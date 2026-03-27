@@ -1,110 +1,121 @@
-import { useState, useEffect } from "react";
-import { useEditor, EditorContext, EditorContent } from "@tiptap/react";
+import { useEffect, useState, useRef } from "react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import { useParams } from 'react-router-dom';
 import StarterKit from "@tiptap/starter-kit";
-import debounce from "lodash.debounce";
-import { getNote, saveNote } from "../services/note";
-import socket from "../socket.js";
+import Collaboration from "@tiptap/extension-collaboration";
+import CollaborationCursor from "@tiptap/extension-collaboration-cursor"; // ✅ default import
+import { createYjs } from "../lib/yjs";
 
-function Editor({ roomId = "69c132eab358289d365fc24b" }) {
-  const editor = useEditor({
-    extensions: [StarterKit],
-    content: "",
-  });
+function Editor({roomId, user }) {
+  // const {roomId} = useParams();
+  const [yjs, setYjs] = useState(null);
+  const instanceRef = useRef(null);
 
-  let isRemote = false;
-
-  //join room
   useEffect(() => {
-    if (!roomId) return;
-    socket.emit("join-room", roomId);
+    let destroyed = false;
+
+    // createYjs รับ callback เมื่อ synced
+    const instance = createYjs(roomId, (readyYjs) => {
+      if (!destroyed) setYjs(readyYjs);
+    });
+
+    instanceRef.current = instance;
+
+    return () => {
+      destroyed = true;
+      setYjs(null);
+      setTimeout(() => {
+        instance.provider.destroy();
+        instance.ydoc.destroy();
+      }, 100);
+    };
   }, [roomId]);
 
-  //send data
-  useEffect(() => {
-    if (!editor) return;
+  if (!yjs) return <div>Connecting...</div>;
 
-    const updateHandler = () => {
-      if (isRemote) return;
-      const json = editor.getJSON();
+  // ✅ key บังคับ remount ทุกครั้งที่ yjs instance ใหม่
+  return <EditorInner key={roomId} yjs={yjs} user={user} />;
+}
+const getUserColor = (name = "david") => {
+  const colors = [
+    "#639922",
+    "#185FA5",
+    "#993C1D",
+    "#533AB7",
+    "#0F6E56",
+    "#993556",
+    "#854F0B",
+    "#A32D2D",
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+};
 
-      socket.emit("send-changes", {
-        roomId,
-        content: json,
-      });
-    };
-
-    editor.on("update", updateHandler);
-
-    return () => {
-      editor.off("update", updateHandler);
-    };
-  }, [editor, roomId]);
-
-  //receive data
-  useEffect(() => {
-    if (!editor) return;
-
-    const receiveHandler = (content) => {
-      isRemote = true;
-      editor.commands.setContent(content, false);
-      isRemote = false;
-    };
-
-    socket.on("receive-changes", receiveHandler);
-
-    return () => {
-      socket.off("receive-changes", receiveHandler);
-    };
-  }, [editor]);
-
-  //load content
-  const fetch_note = async () => {
-    const res = await getNote(roomId);
-    editor.commands.setContent(res.data.content);
-  };
-
-  //auto save
-  const save = debounce(async () => {
-    const json = editor.getJSON();
-    await saveNote(roomId, json);
-  }, 2000);
-
-  //cursor system
-  editor.on("selectionUpdate", () => {
-    const { from, to } = editor.state.selection;
-
-    socket.emit("cursor:update", { roomId, userId, from, to });
+function EditorInner({ yjs, user }) {
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({ history: false }),
+      Collaboration.configure({
+        document: yjs.ydoc,
+        field: "document",
+      }),
+      CollaborationCursor.configure({
+        provider: yjs.provider,
+        user: {
+          name: user?.username || "Guest",
+          color: getUserColor(user?.username),
+        },
+        render(user) {
+          const cursor = document.createElement("span");
+          cursor.classList.add("collab-cursor");
+          cursor.style.cssText = `
+            border-left: 2px solid ${user.color};
+            margin-left: -1px;
+            margin-right: -1px;
+            pointer-events: none;
+            position: relative;
+            word-break: normal;
+          `;
+          const label = document.createElement("div");
+          label.classList.add("collab-cursor-label");
+          label.style.cssText = `
+            position: absolute;
+            bottom: 100%;
+            left: -1px;
+            background: ${user.color};
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: 500;
+            padding: 1px 12px;
+            border-radius: 20px;
+            white-space: nowrap;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-family: sans-serif;
+          `;
+          const dot = document.createElement("span");
+          dot.style.cssText = `
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: rgba(23, 250, 23, 0.9);
+          `;
+          label.appendChild(dot);
+          label.appendChild(document.createTextNode(user.name));
+          cursor.appendChild(label);
+          return cursor;
+        },
+      }),
+    ],
+    editable: true,
   });
 
-  editor.on("cursor:broadcast", (cursor) => {
-    //setPosition(cursor)
-  });
-  useEffect(() => {
-    fetch_note();
-  }, [editor, roomId]);
-
-  return (
-    <div>
-      <div className="mb-2 space-x-2">
-        <button onClick={() => editor.chain().focus().toggleBold().run()}>
-          Bold
-        </button>
-
-        <button
-          onClick={() =>
-            editor.chain().focus().toggleHeading({ level: 1 }).run()
-          }
-        >
-          H1
-        </button>
-
-        <button onClick={() => editor.chain().focus().toggleBulletList().run()}>
-          List
-        </button>
-      </div>
-      <EditorContent editor={editor} />
-    </div>
-  );
+  if (!editor) return null;
+  return <EditorContent editor={editor} style={{backgroundColor:"#b5ceff", width:"100%"}}/>;
 }
 
 export default Editor;

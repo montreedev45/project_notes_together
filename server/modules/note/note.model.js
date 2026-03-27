@@ -8,8 +8,8 @@ const noteSchema = new mongoose.Schema({
         unique: true
     },
     content:{
-        type: Object,
-        default:{}
+        type: Buffer,
+        required: true
     }
 }, {timestamps: true})
 

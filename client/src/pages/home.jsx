@@ -4,7 +4,6 @@ import api from "../services/api";
 function Home() {
     const [message, setMessage] = useState("loading...")
 
-
     useEffect(() => {
         const fetchHealth = async()=>{
             try {

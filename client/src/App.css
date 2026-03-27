@@ -182,3 +182,16 @@
     border-right-color: var(--border);
   }
 }
+
+.collab-cursor { display: inline; }
+
+/* ซ่อน label จนกว่าจะ hover */
+.collab-cursor-label {
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.15s, transform 0.15s;
+}
+.collab-cursor:hover .collab-cursor-label {
+  opacity: 1;
+  transform: translateY(0);
+}
