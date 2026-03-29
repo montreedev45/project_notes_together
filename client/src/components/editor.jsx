@@ -1,24 +1,28 @@
 import { useEffect, useState, useRef } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
-import { useParams } from 'react-router-dom';
 import StarterKit from "@tiptap/starter-kit";
 import Collaboration from "@tiptap/extension-collaboration";
-import CollaborationCursor from "@tiptap/extension-collaboration-cursor"; // ✅ default import
+import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
 import { createYjs } from "../lib/yjs";
 
-function Editor({roomId, user }) {
-  // const {roomId} = useParams();
+const getUserColor = (name = "guest") => {
+  const colors = ["#6366f1", "#8b5cf6", "#ec4899", "#f43f5e", "#f59e0b", "#10b981", "#06b6d4", "#3b82f6"];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+};
+
+function Editor({ roomId, user }) {
   const [yjs, setYjs] = useState(null);
   const instanceRef = useRef(null);
 
   useEffect(() => {
     let destroyed = false;
-
-    // createYjs รับ callback เมื่อ synced
     const instance = createYjs(roomId, (readyYjs) => {
       if (!destroyed) setYjs(readyYjs);
     });
-
     instanceRef.current = instance;
 
     return () => {
@@ -31,28 +35,16 @@ function Editor({roomId, user }) {
     };
   }, [roomId]);
 
-  if (!yjs) return <div>Connecting...</div>;
+  if (!yjs) {
+    return (
+      <div className="flex items-center justify-center min-h-100">
+        <div className="animate-pulse text-slate-400 font-medium">Connecting to sync server...</div>
+      </div>
+    );
+  }
 
-  // ✅ key บังคับ remount ทุกครั้งที่ yjs instance ใหม่
   return <EditorInner key={roomId} yjs={yjs} user={user} />;
 }
-const getUserColor = (name = "david") => {
-  const colors = [
-    "#639922",
-    "#185FA5",
-    "#993C1D",
-    "#533AB7",
-    "#0F6E56",
-    "#993556",
-    "#854F0B",
-    "#A32D2D",
-  ];
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return colors[Math.abs(hash) % colors.length];
-};
 
 function EditorInner({ yjs, user }) {
   const editor = useEditor({
@@ -71,39 +63,15 @@ function EditorInner({ yjs, user }) {
         render(user) {
           const cursor = document.createElement("span");
           cursor.classList.add("collab-cursor");
-          cursor.style.cssText = `
-            border-left: 2px solid ${user.color};
-            margin-left: -1px;
-            margin-right: -1px;
-            pointer-events: none;
-            position: relative;
-            word-break: normal;
-          `;
+          cursor.style.borderColor = user.color;
+
           const label = document.createElement("div");
           label.classList.add("collab-cursor-label");
-          label.style.cssText = `
-            position: absolute;
-            bottom: 100%;
-            left: -1px;
-            background: ${user.color};
-            color: #ffffff;
-            font-size: 10px;
-            font-weight: 500;
-            padding: 1px 12px;
-            border-radius: 20px;
-            white-space: nowrap;
-            pointer-events: none;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-family: sans-serif;
-          `;
+          label.style.backgroundColor = user.color;
+
           const dot = document.createElement("span");
-          dot.style.cssText = `
-            width: 6px; height: 6px;
-            border-radius: 50%;
-            background: rgba(23, 250, 23, 0.9);
-          `;
+          dot.classList.add("collab-cursor-dot");
+
           label.appendChild(dot);
           label.appendChild(document.createTextNode(user.name));
           cursor.appendChild(label);
@@ -111,11 +79,33 @@ function EditorInner({ yjs, user }) {
         },
       }),
     ],
-    editable: true,
-  });
+    editorProps: {
+      attributes: {
+        // ใช้ Tailwind Typography (prose) ร่วมกับสีพื้นหลังที่ต้องการ
+        class: "prose prose-slate bg-white shadow-xl border border-slate-200 rounded-lg mx-auto",
+      },
+    },
+  }, [yjs]);
 
   if (!editor) return null;
-  return <EditorContent editor={editor} style={{backgroundColor:"#b5ceff", width:"100%"}}/>;
+
+  return (
+    <div className="w-full h-full bg-slate-50 p-4 sm:p-8 overflow-y-auto">
+      <div className="max-w-4xl mx-auto">
+        {/* Toolbar จำลอง (ตกแต่งเพิ่มได้ที่นี่) */}
+        <div className="mb-4 flex items-center justify-between px-4 py-2 bg-white rounded-md shadow-sm border border-slate-200 text-xs text-slate-500">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-ping"></span>
+            Live Syncing
+          </div>
+          <div>Room: <span className="font-mono text-indigo-600">{yjs.ydoc.guid.slice(0, 8)}</span></div>
+        </div>
+
+        {/* Editor Area */}
+        <EditorContent editor={editor} />
+      </div>
+    </div>
+  );
 }
 
 export default Editor;

@@ -7,15 +7,14 @@ import Register from "./pages/register";
 import Layout from "./layouts/layout";
 
 function App() {
-  return(
+  return (
     <>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Layout/>}>
-            <Route path="editor/:id" element={<Editor roomId="69c132eab358289d365fc24b"/>}/>
-          </Route>
-        </Routes>
-      </BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Home />} />
+          {/* <Route path="editor/:id" element={<Editor roomId="69c132eab358289d365fc24b"/>}/> */}
+        </Route>
+      </Routes>
     </>
   );
 }
