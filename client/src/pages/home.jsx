@@ -6,6 +6,7 @@ import image_step_1 from "../assets/notes_together_step1.png";
 import image_step_2 from "../assets/notes_together_step2.png";
 import image_step_3 from "../assets/notes_together_step3.png";
 import api from "../services/api";
+import { HashLink } from "react-router-hash-link";
 
 function Home() {
   return (
@@ -20,9 +21,9 @@ function Home() {
               Create a shared workspace for your team. Start a room, invite
               collaborators, and edit notes together in real time.
             </p>
-            <button className="button-primary mt-5 font-semibold hover:scale-105 transition-transform cursor-pointer">
+            <Link to="/login" className="button-primary mt-5 font-semibold hover:scale-105 transition-transform cursor-pointer block text-center">
               Create Your Frist Room
-            </button>
+            </Link>
           </div>
           <div className="hidden  lg:block ">
             <img src={image_hero} alt="" className="" />
@@ -30,7 +31,7 @@ function Home() {
         </div>
       </div>
 
-      <div className="text-black w-full flex justify-center h-fit">
+      <div className="text-black w-full flex justify-center h-fit" id="feature">
         <div className="w-fit h-fit  pt-30 pb-30">
           <p className="font-bold text-logo text-center">Features</p>
           <div className="flex flex-col pt-15 items-center justify-between lg:gap-20 gap-30 px-10 lg:flex-row">
@@ -78,7 +79,7 @@ function Home() {
         </div>
       </div>
 
-      <div className="text-black w-full flex justify-center h-fit">
+      <div className="text-black w-full flex justify-center h-fit" id="how-it-works">
         <div className="max-w-5xl w-full px-30 py-30">
           <p className="font-bold text-logo text-center">How it works</p>
           <div className=" mt-8 flex flex-col gap-30">
@@ -148,7 +149,7 @@ function Home() {
         </div>
       </div>
 
-      <div className="text-black w-full flex justify-center  h-auto bg-third">
+      <div className="text-black w-full flex justify-center  h-auto bg-third" id="pricing">
         <div className="w-full max-w-300 px-15 py-30">
           <p className="font-bold text-logo text-center">Pricing</p>
           <div className=" flex justify-between items-center flex-col gap-30 lg:gap-20 lg:flex-row mt-10">
@@ -159,9 +160,9 @@ function Home() {
               <span className="text-black block py-5 font-bold text-3xl">
                 $0 / month
               </span>
-              <button className="button-primary bg-secondary py-2 rounded-md font-medium w-full cursor-pointer">
+              <Link to="/login" className="button-primary bg-secondary py-2 rounded-md font-medium block w-full text-center cursor-pointer">
                 Current plan
-              </button>
+              </Link>
               <div className="flex justify-start pt-5">
                 <Icon
                   icon="fluent-emoji-high-contrast:check-mark"
@@ -200,9 +201,9 @@ function Home() {
               <span className="text-black block py-5 font-bold text-3xl">
                 $10 / month
               </span>
-              <button className="button-primary bg-primary py-2 rounded-md font-medium w-full cursor-pointer">
+              <Link to="/login" className="button-primary bg-primary py-2 rounded-md font-medium block text-center w-full cursor-pointer">
                 Get started
-              </button>
+              </Link>
               <div className="flex justify-start pt-5">
                 <Icon
                   icon="fluent-emoji-high-contrast:check-mark"
@@ -241,9 +242,9 @@ function Home() {
               <span className="text-black block py-5 font-bold text-3xl">
                 $100 / month
               </span>
-              <button className="button-primary bg-primary py-2 rounded-md font-medium w-full cursor-pointer">
+              <Link to="/login" className="button-primary bg-primary py-2 rounded-md font-medium block text-center w-full cursor-pointer">
                 Get started
-              </button>
+              </Link>
               <div className="flex justify-start pt-5">
                 <Icon
                   icon="fluent-emoji-high-contrast:check-mark"
@@ -279,7 +280,7 @@ function Home() {
       <div className="text-black w-full flex justify-center  py-40 px-10 h-auto">
         <div className="max-w-200 w-fit flex flex-col justify-center items-center gap-6">
           <p className="font-bold text-logo text-center w-full text-primary ">Start collaborating today Create your first room in seconds</p>
-          <button className="button-primary w-fit font-semibold hover:scale-105 transition-transform cursor-pointer">Create Your First Room</button>
+          <Link to="/login" className="button-primary w-fit font-semibold hover:scale-105 transition-transform cursor-pointer">Create Your First Room</Link>
         </div>
       </div>
 
@@ -298,8 +299,9 @@ function Home() {
           </div>
           <div className="text-secondary font-semibold flex flex-col text-center leading-7 min-w-25 w-full max-w-50">
             <span className="text-black ">Product</span>
-            <span className="hover:text-primary transition-colors cursor-pointer">Feature</span>
-            <span className="hover:text-primary transition-colors cursor-pointer">Pricing</span>
+            <HashLink to="/#feature" className="hover:text-primary transition-colors cursor-pointer">Feature</HashLink>
+            <HashLink to="/#how-it-works" className="hover:text-primary transition-colors cursor-pointer">How it works</HashLink>
+            <HashLink to="/#pricing" className="hover:text-primary transition-colors cursor-pointer">Pricing</HashLink>
             <span className="hover:text-primary transition-colors cursor-pointer">API</span>
           </div>
           <div className="text-secondary font-semibold flex flex-col text-center leading-7 min-w-25 w-full max-w-50">

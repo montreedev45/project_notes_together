@@ -29,6 +29,9 @@ body {
   margin: 0; /* ลบขอบขาวรอบเว็บ */
 }
 
+html{
+  scroll-behavior: smooth
+}
   .navbar-style {
     @apply text-nav text-secondary font-semibold;
   }
