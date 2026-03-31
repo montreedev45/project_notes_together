@@ -10,7 +10,7 @@ import { HashLink } from "react-router-hash-link";
 
 function Home() {
   return (
-    <div className="w-full flex flex-col justify-center items-center">
+    <div className="w-full flex flex-col justify-center items-center mt-22">
       <div className="w-full bg-third flex justify-center pb-40 pt-40">
         <div className="w-fit flex items-center  md:px-10 min-w-sm px-10">
           <div className="grow justify-center lg:items-start items-center flex flex-col text-center lg:text-left">

@@ -26,11 +26,12 @@ body {
   @apply font-sans antialiased;
   background-color: var(--color-white);
   color: black;
-  margin: 0; /* ลบขอบขาวรอบเว็บ */
+  margin: 0;
 }
 
 html{
-  scroll-behavior: smooth
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
 }
   .navbar-style {
     @apply text-nav text-secondary font-semibold;

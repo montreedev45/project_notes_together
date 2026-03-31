@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { HashLink } from "react-router-hash-link"
 function Navbar() {
   return (
-    <div className="w-full flex justify-center md:px-20">
+    <div className="w-full flex justify-center md:px-20 fixed backdrop-blur-xl z-50">
       <nav className="w-7xl h-navbar flex items-center">
         <div className="">
           <HashLink to=""><img src="/logo.svg" alt="" className="w-70" /></HashLink>

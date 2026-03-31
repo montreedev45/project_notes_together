@@ -13,6 +13,9 @@ function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
           {/* <Route path="editor/:id" element={<Editor roomId="69c132eab358289d365fc24b"/>}/> */}
+
+          <Route path="/login" element={<Login/>}/>
+          <Route path="/sign-up" element={<Register/>}/>
         </Route>
       </Routes>
     </>
