@@ -1,6 +1,15 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { HashLink } from "react-router-hash-link"
+
 function Navbar() {
+  const navigate = useNavigate();
+
+  const handleError = ()=>{
+    //Test navigate send url path
+    const currentPath = window.location.pathname + "login";
+    console.log(currentPath)
+    navigate(`/500?from=${encodeURIComponent(currentPath)}`)
+  }
   return (
     <div className="w-full flex justify-center md:px-20 fixed backdrop-blur-xl z-50">
       <nav className="w-7xl h-navbar flex items-center">
@@ -9,6 +18,9 @@ function Navbar() {
         </div>
         <div className="grow lg:block hidden">
           <ul className=" flex justify-end items-center gap-10 navbar-style">
+            <button onClick={handleError} className="hover:text-primary transition-colors">
+              <li>Test-500</li>
+            </button>
             <HashLink to="/#feature" className="hover:text-primary transition-colors">
               <li>Feature</li>
             </HashLink>
