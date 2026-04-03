@@ -9,6 +9,7 @@ import DashboardLayout from "./layouts/dashboardlayout";
 import Error404 from "./pages/error404";
 import Error500 from "./pages/error500";
 import Dashboard from "./pages/dashboard";
+import SettingRoom from "./pages/settingRoom";
 
 function App() {
   return (
@@ -28,6 +29,8 @@ function App() {
         {/* private */}
         <Route path="/notes-together" element={<DashboardLayout/>}>
           <Route path="/notes-together/dashboard" element={<Dashboard/>}/>
+          <Route path="/notes-together/:id/editor" element={<Editor/>}/>
+          <Route path="/notes-together/:id/setting" element={<SettingRoom/>}/>
         </Route>
 
         <Route path="*" element={<Error404/>}/>

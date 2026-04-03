@@ -70,3 +70,9 @@ html{
 .tiptap.prose {
   @apply max-w-none focus:outline-none min-h-125 text-slate-800 text-left p-8;
 }
+
+/* index.css */
+button, span, p,label, .sidebar-item {
+  user-select: none; /* ห้ามคลุมดำ */
+  -webkit-user-select: none;
+}
