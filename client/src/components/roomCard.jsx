@@ -1,10 +1,14 @@
 import { Icon } from "@iconify/react";
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 
 function RoomCard({ index }) {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [isOpenMenuModal, setIsOpenMenuModal] = useState(false);
+  const isUrlFromTrash = location.pathname.includes("trash");
+  //console.log(isUrlFromTrash);
 
   //test nacigate
   const handleClickRoom = () => {
@@ -32,40 +36,57 @@ function RoomCard({ index }) {
             />
             {isOpenMenuModal && (
               <div className="absolute left-13 -top-2 z-50 select-none">
-                <div className="relative w-32 bg-white border border-slate-200 rounded-xl shadow-lg p-2">
+                <div className={`relative ${isUrlFromTrash ? `w-35` : `w-30`} bg-white border border-slate-200 rounded-xl shadow-lg p-2`}>
                   {/* 1. ส่วนที่เป็น "ติ่ง" (Arrow) ชี้ไปทางซ้าย */}
                   <div className="absolute -left-1.5 top-4 w-3 h-3 bg-white border-l border-t border-slate-200 -rotate-45"></div>
 
                   {/* 2. รายการเมนูข้างใน */}
                   <ul className="relative z-10 flex flex-col gap-1">
-                    <li onClick={(e) => e.stopPropagation()}>
-                      <Link className="w-full text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-black cursor-pointer transition-colors">
-                        open
-                      </Link>
-                    </li>
-                    <li onClick={(e) => e.stopPropagation()}>
-                      <Link
-                        to={`/notes-together/${index}/setting`}
-                        className="block w-full text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-black cursor-pointer transition-colors"
-                      >
-                        setting
-                      </Link>
-                    </li>
-                    <li onClick={(e) => e.stopPropagation()}>
-                      <Link className="w-full text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-black cursor-pointer transition-colors">
-                        invite
-                      </Link>
-                    </li>
-                    <li onClick={(e) => e.stopPropagation()}>
-                      <Link className="w-full text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-black cursor-pointer transition-colors">
-                        leave
-                      </Link>
-                    </li>
-                    <li onClick={(e) => e.stopPropagation()}>
-                      <Link className="w-full text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-red-500 cursor-pointer transition-colors">
-                        delete
-                      </Link>
-                    </li>
+                    {isUrlFromTrash ? (
+                      <>
+                        <li onClick={(e) => e.stopPropagation()}>
+                          <Link className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-green-100 hover:text-green-500 cursor-pointer transition-colors">
+                            restore
+                          </Link>
+                        </li>
+                        <li onClick={(e) => e.stopPropagation()}>
+                          <Link className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-red-200 hover:text-red-400 cursor-pointer transition-colors">
+                            delete forever
+                          </Link>
+                        </li>
+                      </>
+                    ) : (
+                      <>
+                        <li onClick={(e) => e.stopPropagation()}>
+                          <Link className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-black cursor-pointer transition-colors">
+                            open
+                          </Link>
+                        </li>
+                        <li onClick={(e) => e.stopPropagation()}>
+                          <Link
+                            to={`/notes-together/${index}/setting-room/general`}
+                            className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-black cursor-pointer transition-colors"
+                          >
+                            setting
+                          </Link>
+                        </li>
+                        <li onClick={(e) => e.stopPropagation()}>
+                          <Link className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-black cursor-pointer transition-colors">
+                            invite
+                          </Link>
+                        </li>
+                        <li onClick={(e) => e.stopPropagation()}>
+                          <Link className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-black cursor-pointer transition-colors">
+                            leave
+                          </Link>
+                        </li>
+                        <li onClick={(e) => e.stopPropagation()}>
+                          <Link className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-red-500 cursor-pointer transition-colors">
+                            delete
+                          </Link>
+                        </li>
+                      </>
+                    )}
                   </ul>
                 </div>
               </div>

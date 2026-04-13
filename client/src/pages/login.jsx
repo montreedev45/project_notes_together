@@ -4,9 +4,10 @@ import { Icon } from "@iconify/react";
 import api from "../services/api.js";
 import image_hero from "../assets/image_hero.png";
 import Editor from "../components/editor.jsx";
+import ForgotPasswordModal from "../components/forgotPasswordModal.jsx";
 
 function Login() {
-
+const [isOpenForgotPasswordModal, setIsOpenForgotPasswordModal]=useState(false)
   return (
     <div className="w-full mt-22 flex justify-center bg-third">
       <div className="max-w-300 w-full flex justify-between items-center px-20 mt-16 mb-20">
@@ -44,9 +45,10 @@ function Login() {
               className="text-gray absolute right-3 cursor-pointer"
             />
           </div>
-          <span className="text-end w-full font-semibold text-primary mb-4 cursor-pointer">
+          <span onClick={()=> setIsOpenForgotPasswordModal(true)} className="text-end w-full font-semibold text-primary mb-4 cursor-pointer">
             Forgot password?
           </span>
+          <ForgotPasswordModal isOpen={isOpenForgotPasswordModal} onClose={()=>setIsOpenForgotPasswordModal(false)}/>
           <button className="button-primary w-full py-2 rounded-lg font-medium hover:scale-105 transition-transform cursor-pointer">
             Login
           </button>

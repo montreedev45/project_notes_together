@@ -6,19 +6,32 @@ function Sidebar() {
     <div className="w-60 h-full border-r-2 border-gray-200 flex flex-col justify-between py-8 px-6 bg-third">
       <nav>
         <ul className="flex flex-col gap-6 text-secondary font-medium">
-            <Link to="/notes-together/dashboard">
-          <li className="flex items-center gap-4 cursor-pointer hover:text-primary transition-colors">
+          <li className="cursor-pointer hover:text-primary transition-colors">
+            <Link
+              to="/notes-together/dashboard"
+              className="flex gap-4 items-center"
+            >
               <Icon icon="mdi:home" width="24" />
               <span>My Rooms</span>
-          </li>
             </Link>
-          <li className="flex items-center gap-4 cursor-pointer hover:text-primary transition-colors">
-            <Icon icon="mdi:clock" width="24" />
-            <span>Recent</span>
           </li>
-          <li className="flex items-center gap-4 cursor-pointer hover:text-primary transition-colors">
-            <Icon icon="mdi:trash" width="24" />
-            <span>Trash</span>
+          <li className="cursor-pointer hover:text-primary transition-colors">
+            <Link
+              to="/notes-together/recent"
+              className="flex gap-4 items-center"
+            >
+              <Icon icon="mdi:clock" width="24" />
+              <span>Recent</span>
+            </Link>
+          </li>
+          <li className="cursor-pointer hover:text-primary transition-colors">
+            <Link
+              to="/notes-together/trash"
+              className="flex gap-4 items-center"
+            >
+              <Icon icon="mdi:trash" width="24" />
+              <span>Trash</span>
+            </Link>
           </li>
         </ul>
       </nav>
@@ -38,9 +51,11 @@ function Sidebar() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-secondary font-medium cursor-pointer hover:text-primary transition-colors">
-          <Icon icon="mdi:cog" width="30" />
-          <span>Settings</span>
+        <div className="text-secondary font-medium cursor-pointer hover:text-primary transition-colors">
+          <Link to="/notes-together/01/setting-account" className="flex items-center gap-4">
+            <Icon icon="mdi:cog" width="30" />
+            <span>Settings</span>
+          </Link>
         </div>
       </div>
     </div>
