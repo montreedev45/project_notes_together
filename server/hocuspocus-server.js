@@ -15,7 +15,7 @@ const __dirname = path.dirname(__filename);
 // หาก .env อยู่โฟลเดอร์ข้างนอก ให้ใช้ path.join(__dirname, "../.env")
 dotenv.config({ path: path.join(__dirname, ".env") });
 
-console.log("🔍 Check MONGO_URI:", process.env.MONGO_URI ? "Found" : "Not Found");
+console.log("🔍 Check MONGO_URI:", process.env.MONGO_URL ? "Found" : "Not Found");
 
 connectDB();
 

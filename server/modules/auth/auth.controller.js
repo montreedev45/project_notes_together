@@ -3,9 +3,18 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
 const generateToken = (user) => {
-  return jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-    expiresIn: "1d",
-  });
+  return jwt.sign(
+    {
+      id: user._id,
+      email: user.email,
+      username: user.username,
+      avatar: user.avatar
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "1d",
+    },
+  );
 };
 
 export const register = async (req, res) => {

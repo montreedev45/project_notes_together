@@ -112,114 +112,116 @@ function EditorInner({ yjs, user }) {
   if (!editor) return null;
 
   return (
-    <div className="w-full h-full bg-slate-50 p-4 sm:p-8 overflow-y-auto">
+    <div className="w-full h-full bg-slate-50 pt-0 sm:p-8 sm:pt-0 overflow-y-auto">
       <div className="max-w-4xl mx-auto">
         {/* toolbar */}
-        <div className="sticky top-0 z-20 flex flex-wrap items-center gap-1 p-2 bg-white/90 backdrop-blur-md border-b mb-4 rounded-t-lg shadow-sm">
+        <div className="sticky top-0 z-20 flex px-4 py-4 gap-3 flex-col items-center  bg-white/90 backdrop-blur-md mb-6 rounded-t-lg shadow-sm">
           {/* --- Group 1: Text Styles (Marks) --- */}
-          <button
-            onClick={() => editor.chain().focus().toggleBold().run()}
-            disabled={!editor.can().chain().focus().toggleBold().run()}
-            className={`p-2 rounded transition-colors ${editor.isActive("bold") ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
-            title="Bold (Ctrl+B)"
-          >
-            <Icon icon="mdi:format-bold" width="20" />
-          </button>
-          <button
-            onClick={() => editor.chain().focus().toggleItalic().run()}
-            disabled={!editor.can().chain().focus().toggleItalic().run()}
-            className={`p-2 rounded transition-colors ${editor.isActive("italic") ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
-            title="Italic (Ctrl+I)"
-          >
-            <Icon icon="mdi:format-italic" width="20" />
-          </button>
-          {/* Underline (ต้องลง Extension เพิ่ม) */}
-          <button
-            onClick={() => editor.chain().focus().toggleUnderline().run()}
-            className={`p-2 rounded transition-colors ${editor.isActive("underline") ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
-            title="Underline (Ctrl+U)"
-          >
-            <Icon icon="mdi:format-underline" width="20" />
-          </button>
-          <button
-            onClick={() => editor.chain().focus().toggleStrike().run()}
-            className={`p-2 rounded transition-colors ${editor.isActive("strike") ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
-            title="Strikethrough"
-          >
-            <Icon icon="mdi:format-strikethrough-variant" width="20" />
-          </button>
-          <button
-            onClick={() => editor.chain().focus().toggleCode().run()}
-            className={`p-2 rounded transition-colors ${editor.isActive("code") ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
-            title="Inline Code"
-          >
-            <Icon icon="mdi:code-tags" width="20" />
-          </button>
-          <div className="w-px h-6 bg-slate-200 mx-1" /> {/* เส้นคั่น */}
-          {/* --- Group 2: Headings --- */}
-          <button
-            onClick={() =>
-              editor.chain().focus().toggleHeading({ level: 1 }).run()
-            }
-            className={`p-2 rounded font-bold ${editor.isActive("heading", { level: 1 }) ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
-          >
-            H1
-          </button>
-          <button
-            onClick={() =>
-              editor.chain().focus().toggleHeading({ level: 2 }).run()
-            }
-            className={`p-2 rounded font-bold ${editor.isActive("heading", { level: 2 }) ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
-          >
-            H2
-          </button>
-          <div className="w-px h-6 bg-slate-200 mx-1" /> {/* เส้นคั่น */}
-          {/* --- Group 3: Lists & Blocks --- */}
-          <button
-            onClick={() => editor.chain().focus().toggleBulletList().run()}
-            className={`p-2 rounded ${editor.isActive("bulletList") ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
-          >
-            <Icon icon="mdi:format-list-bulleted" width="20" />
-          </button>
-          <button
-            onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            className={`p-2 rounded ${editor.isActive("orderedList") ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
-          >
-            <Icon icon="mdi:format-list-numbered" width="20" />
-          </button>
-          <button
-            onClick={() => editor.chain().focus().toggleBlockquote().run()}
-            className={`p-2 rounded ${editor.isActive("blockquote") ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
-          >
-            <Icon icon="mdi:format-quote-close" width="20" />
-          </button>
-          <div className="flex-1 " /> {/* ดันปุ่มที่เหลือไปทางขวา */}
-          {/* --- Group 4: Clear Formatting --- */}
-          <button
-            onClick={() =>
-              editor.chain().focus().unsetAllMarks().clearNodes().run()
-            }
-            className="p-2 rounded hover:bg-red-50 text-red-400"
-            title="Clear Formatting"
-          >
-            <Icon icon="mdi:format-clear" width="20" />
-          </button>
-        </div>
-        <div className="mb-4 flex items-center justify-between px-4 py-2 bg-white rounded-md shadow-sm border border-slate-200 text-xs text-slate-500">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-ping"></span>
-            Live Syncing
+          <div className=" w-full flex items-center justify-between px-4 py-2  rounded-md shadow-sm border border-slate-200 text-xs text-slate-500">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-ping"></span>
+              Live Syncing
+            </div>
+            <div>
+              Room:{" "}
+              <span className="font-mono text-indigo-600">
+                {yjs.ydoc.guid.slice(0, 8)}
+              </span>
+            </div>
           </div>
-          <div>
-            Room:{" "}
-            <span className="font-mono text-indigo-600">
-              {yjs.ydoc.guid.slice(0, 8)}
-            </span>
+          <div className=" w-full flex py-3 px-3 rounded-md shadow-sm border border-slate-200">
+            <button
+              onClick={() => editor.chain().focus().toggleBold().run()}
+              disabled={!editor.can().chain().focus().toggleBold().run()}
+              className={`p-2 rounded transition-colors ${editor.isActive("bold") ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
+              title="Bold (Ctrl+B)"
+            >
+              <Icon icon="mdi:format-bold" width="20" />
+            </button>
+            <button
+              onClick={() => editor.chain().focus().toggleItalic().run()}
+              disabled={!editor.can().chain().focus().toggleItalic().run()}
+              className={`p-2 rounded transition-colors ${editor.isActive("italic") ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
+              title="Italic (Ctrl+I)"
+            >
+              <Icon icon="mdi:format-italic" width="20" />
+            </button>
+            <button
+              onClick={() => editor.chain().focus().toggleUnderline().run()}
+              className={`p-2 rounded transition-colors ${editor.isActive("underline") ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
+              title="Underline (Ctrl+U)"
+            >
+              <Icon icon="mdi:format-underline" width="20" />
+            </button>
+            <button
+              onClick={() => editor.chain().focus().toggleStrike().run()}
+              className={`p-2 rounded transition-colors ${editor.isActive("strike") ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
+              title="Strikethrough"
+            >
+              <Icon icon="mdi:format-strikethrough-variant" width="20" />
+            </button>
+            <button
+              onClick={() => editor.chain().focus().toggleCode().run()}
+              className={`p-2 rounded transition-colors ${editor.isActive("code") ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
+              title="Inline Code"
+            >
+              <Icon icon="mdi:code-tags" width="20" />
+            </button>
+            <div className="w-px h-6 bg-slate-200 mx-1" /> {/* เส้นคั่น */}
+            {/* --- Group 2: Headings --- */}
+            <button
+              onClick={() =>
+                editor.chain().focus().toggleHeading({ level: 1 }).run()
+              }
+              className={`p-2 rounded font-bold ${editor.isActive("heading", { level: 1 }) ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
+            >
+              H1
+            </button>
+            <button
+              onClick={() =>
+                editor.chain().focus().toggleHeading({ level: 2 }).run()
+              }
+              className={`p-2 rounded font-bold ${editor.isActive("heading", { level: 2 }) ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
+            >
+              H2
+            </button>
+            <div className="w-px h-6 bg-slate-200 mx-1" /> {/* เส้นคั่น */}
+            {/* --- Group 3: Lists & Blocks --- */}
+            <button
+              onClick={() => editor.chain().focus().toggleBulletList().run()}
+              className={`p-2 rounded ${editor.isActive("bulletList") ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
+            >
+              <Icon icon="mdi:format-list-bulleted" width="20" />
+            </button>
+            <button
+              onClick={() => editor.chain().focus().toggleOrderedList().run()}
+              className={`p-2 rounded ${editor.isActive("orderedList") ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
+            >
+              <Icon icon="mdi:format-list-numbered" width="20" />
+            </button>
+            <button
+              onClick={() => editor.chain().focus().toggleBlockquote().run()}
+              className={`p-2 rounded ${editor.isActive("blockquote") ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
+            >
+              <Icon icon="mdi:format-quote-close" width="20" />
+            </button>
+            <div className="flex-1 " /> {/* ดันปุ่มที่เหลือไปทางขวา */}
+            {/* --- Group 4: Clear Formatting --- */}
+            <button
+              onClick={() =>
+                editor.chain().focus().unsetAllMarks().clearNodes().run()
+              }
+              className="p-2 rounded hover:bg-red-50 text-red-400"
+              title="Clear Formatting"
+            >
+              <Icon icon="mdi:format-clear" width="20" />
+            </button>
           </div>
+          
         </div>
 
         {/* Editor Area */}
-        <EditorContent editor={editor} />
+        <EditorContent editor={editor} className=" border border-slate-300" />
       </div>
     </div>
   );

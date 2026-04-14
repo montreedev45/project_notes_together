@@ -16,6 +16,7 @@ import Recent from "./pages/recent";
 import Trash from "./pages/trash";
 import SettingAccountLayout from "./layouts/settingAccountLayout";
 import SettingAccountProfile from "./components/settingAccount-profile";
+import ProtectedRoute from "./components/protectedRoute";
 
 function App() {
   return (
@@ -31,28 +32,32 @@ function App() {
         </Route>
 
         {/* private */}
-        <Route path="/notes-together" element={<DashboardLayout />}>
-          <Route index element={<Dashboard/>}/>
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="recent" element={<Recent />} />
-          <Route path="trash" element={<Trash />} />
-
-          //Editor
-          <Route path=":id/editor" element={<Editor roomId="69c22a40c269a4b7f2b3942b"/>} />
-
-          //Setting Room
-          <Route path=":id/setting-room" element={<SettingRoomLayout />}>
-            <Route index element={<SettingRoomGeneral />} />
-            <Route path="general" element={<SettingRoomGeneral />} />
-            <Route path="member" element={<SettingRoomMember />} />
+        <Route element={<ProtectedRoute />}>
+          <Route path="/notes-together" element={<DashboardLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="recent" element={<Recent />} />
+            <Route path="trash" element={<Trash />} />
+            //Editor
+            <Route
+              path=":id/editor"
+              element={<Editor roomId="69c22a40c269a4b7f2b3942b" />}
+            />
+            //Setting Room
+            <Route path=":id/setting-room" element={<SettingRoomLayout />}>
+              <Route index element={<SettingRoomGeneral />} />
+              <Route path="general" element={<SettingRoomGeneral />} />
+              <Route path="member" element={<SettingRoomMember />} />
+            </Route>
+            //Setting Account
+            <Route
+              path=":id/setting-account"
+              element={<SettingAccountLayout />}
+            >
+              <Route index element={<SettingAccountProfile />} />
+              <Route path="profile" element={<SettingAccountProfile />} />
+            </Route>
           </Route>
-
-          //Setting Account
-          <Route path=":id/setting-account" element={<SettingAccountLayout />}>
-            <Route index element={<SettingAccountProfile />} />
-            <Route path="profile" element={<SettingAccountProfile />} />
-          </Route>
-
         </Route>
 
         <Route path="*" element={<Error404 />} />

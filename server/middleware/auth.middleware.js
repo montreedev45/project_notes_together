@@ -4,7 +4,7 @@ import User from "../modules/auth/auth.model.js";
 const authMiddleware = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
-
+    console.log(authHeader)
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({ message: "Unauthorized" });
     }
@@ -14,15 +14,21 @@ const authMiddleware = async (req, res, next) => {
     
     //verify
     const decode = jwt.verify(token, process.env.JWT_SECRET);
+    //console.log("decode test", decode)
     
-    const user = await User.findById(decode.id).select("-password");
+    //const user = await User.findById(decode.id).select("-password");
 
-    if (!user) {
-      return res.status(401).json({ message: "user not found" });
-    }
+    // if (!user) {
+    //   return res.status(401).json({ message: "user not found" });
+    // }
 
     //attact user data
-    req.user = user;
+    req.user = {
+      id: decode.id,
+      username: decode.id,
+      email: decode.email,
+      avatar: decode.avatar
+    };
     next();
     
   } catch (error) {

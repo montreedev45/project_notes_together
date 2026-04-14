@@ -17,6 +17,8 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+
+//when server response code 500
 api.interceptors.response.use(
   (response) => response,
   (error) => {
