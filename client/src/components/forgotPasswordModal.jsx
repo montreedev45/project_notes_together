@@ -6,7 +6,7 @@ function ForgotPasswordModal({ isOpen, onClose }) {
 
   const handleClose = () => {
     onClose();
-    setStep(1);
+    //setStep(1);
   };
 
   return (

@@ -1,13 +1,42 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
-import api from "../services/api.js";
 import image_hero from "../assets/image_hero.png";
-import Editor from "../components/editor.jsx";
 import ForgotPasswordModal from "../components/forgotPasswordModal.jsx";
+import useAuthStore from "../store/useAuthStore.js";
 
 function Login() {
-const [isOpenForgotPasswordModal, setIsOpenForgotPasswordModal]=useState(false)
+  const navigate = useNavigate();
+  const [isOpenForgotPasswordModal, setIsOpenForgotPasswordModal] =
+    useState(false);
+  const login = useAuthStore((state) => state.login);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const [formData, setFormData] = useState({ email: "", password: "" });
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const result = await login(formData);
+
+    if (result?.success) {
+      navigate("/notes-together/dashboard");
+    } else {
+      alert(result?.message || "Login failed");
+    }
+  };
+
+  const handleShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
+
   return (
     <div className="w-full mt-22 flex justify-center bg-third">
       <div className="max-w-300 w-full flex justify-between items-center px-20 mt-16 mb-20">
@@ -19,8 +48,11 @@ const [isOpenForgotPasswordModal, setIsOpenForgotPasswordModal]=useState(false)
           <div className="relative gap-2 mt-8 flex items-center w-full ">
             <input
               type="text"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
               placeholder="Email"
-              className=" font-medium ps-10 py-2 text-gray outline-0 border-2 border-gray rounded-lg w-full"
+              className=" font-normal ps-10 py-2 text-gray-400 outline-0 border-2 border-gray rounded-lg w-full"
             />
             <Icon
               icon="mdi:email"
@@ -30,9 +62,12 @@ const [isOpenForgotPasswordModal, setIsOpenForgotPasswordModal]=useState(false)
           </div>
           <div className="relative gap-2 mt-5 mb-3 flex items-center w-full ">
             <input
-              type="text"
+              type={showPassword ? "text" : "password"}
+              name="password"
+              onChange={handleChange}
+              value={formData.password}
               placeholder="Password"
-              className=" font-medium ps-10 py-2 text-gray outline-0 border-2 border-gray rounded-lg w-full"
+              className=" font-normal ps-10 py-2 text-gray-400 outline-0 border-2 border-gray rounded-lg w-full"
             />
             <Icon
               icon="mdi:key"
@@ -41,15 +76,25 @@ const [isOpenForgotPasswordModal, setIsOpenForgotPasswordModal]=useState(false)
             />
             <Icon
               icon="mdi:eye"
+              onClick={handleShowPassword}
               width="20"
               className="text-gray absolute right-3 cursor-pointer"
             />
           </div>
-          <span onClick={()=> setIsOpenForgotPasswordModal(true)} className="text-end w-full font-semibold text-primary mb-4 cursor-pointer">
+          <span
+            onClick={() => setIsOpenForgotPasswordModal(true)}
+            className="text-end w-full font-semibold text-primary mb-4 cursor-pointer"
+          >
             Forgot password?
           </span>
-          <ForgotPasswordModal isOpen={isOpenForgotPasswordModal} onClose={()=>setIsOpenForgotPasswordModal(false)}/>
-          <button className="button-primary w-full py-2 rounded-lg font-medium hover:scale-105 transition-transform cursor-pointer">
+          <ForgotPasswordModal
+            isOpen={isOpenForgotPasswordModal}
+            onClose={() => setIsOpenForgotPasswordModal(false)}
+          />
+          <button
+            onClick={handleSubmit}
+            className="button-primary w-full py-2 rounded-lg font-medium hover:scale-105 transition-transform cursor-pointer"
+          >
             Login
           </button>
           <span className="py-4 font-semibold text-secondary">or</span>
@@ -64,7 +109,10 @@ const [isOpenForgotPasswordModal, setIsOpenForgotPasswordModal]=useState(false)
           </span>
 
           <span className="mt-8 text-gray font-semibold">
-            Don't have an account? <Link to="/sign-up" className="text-primary">Sign up</Link>
+            Don't have an account?{" "}
+            <Link to="/sign-up" className="text-primary">
+              Sign up
+            </Link>
           </span>
         </div>
       </div>

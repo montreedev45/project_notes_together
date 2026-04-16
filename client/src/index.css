@@ -50,7 +50,7 @@
 /* 3. Component Classes */
 @layer components {
   .navbar-style {
-    @apply text-nav text-secondary font-semibold hover:text-primary transition-colors;
+    @apply text-nav text-secondary font-semibold transition-colors;
   }
 
   .button-primary {

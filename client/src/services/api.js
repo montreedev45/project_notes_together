@@ -23,9 +23,14 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 500) {
-      const currentPath = window.location.pathname;
-      console.log("api interceptor: ", currentPath)
-      window.location.href = `/500?from=${encodeURIComponent(currentPath)}`;
+      const isAuthPage =
+        window.location.pathname.includes("/register") ||
+        window.location.pathname.includes("/login");
+
+      if (!isAuthPage) {
+        const currentPath = window.location.pathname;
+        window.location.href = `/500?from=${encodeURIComponent(currentPath)}`;
+      }
     }
 
     return Promise.reject(error);

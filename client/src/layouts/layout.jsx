@@ -9,7 +9,6 @@ function Layout() {
 
   const showFooter = !pathNoFooter.includes(location.pathname)
 
-  console.log(showFooter)
   return (
     <div className="layout-container">
       <Navbar />
