@@ -4,7 +4,6 @@ import User from "../modules/auth/auth.model.js";
 const authMiddleware = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
-    console.log(authHeader)
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({ message: "Unauthorized" });
     }
@@ -24,8 +23,8 @@ const authMiddleware = async (req, res, next) => {
 
     //attact user data
     req.user = {
-      id: decode.id,
-      username: decode.id,
+      _id: decode.id,
+      username: decode.username,
       email: decode.email,
       avatar: decode.avatar
     };

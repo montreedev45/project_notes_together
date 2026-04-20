@@ -3,7 +3,8 @@ import api from "../services/api";
 const useAuthStore = create((set) => ({
   user: null,
   isAuthenticated: false,
-  loading: true,
+  loading: false,
+  isInitialized: false, //use when check that Have finished process yet?
 
   login: async (formData) => {
     set({ loading: true });
@@ -59,10 +60,6 @@ const useAuthStore = create((set) => ({
     }
   },
 
-  setUserData: (userData) => {
-    set({ user: userData, isAuthenticated: true, loading: false });
-  },
-
   logout: () => {
     localStorage.removeItem("token");
     set({ user: null, isAuthenticated: false, loading: false });
@@ -72,7 +69,7 @@ const useAuthStore = create((set) => ({
     const token = localStorage.getItem("token");
 
     if (!token) {
-      set({ isAuthenticated: false, loading: false });
+      set({ isAuthenticated: false, loading: false , isInitialized: true});
       return;
     }
 
@@ -80,10 +77,10 @@ const useAuthStore = create((set) => ({
       const res = await api.get("/auth/verify", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      set({ user: res.data.user, isAuthenticated: true, loading: false });
+      set({ user: res.data.user, isAuthenticated: true, loading: false, isInitialized: true });
     } catch (error) {
       localStorage.removeItem("token");
-      set({ user: null, isAuthenticated: false, loading: false });
+      set({ user: null, isAuthenticated: false, loading: false, isInitialized: true});
     }
   },
 }));

@@ -3,7 +3,7 @@ import Room from "./room.model.js";
 //create room
 export const createRoom = async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, isPrivate, selectedColor } = req.body;
 
     const room = await Room.create({
       name,
@@ -15,9 +15,17 @@ export const createRoom = async (req, res) => {
           role: "owner",
         },
       ],
+      isPrivate,
+      color: selectedColor,
     });
 
-    res.json(room);
+    //case: when create room frontend not received some data
+    const populate = await Room.findById(room._id)
+      .sort({ createdAt: -1 })
+      .populate("owner", "username email")
+      .populate("members.user", "avatar username -_id");
+
+    res.json(populate);
   } catch (error) {
     res.status(500).json({ message: "create room failed" });
   }
@@ -28,8 +36,12 @@ export const getMyRooms = async (req, res) => {
   try {
     const room = await Room.find({
       "members.user": req.user._id,
-    }).populate("owner", "username email");
+    })
+      .sort({ createdAt: -1 })
+      .populate("owner", "username email")
+      .populate("members.user", "avatar username -_id");
 
+    //console.log("room", room);
     res.json(room);
   } catch (error) {
     res.status(500).json({ message: "fecth rooms failed" });
@@ -53,7 +65,7 @@ export const getRoomById = async (req, res) => {
       (m) => m.user._id.toString() === req.user._id.toString(),
     );
     if (!isMember) {
-      res.status(403).json({ message: "access denied" });
+      return res.status(403).json({ message: "access denied" });
     }
 
     res.json(room);
@@ -67,7 +79,7 @@ export const joinRoom = async (req, res) => {
   try {
     const { roomId } = req.body;
 
-    const room = await Room.findById(roomId)
+    const room = await Room.findById(roomId);
     if (!room) {
       res.status(404).json({ message: "room not found" });
     }

@@ -1,13 +1,13 @@
 import { Icon } from "@iconify/react";
 
 const colors = [
-  { id: "blue", bg: "bg-primary" },
-  { id: "red", bg: "bg-red" },
-  { id: "green", bg: "bg-green" },
-  { id: "orange", bg: "bg-orange" },
-  { id: "yellow", bg: "bg-yellow" },
-  { id: "pink", bg: "bg-pink" },
-  { id: "gray", bg: "bg-gray" },
+  { id: "#4b9fff", bg: "bg-primary" },
+  { id: "#f9aaaa", bg: "bg-red" },
+  { id: "#baf9aa", bg: "bg-green" },
+  { id: "#f9d4aa", bg: "bg-orange" },
+  { id: "#f9f2aa", bg: "bg-yellow" },
+  { id: "#f9aae1", bg: "bg-pink" },
+  { id: "#c7c6c6", bg: "bg-gray" },
 ];
 
 function ColorPicker({ label, selectedColor, setSelectedColor }) {

@@ -2,10 +2,41 @@ import { Icon } from "@iconify/react";
 import { useState } from "react";
 import ColorPicker from "./colorPicker";
 import Toggle from "./toggleButton";
+import useRoomStore from "../store/useRoomStore";
 
-function CreateRoomModal({ isOpen, onClose }) {
-  const [selectedColor, setSelectedColor] = useState("blue");
+function CreateRoomModal({ isOpen, onClose , key}) {
+  const [selectedColor, setSelectedColor] = useState("#4b9fff");
   const [isPrivate, setIsPrivate] = useState(false);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+
+  const createRoom = useRoomStore((state) => state.createRoom);
+
+  const handleSubmit = () => {
+    const finalData = {
+      name,
+      description,
+      isPrivate,
+      selectedColor,
+    };
+
+    //console.log("finalData", finalData);
+
+    createRoom(finalData)
+    onClose();
+    // setName("")
+    // setDescription("")
+    // setIsPrivate(false) 
+    // setIsPrivate("#4b9fff") 
+  };
+
+  const handleChangeName = (e) => {
+    setName(e.target.value);
+  };
+  const handleChangeDes = (e) => {
+    setDescription(e.target.value);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -26,14 +57,21 @@ function CreateRoomModal({ isOpen, onClose }) {
           <div>
             <input
               type="text"
-              placeholder="Room Name"
+              name="name"
+              value={name}
+              onChange={handleChangeName}
+              placeholder="Room Name (10 characters limit)"
+              maxLength={10}
               className="w-full px-4 py-2.5 bg-gray-100 border-2 border-secondary rounded-xl outline-none "
             />
           </div>
 
           <div>
             <textarea
-              rows="3"
+              rows="5"
+              name="description"
+              value={description}
+              onChange={handleChangeDes}
               placeholder="Description"
               className="w-full px-4 py-2.5 bg-gray-100 border-2 border-secondary rounded-xl outline-none"
             ></textarea>
@@ -57,7 +95,10 @@ function CreateRoomModal({ isOpen, onClose }) {
 
         {/* Footer Actions */}
         <div className="p-6 pt-2 flex justify-center">
-          <button className="px-6 py-2.5 bg-primary text-white font-semibold rounded-lg hover:scale-105 cursor-pointer active:scale-95 transition-all">
+          <button
+            onClick={handleSubmit}
+            className="px-6 py-2.5 bg-primary text-white font-semibold rounded-lg hover:scale-105 cursor-pointer active:scale-95 transition-all"
+          >
             Create
           </button>
         </div>

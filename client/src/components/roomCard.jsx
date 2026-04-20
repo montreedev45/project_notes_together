@@ -2,7 +2,7 @@ import { Icon } from "@iconify/react";
 import { useState } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 
-function RoomCard({ index }) {
+function RoomCard({ data = {} }) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -12,18 +12,18 @@ function RoomCard({ index }) {
 
   //test nacigate
   const handleClickRoom = () => {
-    navigate(`/notes-together/${index}/editor`);
+    navigate(`/notes-together/${data._id}/editor`);
   };
 
   return (
     <>
       <div
-        key={index}
+        key={data._id}
         onClick={handleClickRoom}
         className="w-55 bg-white shadow-md p-3 rounded-lg cursor-pointer hover:scale-105 transition-transform"
       >
         <div className="flex items-center justify-between mb-1">
-          <Icon icon="mdi:folder" width="50" className="text-green" />
+          <Icon icon="mdi:folder" width="50" style={{color: data.color}} />
           <div className="relative">
             <Icon
               onClick={(e) => {
@@ -36,7 +36,9 @@ function RoomCard({ index }) {
             />
             {isOpenMenuModal && (
               <div className="absolute left-13 -top-2 z-50 select-none">
-                <div className={`relative ${isUrlFromTrash ? `w-35` : `w-30`} bg-white border border-slate-200 rounded-xl shadow-lg p-2`}>
+                <div
+                  className={`relative ${isUrlFromTrash ? `w-35` : `w-30`} bg-white border border-slate-200 rounded-xl shadow-lg p-2`}
+                >
                   {/* 1. ส่วนที่เป็น "ติ่ง" (Arrow) ชี้ไปทางซ้าย */}
                   <div className="absolute -left-1.5 top-4 w-3 h-3 bg-white border-l border-t border-slate-200 -rotate-45"></div>
 
@@ -64,7 +66,7 @@ function RoomCard({ index }) {
                         </li>
                         <li onClick={(e) => e.stopPropagation()}>
                           <Link
-                            to={`/notes-together/${index}/setting-room/general`}
+                            to={`/notes-together/${data._id}/setting-room/general`}
                             className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-black cursor-pointer transition-colors"
                           >
                             setting
@@ -93,21 +95,14 @@ function RoomCard({ index }) {
             )}
           </div>
         </div>
-        <span className="text-2xl font-semibold">marketing</span>
-        <p className="text-secondary text-sm font-medium">
-          discuss about tasking and meeting
-        </p>
+        <span className="text-2xl font-semibold">{data.name}</span>
+        <p className="text-secondary text-sm font-medium">{data.description}</p>
         <div className="flex items-center gap-1 my-4">
-          <div className="flex-none bg-white border-2 border-primary w-8 h-8 rounded-full flex items-center justify-center cursor-pointer">
-            <Icon icon="mdi:account" className="text-primary" width="30" />
-          </div>
-          <div className="flex-none bg-white border-2 border-green w-8 h-8 rounded-full flex items-center justify-center cursor-pointer">
-            <Icon icon="mdi:account" className="text-green" width="30" />
-          </div>
-          <div className="flex-none bg-white border-2 border-orange w-8 h-8 rounded-full flex items-center justify-center cursor-pointer">
-            <Icon icon="mdi:account" className="text-orange" width="30" />
-          </div>
-          <span className="text-lg font-semibold text-secondary">+ 3</span>
+          {data?.members?.map((member) => (
+            <div key={member._id} style={{borderColor: member?.user?.avatar}} className="flex-none bg-white border-2 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer">
+              <Icon icon="mdi:account" style={{color: member?.user?.avatar}} width="30" />
+            </div>
+          ))}
         </div>
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-2 text-secondary text-sm">

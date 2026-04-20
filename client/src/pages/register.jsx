@@ -9,7 +9,6 @@ function Register() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const setUserData = useAuthStore((state) => state.setUserData);
   const register = useAuthStore((state) => state.register);
   const [formData, setFormData] = useState({
     username: "",

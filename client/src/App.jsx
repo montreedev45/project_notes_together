@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useEffect } from "react";
 import Editor from "./components/editor";
 import Profile from "./components/profile";
 import Home from "./pages/home";
@@ -17,8 +18,24 @@ import Trash from "./pages/trash";
 import SettingAccountLayout from "./layouts/settingAccountLayout";
 import SettingAccountProfile from "./components/settingAccount-profile";
 import ProtectedRoute from "./components/protectedRoute";
+import useAuthStore from "./store/useAuthStore";
 
 function App() {
+  const checkAuth = useAuthStore((state) => state.checkAuth);
+  const isInitialized = useAuthStore((state) => state.isInitialized);
+
+  useEffect(() => {
+    console.log("test initailized")
+    checkAuth();
+  }, []);
+
+  if (!isInitialized) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-primary"></div>
+      </div>
+    );
+  }
   return (
     <>
       <Routes>

@@ -51,8 +51,6 @@ function ChangeEmailModal({ isOpen, onClose }) {
               <div className="flex gap-5 items-center mx-6 ">
                 <input
                   type="text"
-                  readOnly
-                  value=""
                   placeholder="New email"
                   className="flex-1 py-2 outline-none px-4 text-lg rounded-lg border-2 border-gray text-secondary"
                 />

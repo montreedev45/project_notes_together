@@ -5,6 +5,7 @@ import Toggle from "./toggleButton";
 import ChangePasswordModal from "./changePasswordModal";
 import SaveModal from "./saveModal";
 import ChangeEmailModal from "./changeEmailModal";
+import useAuthStore from "../store/useAuthStore";
 
 function SettingAccountProfile() {
   const [selectedColor, setSelectedColor] = useState("blue");
@@ -12,6 +13,20 @@ function SettingAccountProfile() {
   const [isOpenChangePasswordModal, setIsOpenChangePasswordModal] = useState(false);
   const [isOpenSaveModal, setIsOpenSaveModal] = useState(false);
   const [isOpenChangeEmailModal, setIsOpenChangeEmailModal] = useState(false);
+
+  const user = useAuthStore((state)=> state.user)
+  const [formData, setFormData]=useState({
+    username: user?.username,
+    email: user?.email,
+  })
+
+
+  const handleChange = (e)=>{
+    setFormData({
+      ...formData,
+      [e.target.name] : e.target.value
+    })
+  }
   return (
     <>
       <div className=" border-s-2 border-gray px-15 pt-9 flex flex-col gap-4">
@@ -19,8 +34,10 @@ function SettingAccountProfile() {
           <span className="text-2xl font-semibold">Username</span>
           <input
             type="text"
-            placeholder="montree.dev"
-            className="w-full py-2.5 outline-0 px-4 text-xl rounded-lg border-2 border-gray"
+            value={formData.username}
+            name="username"
+            onChange={handleChange}
+            className="w-full py-2.5 outline-0 px-4 text-xl text-secondary  rounded-lg border-2 border-gray"
           />
           <Icon
             icon="mdi:pencil"
@@ -34,7 +51,7 @@ function SettingAccountProfile() {
             <input
               type="text"
               readOnly
-              value="testdev@gmail.com"
+              value={formData.email}
               className="flex-1 py-2 outline-none px-4 text-lg rounded-lg border-2 border-gray text-secondary"
             />
 
@@ -48,25 +65,12 @@ function SettingAccountProfile() {
           </div>
         </div>
         <div className="flex flex-col gap-3 relative">
-          <span className="text-2xl font-semibold">Password</span>
           <div className="flex gap-5 items-center ">
-            <input
-              type="password"
-              readOnly
-              value="test1234"
-              className="flex-1 py-2 outline-none px-4 text-lg rounded-lg border-2 border-gray text-secondary"
-            />
-            <Icon
-                icon="mdi:eye"
-                width="25"
-                className="text-gray absolute right-35 cursor-pointer"
-              />
-
             <button
               onClick={()=> setIsOpenChangePasswordModal(true)}
-              className="cursor-pointer bg-gray-400 hover:bg-gray-500 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors"
+              className="cursor-pointer bg-red hover:bg-red-400 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors"
             >
-              Change
+              Change Password
             </button>
             <ChangePasswordModal isOpen={isOpenChangePasswordModal} onClose={()=> setIsOpenChangePasswordModal(false)}/>
           </div>
@@ -87,7 +91,7 @@ function SettingAccountProfile() {
             <span className="text-lg">show online status</span>
           </div>
         </div>
-        <button  onClick={()=> setIsOpenSaveModal(true)} className="w-full text-center text-lg cursor-pointer button-primary bg-primary rounded-lg hover:bg-blue-500 transition-colors mb-8">
+        <button  onClick={()=> setIsOpenSaveModal(true)} className="w-full text-center text-lg cursor-pointer button-primary bg-primary rounded-lg hover:bg-blue-500 transition-all mb-8">
           Save
         </button>
          <SaveModal isOpen={isOpenSaveModal} onClose={()=> setIsOpenSaveModal(false)}/>

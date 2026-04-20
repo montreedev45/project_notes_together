@@ -27,6 +27,10 @@ const roomSchema = new mongoose.Schema({
     isPrivate: {
         type:Boolean,
         default: false
+    },
+    color:{
+        type: String,
+        default: "#4b9fff"
     }
 }, {timestamps: true})
 

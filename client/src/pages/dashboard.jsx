@@ -3,18 +3,27 @@ import { useState } from "react";
 import CreateRoomModal from "../components/createRoomModal";
 import JoinRoomModal from "../components/joinRoomModal";
 import RoomCard from "../components/roomCard";
+import useRoomStore from "../store/useRoomStore";
+import { useEffect } from "react";
 
 function Dashboard() {
   const [isOpenCreateRoomModal, setIsOpenCreateRoomModal] = useState(false);
   const [isOpenJoinRoomModal, setIsOpenJoinRoomModal] = useState(false);
   const [isOpenFilterModal, setIsOpenFilterModal] = useState(false);
 
-  const is = () => {
-    setIsOpenFilterModal(!isOpenFilterModal);
-    console.log(isOpenFilterModal);
-  };
+  const getMyRooms = useRoomStore((state)=> state.getMyRooms)
+  const rooms = useRoomStore((state)=> state.rooms)
+  console.log("rooms",rooms)
 
-  const loopTime = Array.from({ length: 15 });
+//test mock room
+  //const loopTime = Array.from({ length: 15 });
+
+  useEffect(()=>{
+    console.log("Dashboard Mounted")
+    if (rooms.length === 0) {
+    getMyRooms();
+  }
+  }, [])
 
   return (
     <>
@@ -31,6 +40,7 @@ function Dashboard() {
           <CreateRoomModal
             isOpen={isOpenCreateRoomModal}
             onClose={() => setIsOpenCreateRoomModal(false)}
+            key={isOpenCreateRoomModal}
           />
           <button
             onClick={() => setIsOpenJoinRoomModal(true)}
@@ -99,9 +109,9 @@ function Dashboard() {
           )}
         </div>
 
-        <div className="bg-gray-200 mt-5 h-140 overflow-auto rounded-2xl p-6 grid grid-cols-5 grid-rows-auto gap-9 place-items-center">
-          {loopTime.map((_, index) => (
-            <RoomCard key={index} index={index} />
+        <div className="bg-gray-200 mt-5 h-140 overflow-auto rounded-2xl p-6 grid grid-cols-5 grid-rows-auto gap-9 place-items-start">
+          {rooms.map((room) => (
+            <RoomCard key={room._id} data={room}/>
           ))}
         </div>
       </div>

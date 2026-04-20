@@ -1,7 +1,15 @@
 import { Link } from "react-router-dom";
 import { Icon } from "@iconify/react";
+import useAuthStore from "../store/useAuthStore";
 
 function Sidebar() {
+  const logout = useAuthStore((state)=> state.logout)
+  const user = useAuthStore((state)=> state.user)
+
+  const handleLogout=()=>{
+    logout()
+  }
+
   return (
     <div className="w-60 h-full border-r-2 border-gray-200 flex flex-col justify-between py-8 px-6 bg-third">
       <nav>
@@ -43,18 +51,22 @@ function Sidebar() {
           </div>
           <div className="flex flex-col min-w-0 leading-tight">
             <span className="font-bold text-sm truncate text-slate-800">
-              montree.dev
+              {user.username}
             </span>
             <span className="font-normal text-xs text-secondary truncate">
-              test.dev@gmail.com
+              {user.email}
             </span>
           </div>
         </div>
 
-        <div className="text-secondary font-medium cursor-pointer hover:text-primary transition-colors">
-          <Link to="/notes-together/01/setting-account" className="flex items-center gap-4">
+        <div className="flex flex-col gap-6 text-secondary font-medium ">
+          <Link to="/notes-together/01/setting-account" className="flex items-center gap-4 cursor-pointer hover:text-primary transition-colors">
             <Icon icon="mdi:cog" width="30" />
             <span>Settings</span>
+          </Link>
+          <Link to="/" onClick={handleLogout} className="flex items-center gap-4 cursor-pointer hover:text-red-500 transition-colors">
+            <Icon icon="mdi:log-out" width="30" />
+            <span>Log out</span>
           </Link>
         </div>
       </div>

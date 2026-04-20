@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Icon } from "@iconify/react";
 import { Link } from "react-router-dom";
+import useAuthStore from "../store/useAuthStore";
 
 function Topbar() {
+  const user = useAuthStore((state=> state.user))
   const [isOpenNotificationModal, setIsOpenNotificationModal] = useState(false);
-  
   return (
     <>
       <div className="bg-third flex px-15 h-20 border-b-2 border-gray-200">
@@ -28,11 +29,11 @@ function Topbar() {
           <div className="flex items-center gap-3 me-5 cursor-pointer hover:scale-105 transition-transform">
             <div className="flex flex-col min-w-0 leading-tight">
               <span className="font-bold text-sm truncate text-slate-800">
-                montree.dev
+                {user?.username}
               </span>
             </div>
-            <div className="flex-none bg-white border-2 border-primary w-10 h-10 rounded-full flex items-center justify-center cursor-pointer">
-              <Icon icon="mdi:account" className="text-primary" width="30" />
+            <div style={{borderColor: user?.avatar}} className={`flex-none bg-white border-2  w-10 h-10 rounded-full flex items-center justify-center cursor-pointer`}>
+              <Icon icon="mdi:account" style={{color: user?.avatar}}  width="30" />
             </div>
           </div>
           <Icon
