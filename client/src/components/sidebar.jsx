@@ -1,12 +1,15 @@
 import { Link } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import useAuthStore from "../store/useAuthStore";
+import useRoomStore from "../store/useRoomStore";
 
 function Sidebar() {
+  const resetRoomStore = useRoomStore((state)=> state.resetRoomStore)
   const logout = useAuthStore((state)=> state.logout)
   const user = useAuthStore((state)=> state.user)
 
   const handleLogout=()=>{
+    resetRoomStore()
     logout()
   }
 
@@ -14,6 +17,15 @@ function Sidebar() {
     <div className="w-60 h-full border-r-2 border-gray-200 flex flex-col justify-between py-8 px-6 bg-third">
       <nav>
         <ul className="flex flex-col gap-6 text-secondary font-medium">
+          <li className="cursor-pointer hover:text-primary transition-colors">
+            <Link
+              to="/notes-together/explore"
+              className="flex gap-4 items-center"
+            >
+              <Icon icon="mdi:explore" width="24" />
+              <span>Explorer</span>
+            </Link>
+          </li>
           <li className="cursor-pointer hover:text-primary transition-colors">
             <Link
               to="/notes-together/dashboard"
@@ -46,8 +58,8 @@ function Sidebar() {
 
       <div className="flex flex-col gap-6">
         <div className="flex items-center gap-3 cursor-pointer hover:scale-105 transition-transform">
-          <div className="flex-none bg-white border-2 border-primary w-10 h-10 rounded-full flex items-center justify-center cursor-pointer">
-            <Icon icon="mdi:account" className="text-primary" width="24" />
+          <div style={{borderColor: user.avatar}} className="flex-none bg-white border-2 w-10 h-10 rounded-full flex items-center justify-center cursor-pointer">
+            <Icon icon="mdi:account" style={{color: user.avatar}} width="24" />
           </div>
           <div className="flex flex-col min-w-0 leading-tight">
             <span className="font-bold text-sm truncate text-slate-800">

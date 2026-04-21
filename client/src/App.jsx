@@ -19,13 +19,13 @@ import SettingAccountLayout from "./layouts/settingAccountLayout";
 import SettingAccountProfile from "./components/settingAccount-profile";
 import ProtectedRoute from "./components/protectedRoute";
 import useAuthStore from "./store/useAuthStore";
+import Explore from "./pages/explore";
 
 function App() {
   const checkAuth = useAuthStore((state) => state.checkAuth);
   const isInitialized = useAuthStore((state) => state.isInitialized);
 
   useEffect(() => {
-    console.log("test initailized")
     checkAuth();
   }, []);
 
@@ -51,7 +51,8 @@ function App() {
         {/* private */}
         <Route element={<ProtectedRoute />}>
           <Route path="/notes-together" element={<DashboardLayout />}>
-            <Route index element={<Dashboard />} />
+            <Route index element={<Explore />} />
+            <Route path="explore" element={<Explore />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="recent" element={<Recent />} />
             <Route path="trash" element={<Trash />} />

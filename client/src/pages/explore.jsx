@@ -6,7 +6,7 @@ import RoomCard from "../components/roomCard";
 import useRoomStore from "../store/useRoomStore";
 import { useEffect, useMemo } from "react";
 
-function Dashboard() {
+function Explore() {
   const [isOpenCreateRoomModal, setIsOpenCreateRoomModal] = useState(false);
   const [isOpenJoinRoomModal, setIsOpenJoinRoomModal] = useState(false);
   const [isOpenFilterModal, setIsOpenFilterModal] = useState(false);
@@ -14,13 +14,13 @@ function Dashboard() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
 
-  const getMyRooms = useRoomStore((state) => state.getMyRooms);
+  const getAllRooms = useRoomStore((state) => state.getAllRooms);
   const rooms = useRoomStore((state) => state.rooms);
   ///console.log("rooms", rooms);
 
   useEffect(() => {
     if (rooms.length === 0) {
-      getMyRooms();
+      getAllRooms();
     }
   }, []);
 
@@ -37,7 +37,7 @@ function Dashboard() {
   const handleFilter = (e) => {
     const criteria = e.currentTarget.name;
     setActiveFilter(criteria);
-    //getMyRooms(criteria);
+    //getAllRooms(criteria);
   };
 
 
@@ -45,7 +45,7 @@ function Dashboard() {
 useEffect(() => {
   const delayDebounceFn = setTimeout(() => {
     // ยิง API โดยส่งทั้งค่า Filter ปัจจุบัน และคำค้นหา
-    getMyRooms(activeFilter, searchTerm);
+    getAllRooms(activeFilter, searchTerm);
   }, 500); // รอ 500ms หลังหยุดพิมพ์ถึงจะยิง API
 
   return () => clearTimeout(delayDebounceFn);
@@ -54,7 +54,7 @@ useEffect(() => {
   return (
     <>
       <div className="p-12 pt-8 pb-0">
-        <span className="font-bold text-3xl ">My Rooms</span>
+        <span className="font-bold text-3xl ">Explore</span>
         <div className="mt-5 flex items-center gap-5">
           <button
             onClick={() => setIsOpenCreateRoomModal(true)}
@@ -146,6 +146,19 @@ useEffect(() => {
                   </li>
                   <li>
                     <button
+                      name="joined"
+                      onClick={handleFilter}
+                      className={`w-full text-left px-4 py-1.5 font-medium rounded-lg text-sm transition-colors ${
+                        activeFilter === "joined"
+                          ? "bg-blue-100 text-blue-600" 
+                          : "text-slate-500 hover:bg-gray-200 hover:text-black" 
+                      }`}
+                    >
+                      joined
+                    </button>
+                  </li>
+                  <li>
+                    <button
                       name="public"
                       onClick={handleFilter}
                       className={`w-full text-left px-4 py-1.5 font-medium rounded-lg text-sm transition-colors ${
@@ -186,4 +199,4 @@ useEffect(() => {
   );
 }
 
-export default Dashboard;
+export default Explore;

@@ -27,7 +27,7 @@ function Login() {
     const result = await login(formData);
 
     if (result?.success) {
-      navigate("/notes-together/dashboard");
+      navigate("/notes-together/explore");
     } else {
       alert(result?.message || "Login failed");
     }

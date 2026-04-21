@@ -31,6 +31,10 @@ const roomSchema = new mongoose.Schema({
     color:{
         type: String,
         default: "#4b9fff"
+    },
+    code: {
+        type: String,
+        unique: true
     }
 }, {timestamps: true})
 

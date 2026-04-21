@@ -1,18 +1,38 @@
 import { Icon } from "@iconify/react";
 import { useState } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
+import JoinRoomModal from "./joinRoomModal";
+import useAuthStore from "../store/useAuthStore";
 
 function RoomCard({ data = {} }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const user = useAuthStore((state) => state.user);
 
   const [isOpenMenuModal, setIsOpenMenuModal] = useState(false);
   const isUrlFromTrash = location.pathname.includes("trash");
+  const [isOpenJoinRoomModal, setIsOpenJoinRoomModal] = useState(false);
   //console.log(isUrlFromTrash);
-
+  
   //test nacigate
-  const handleClickRoom = () => {
-    navigate(`/notes-together/${data._id}/editor`);
+  const handleClickRoom = (e) => {
+
+    const isOwner = data?.owner?._id === user?._id;
+    // 1. เช็คว่าเป็นสมาชิกในห้องอยู่แล้วหรือไม่ (ค้นหาใน Array members)
+    const isAlreadyMember = data?.members?.some(
+      (m) => (m.user?._id || m.user) === user?._id,
+    );
+
+    console.log(isAlreadyMember)
+
+    // 2. Logic การเข้าห้อง
+    // ถ้าห้องเป็น Private และเรา "ไม่ใช่ทั้งเจ้าของ" และ "ไม่ใช่สมาชิก" ให้เปิด Modal
+    if (data?.isPrivate && !isOwner && !isAlreadyMember) {
+      setIsOpenJoinRoomModal(true);
+    } else {
+      // ถ้าเป็น Public หรือเป็นสมาชิกอยู่แล้ว ให้เข้า Editor ได้เลย
+      navigate(`/notes-together/${data._id}/editor`);
+    }
   };
 
   return (
@@ -23,8 +43,13 @@ function RoomCard({ data = {} }) {
         className="w-55 bg-white shadow-md p-3 rounded-lg cursor-pointer hover:scale-105 transition-transform"
       >
         <div className="flex items-center justify-between mb-1">
-          <Icon icon="mdi:folder" width="50" style={{color: data.color}} />
-          <div className="relative">
+          <Icon icon="mdi:folder" width="50" style={{ color: data.color }} />
+          <div className="relative flex items-center">
+            {data?.isPrivate ? (
+              <Icon icon="mdi:lock" className="text-black" width={20} />
+            ) : (
+              ""
+            )}
             <Icon
               onClick={(e) => {
                 e.stopPropagation();
@@ -35,7 +60,7 @@ function RoomCard({ data = {} }) {
               className="text-secondary"
             />
             {isOpenMenuModal && (
-              <div className="absolute left-13 -top-2 z-50 select-none">
+              <div className="absolute left-20 -top-2 z-50 select-none">
                 <div
                   className={`relative ${isUrlFromTrash ? `w-35` : `w-30`} bg-white border border-slate-200 rounded-xl shadow-lg p-2`}
                 >
@@ -59,7 +84,7 @@ function RoomCard({ data = {} }) {
                       </>
                     ) : (
                       <>
-                        <li onClick={(e) => e.stopPropagation()}>
+                        <li onClick={handleClickRoom}>
                           <Link className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-black cursor-pointer transition-colors">
                             open
                           </Link>
@@ -95,12 +120,28 @@ function RoomCard({ data = {} }) {
             )}
           </div>
         </div>
-        <span className="text-2xl font-semibold">{data.name}</span>
+        <span className="text-2xl font-semibold flex items-center">
+          {data.name}
+          {data?.owner?._id === user._id &&<Icon
+            icon="mdi:star"
+            className="text-yellow-200 ms-2"
+            width={25}
+          />}
+        </span>
+
         <p className="text-secondary text-sm font-medium">{data.description}</p>
         <div className="flex items-center gap-1 my-4">
           {data?.members?.map((member) => (
-            <div key={member._id} style={{borderColor: member?.user?.avatar}} className="flex-none bg-white border-2 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer">
-              <Icon icon="mdi:account" style={{color: member?.user?.avatar}} width="30" />
+            <div
+              key={member._id}
+              style={{ borderColor: member?.user?.avatar }}
+              className="flex-none bg-white border-2 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
+            >
+              <Icon
+                icon="mdi:account"
+                style={{ color: member?.user?.avatar }}
+                width="30"
+              />
             </div>
           ))}
         </div>
@@ -111,6 +152,10 @@ function RoomCard({ data = {} }) {
           <span className="text-sm text-secondary">edited 5 min ago</span>
         </div>
       </div>
+      <JoinRoomModal
+        isOpen={isOpenJoinRoomModal}
+        onClose={() => setIsOpenJoinRoomModal(false)}
+      />
     </>
   );
 }

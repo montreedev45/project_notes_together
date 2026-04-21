@@ -4,7 +4,7 @@ import ColorPicker from "./colorPicker";
 import Toggle from "./toggleButton";
 import useRoomStore from "../store/useRoomStore";
 
-function CreateRoomModal({ isOpen, onClose , key}) {
+function CreateRoomModal({ isOpen, onClose, key }) {
   const [selectedColor, setSelectedColor] = useState("#4b9fff");
   const [isPrivate, setIsPrivate] = useState(false);
   const [name, setName] = useState("");
@@ -22,12 +22,8 @@ function CreateRoomModal({ isOpen, onClose , key}) {
 
     //console.log("finalData", finalData);
 
-    createRoom(finalData)
+    createRoom(finalData);
     onClose();
-    // setName("")
-    // setDescription("")
-    // setIsPrivate(false) 
-    // setIsPrivate("#4b9fff") 
   };
 
   const handleChangeName = (e) => {
