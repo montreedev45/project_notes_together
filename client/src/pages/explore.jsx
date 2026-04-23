@@ -37,7 +37,7 @@ function Explore() {
   const handleFilter = (e) => {
     const criteria = e.currentTarget.name;
     setActiveFilter(criteria);
-    //getAllRooms(criteria);
+    getAllRooms(criteria);
   };
 
 
@@ -78,6 +78,7 @@ useEffect(() => {
           <JoinRoomModal
             isOpen={isOpenJoinRoomModal}
             onClose={() => setIsOpenJoinRoomModal(false)}
+            key={`join-${isOpenJoinRoomModal}`}
           />
           <div className="bg-white flex items-center  rounded-xl relative">
             <Icon

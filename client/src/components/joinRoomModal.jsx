@@ -2,13 +2,21 @@ import { Icon } from "@iconify/react";
 import { useState } from "react";
 import ColorPicker from "./colorPicker";
 import useRoomStore from "../store/useRoomStore";
+import { useEffect } from "react";
 
 function JoinRoomModal({ isOpen, onClose }) {
   const [code, setCode] = useState(new Array(6).fill(""));
 
   const joinRoom = useRoomStore((state) => state.joinRoom);
 
-  const handleFillCode = (element, index) => {
+  //clear value when modal close
+  useEffect(() => {
+    if (!isOpen) {
+      setCode(new Array(6).fill(""));
+    }
+  }, [isOpen]);
+
+  const handleFillCode = async (element, index) => {
     if (isNaN(element.value)) return false;
 
     // 1. สร้าง Array ใหม่และอัปเดตค่า
@@ -26,33 +34,37 @@ function JoinRoomModal({ isOpen, onClose }) {
 
     // 4. เมื่อกรอกครบ 6 ตัว ให้เรียก API (ใช้ fullCode ที่เพิ่งรวมเสร็จ)
     if (fullCode.length === 6) {
-      joinRoom(fullCode);
+      const res = await joinRoom(fullCode);
+      if (res.success) onClose();
     }
   };
 
-  const handlePaste = (e) => {
-    e.preventDefault(); // กันไม่ให้ตัวหนังสือลงไปในช่องเดียวมั่วๆ
-    const pasteData = e.clipboardData.getData("text").slice(0, 6); // เอาแค่ 6 ตัวแรก
+  const handlePaste = async (e) => {
+    e.preventDefault();
+    const pasteData = e.clipboardData.getData("text").slice(0, 6);
 
-    if (!/^\d+$/.test(pasteData)) return; // รับเฉพาะตัวเลข (ถ้าต้องการ)
+    if (!/^\d+$/.test(pasteData)) return;
 
     const newCode = [...code];
     const characters = pasteData.split("");
 
-    // กระจายตัวอักษรลงใน Array ตามลำดับ
     characters.forEach((char, index) => {
       if (index < 6) newCode[index] = char;
     });
 
+    // ✅ แก้เป็นแบบนี้ครับ ส่ง Array ที่อัปเดตแล้วเข้าไปเลย
     setCode(newCode);
+
+    const fullCode = newCode.join("");
 
     // Focus ไปที่ช่องสุดท้ายที่มีข้อมูล หรือช่องที่ 6
     const nextIndex = Math.min(characters.length, 5);
     document.getElementById(`code-${nextIndex}`)?.focus();
 
     // ถ้าวางแล้วครบ 6 ตัว ให้เรียก API ทันที
-    if (pasteData.length === 6) {
-      joinRoom(pasteData);
+    if (fullCode.length === 6) {
+      const res = await joinRoom(fullCode);
+      if (res.success) onClose();
     }
   };
 

@@ -85,7 +85,7 @@ export const getAllRooms = async (req, res) => {
     const userId = req.user._id;
 
     // 1. เริ่มต้นด้วย Query ว่าง (ค้นหาทุกห้อง)
-    let query = {}; 
+    let query = {};
 
     // 2. ปรับเงื่อนไขตาม Criteria
     if (criteria === "owner") {
@@ -93,7 +93,7 @@ export const getAllRooms = async (req, res) => {
     } else if (criteria === "private") {
       query.isPrivate = true;
       // 🔐 ถ้าเป็นห้อง Private ปกติเราควรจะเห็นเฉพาะที่เราเป็นสมาชิกเท่านั้น
-      query["members.user"] = userId; 
+      query["members.user"] = userId;
     } else if (criteria === "public") {
       query.isPrivate = false;
     } else if (criteria === "joined") {
@@ -107,7 +107,6 @@ export const getAllRooms = async (req, res) => {
       query.name = { $regex: searchTerm.trim(), $options: "i" };
     }
 
-    console.log("query", query)
 
     const rooms = await Room.find(query)
       .sort({ createdAt: -1 })
@@ -155,13 +154,11 @@ export const joinRoom = async (req, res) => {
 
     // 1. ค้นหาห้อง (ลำดับความสำคัญ: ใช้ Code ก่อน ถ้าไม่มีค่อยใช้ roomId)
     if (code) {
-      console.log("block code is working");
       // ถ้าส่ง Code มา ให้หาห้องจาก Code (ใช้สำหรับห้อง Private)
       room = await Room.findOne({ code });
       if (!room)
         return res.status(404).json({ message: "Invalid invite code" });
     } else if (roomId) {
-      console.log("block roomId is working");
       // ถ้าส่ง roomId มา (ใช้สำหรับห้อง Public)
       room = await Room.findById(roomId);
       if (!room) return res.status(404).json({ message: "Room not found" });
@@ -203,5 +200,31 @@ export const joinRoom = async (req, res) => {
     res.json(joinedRoom);
   } catch (error) {
     res.status(500).json({ message: "join room failed" });
+  }
+};
+
+export const leaveRoom = async (req, res) => {
+  try {
+    const {roomId} = req.body;
+    const userId = req.user._id;
+    console.log(roomId)
+
+    const room = await Room.findById(roomId);
+    if (!room) return res.status(404).json({ message: "room not found" });
+
+    if (room?.owner?.toString() === userId.toString()) {
+      return res
+        .status(400)
+        .json({
+          message: "Owner cannot leave the room. Please delete the room.",
+        });
+    }
+
+    await Room.findByIdAndUpdate(roomId, {
+      $pull: { members: { user: userId } },
+    });
+    res.status(200).json({message: "leave rooom successfully"})
+  } catch (error) {
+    res.status(500).json({message: "leave room failed"})
   }
 };

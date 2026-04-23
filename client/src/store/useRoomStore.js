@@ -24,7 +24,6 @@ const useRoomStore = create((set) => ({
       set({ loading: false });
       return { success: false, message: "Unexpected response from server" };
     } catch (error) {
-      alert(error.message)
       set({ loading: false });
       return {
         success: false,
@@ -81,22 +80,53 @@ const useRoomStore = create((set) => ({
         roomId: roomId,
       };
 
-      console.log("roomId", roomId);
-      console.log("code", code);
-      console.log("finalData", finalData);
-
       const res = await api.post("/rooms/join", finalData);
 
       if (res?.data) {
-        set((state) => ({ rooms: [res.data, ...state.rooms], loading: false }));
+        set((state) => {
+          const isExist = state.rooms.find((r) => r._id === res.data._id);
+
+          if (isExist) {
+            return {
+              rooms: state.rooms.map((r) =>
+                r._id === res.data._id ? res.data : r,
+              ),
+              loading: false,
+            };
+          } else {
+            return {
+              rooms: [res.data, ...state.rooms],
+              loading: false,
+            };
+          }
+        });
+        set({ loading: false });
+        return { success: true };
+      }
+    } catch (error) {
+      set({ loading: false });
+      return { success: false, message: "join room failed" };
+    }
+  },
+
+  leaveRoom: async (roomId, userId) => {
+    set({ loadaing: true });
+    try {
+      const res = await api.post("/rooms/leave", { roomId });
+
+      if (res?.data) {
+        set((state) => ({
+          rooms: state.rooms.filter((r)=> r._id !== roomId),
+          loadaing: false,
+        }));
         return { success: true };
       }
 
       set({ loading: false });
       return { success: false, message: "Unexpected response from server" };
     } catch (error) {
-      set({ loading: false });
-      return { success: false, message: "join room failed" };
+      set({ loadaing: false });
+      return { loadaing: false, message: "leave room failed" };
     }
   },
 

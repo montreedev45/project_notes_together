@@ -4,7 +4,7 @@ import ColorPicker from "./colorPicker";
 import Toggle from "./toggleButton";
 import useRoomStore from "../store/useRoomStore";
 
-function CreateRoomModal({ isOpen, onClose, key }) {
+function CreateRoomModal({ isOpen, onClose }) {
   const [selectedColor, setSelectedColor] = useState("#4b9fff");
   const [isPrivate, setIsPrivate] = useState(false);
   const [name, setName] = useState("");

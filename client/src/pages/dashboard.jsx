@@ -37,7 +37,7 @@ function Dashboard() {
   const handleFilter = (e) => {
     const criteria = e.currentTarget.name;
     setActiveFilter(criteria);
-    //getMyRooms(criteria);
+    getMyRooms(criteria);
   };
 
 
@@ -66,7 +66,7 @@ useEffect(() => {
           <CreateRoomModal
             isOpen={isOpenCreateRoomModal}
             onClose={() => setIsOpenCreateRoomModal(false)}
-            key={isOpenCreateRoomModal}
+            key={`create-${isOpenCreateRoomModal}`}
           />
           <button
             onClick={() => setIsOpenJoinRoomModal(true)}

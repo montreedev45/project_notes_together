@@ -3,17 +3,19 @@ import { useState } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import JoinRoomModal from "./joinRoomModal";
 import useAuthStore from "../store/useAuthStore";
+import useRoomStore from "../store/useRoomStore";
 
 function RoomCard({ data = {} }) {
   const navigate = useNavigate();
   const location = useLocation();
   const user = useAuthStore((state) => state.user);
+  const leaveRoom = useRoomStore((state) => state.leaveRoom);
 
   const [isOpenMenuModal, setIsOpenMenuModal] = useState(false);
   const isUrlFromTrash = location.pathname.includes("trash");
   const [isOpenJoinRoomModal, setIsOpenJoinRoomModal] = useState(false);
   //console.log(isUrlFromTrash);
-  
+
   //test nacigate
   const handleClickRoom = (e) => {
 
@@ -22,8 +24,7 @@ function RoomCard({ data = {} }) {
     const isAlreadyMember = data?.members?.some(
       (m) => (m.user?._id || m.user) === user?._id,
     );
-
-    console.log(isAlreadyMember)
+    
 
     // 2. Logic การเข้าห้อง
     // ถ้าห้องเป็น Private และเรา "ไม่ใช่ทั้งเจ้าของ" และ "ไม่ใช่สมาชิก" ให้เปิด Modal
@@ -32,6 +33,26 @@ function RoomCard({ data = {} }) {
     } else {
       // ถ้าเป็น Public หรือเป็นสมาชิกอยู่แล้ว ให้เข้า Editor ได้เลย
       navigate(`/notes-together/${data._id}/editor`);
+    }
+  };
+
+  const handleLeaveRoome = (e) => {
+    e.stopPropagation();
+
+    if (data?.owner?._id === user?._id) {
+      return alert("Owner cannot leave. Please delete the room instead.");
+    }
+
+    const isAlreadyMember = data?.members?.some(
+      (m) => (m.user?._id || m.user) === user?._id,
+    );
+
+    if (isAlreadyMember) {
+      if (window.confirm(`Are you sure you want to leave "${data.name}"?`)) {
+        leaveRoom(data?._id, user._id);
+      }
+    } else {
+      alert("you not member this room");
     }
   };
 
@@ -102,7 +123,7 @@ function RoomCard({ data = {} }) {
                             invite
                           </Link>
                         </li>
-                        <li onClick={(e) => e.stopPropagation()}>
+                        <li onClick={handleLeaveRoome}>
                           <Link className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-black cursor-pointer transition-colors">
                             leave
                           </Link>
@@ -122,11 +143,9 @@ function RoomCard({ data = {} }) {
         </div>
         <span className="text-2xl font-semibold flex items-center">
           {data.name}
-          {data?.owner?._id === user._id &&<Icon
-            icon="mdi:star"
-            className="text-yellow-200 ms-2"
-            width={25}
-          />}
+          {data?.owner?._id === user._id && (
+            <Icon icon="mdi:star" className="text-yellow-200 ms-2" width={25} />
+          )}
         </span>
 
         <p className="text-secondary text-sm font-medium">{data.description}</p>
