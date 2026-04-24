@@ -15,22 +15,19 @@ function Dashboard() {
   const [searchTerm, setSearchTerm] = useState("");
 
   const getMyRooms = useRoomStore((state) => state.getMyRooms);
-  const rooms = useRoomStore((state) => state.rooms);
-  ///console.log("rooms", rooms);
+  const myRooms = useRoomStore((state) => state.myRooms);
 
   useEffect(() => {
-    if (rooms.length === 0) {
-      getMyRooms();
-    }
+    getMyRooms();
   }, []);
 
   const sortedRooms = useMemo(() => {
-    // เช็คว่า rooms มีค่าและเป็น Array หรือไม่ ถ้าไม่ใช่ให้ส่ง Array ว่างกลับไป
-    if (!Array.isArray(rooms)) return [];
+    // เช็คว่า myRooms มีค่าและเป็น Array หรือไม่ ถ้าไม่ใช่ให้ส่ง Array ว่างกลับไป
+    if (!Array.isArray(myRooms)) return [];
 
-    const result = [...rooms];
+    const result = [...myRooms];
     return isSorting ? result.reverse() : result;
-  }, [rooms, isSorting]);
+  }, [myRooms, isSorting]);
 
 
   // filter

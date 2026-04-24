@@ -2,7 +2,8 @@ import { create } from "zustand";
 import api from "../services/api";
 
 const initialState = {
-  rooms: [],
+  rooms: [], //explore page
+  myRooms: [],
   loading: false,
 };
 
@@ -11,13 +12,13 @@ const useRoomStore = create((set) => ({
   rooms: [],
   loading: false,
 
-  getMyRooms: async (criteria="all", searchTerm="room") => {
+  getMyRooms: async (criteria = "all", searchTerm = "room") => {
     set({ loading: true });
     try {
-      const res = await api.post("/rooms/my-rooms", {criteria, searchTerm});
+      const res = await api.post("/rooms/my-rooms", { criteria, searchTerm });
 
       if (res?.data) {
-        set({ rooms: res.data, loading: false });
+        set({ myRooms: res.data, loading: false });
         return { success: true };
       }
 
@@ -32,10 +33,10 @@ const useRoomStore = create((set) => ({
     }
   },
 
-  getAllRooms: async (criteria="all", searchTerm="room") => {
+  getAllRooms: async (criteria = "all", searchTerm = "room") => {
     set({ loading: true });
     try {
-      const res = await api.post("/rooms/all-rooms", {criteria, searchTerm});
+      const res = await api.post("/rooms/all-rooms", { criteria, searchTerm });
 
       if (res?.data) {
         set({ rooms: res.data, loading: false });
@@ -83,23 +84,13 @@ const useRoomStore = create((set) => ({
       const res = await api.post("/rooms/join", finalData);
 
       if (res?.data) {
-        set((state) => {
-          const isExist = state.rooms.find((r) => r._id === res.data._id);
+        set((state) => ({
+          myRooms: [res.data, ...state.myRooms],
+          rooms: state.rooms.map((r) =>
+            r._id === res.data._id ? res.data : r,
+          ),
+        }));
 
-          if (isExist) {
-            return {
-              rooms: state.rooms.map((r) =>
-                r._id === res.data._id ? res.data : r,
-              ),
-              loading: false,
-            };
-          } else {
-            return {
-              rooms: [res.data, ...state.rooms],
-              loading: false,
-            };
-          }
-        });
         set({ loading: false });
         return { success: true };
       }
@@ -116,7 +107,15 @@ const useRoomStore = create((set) => ({
 
       if (res?.data) {
         set((state) => ({
-          rooms: state.rooms.filter((r)=> r._id !== roomId),
+          myRooms: state.myRooms.filter((r) => r._id !== roomId),
+          rooms: state.rooms.map((r) =>
+            r._id === roomId
+              ? {
+                  ...r,
+                  members: r.members.filter((m) => m.user._id !== userId),
+                }
+              : r,
+          ),
           loadaing: false,
         }));
         return { success: true };

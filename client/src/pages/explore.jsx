@@ -19,9 +19,7 @@ function Explore() {
   ///console.log("rooms", rooms);
 
   useEffect(() => {
-    if (rooms.length === 0) {
       getAllRooms();
-    }
   }, []);
 
   const sortedRooms = useMemo(() => {
