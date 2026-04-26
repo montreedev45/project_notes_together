@@ -59,7 +59,7 @@ function Sidebar() {
       <div className="flex flex-col gap-6">
         <div className="flex items-center gap-3 cursor-pointer hover:scale-105 transition-transform">
           <div style={{borderColor: user.avatar}} className="flex-none bg-white border-2 w-10 h-10 rounded-full flex items-center justify-center cursor-pointer">
-            <Icon icon="mdi:account" style={{color: user.avatar}} width="24" />
+            <Icon icon="mdi:account" style={{color: user.avatar}} width="30" />
           </div>
           <div className="flex flex-col min-w-0 leading-tight">
             <span className="font-bold text-sm truncate text-slate-800">

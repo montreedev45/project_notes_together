@@ -35,6 +35,13 @@ const roomSchema = new mongoose.Schema({
     code: {
         type: String,
         unique: true
+    },
+    isDeleted: {
+        type: Boolean,
+        default: false
+    },
+    deletedAt:{
+        type: Date
     }
 }, {timestamps: true})
 

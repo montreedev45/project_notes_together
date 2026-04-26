@@ -51,7 +51,7 @@ export const getMyRooms = async (req, res) => {
     const userId = req.user._id;
 
     // 1. สร้าง Query Object เบื้องต้น (เริ่มต้นด้วยการหาห้องที่เราเป็นสมาชิก)
-    let query = { "members.user": userId };
+    let query = { "members.user": userId, isDeleted: false };
 
     // 2. ปรับเปลี่ยน Query ตาม Criteria ที่ได้รับมา
     if (criteria === "private") {
@@ -61,7 +61,7 @@ export const getMyRooms = async (req, res) => {
       query.isPrivate = false;
     } else if (criteria === "owner") {
       // ถ้าดูเฉพาะที่เราเป็นเจ้าของ ให้ล้าง query เดิมแล้วใช้ owner แทน
-      query = { owner: userId };
+      query = { owner: userId, isDeleted: false };
     }
 
     if (searchTerm && searchTerm.trim() !== "") {
@@ -85,7 +85,7 @@ export const getAllRooms = async (req, res) => {
     const userId = req.user._id;
 
     // 1. เริ่มต้นด้วย Query ว่าง (ค้นหาทุกห้อง)
-    let query = {};
+    let query = { isDeleted: false };
 
     // 2. ปรับเงื่อนไขตาม Criteria
     if (criteria === "owner") {
@@ -106,7 +106,7 @@ export const getAllRooms = async (req, res) => {
     if (searchTerm && searchTerm.trim() !== "") {
       query.name = { $regex: searchTerm.trim(), $options: "i" };
     }
-
+    
 
     const rooms = await Room.find(query)
       .sort({ createdAt: -1 })
@@ -205,26 +205,112 @@ export const joinRoom = async (req, res) => {
 
 export const leaveRoom = async (req, res) => {
   try {
-    const {roomId} = req.body;
+    const { roomId } = req.body;
     const userId = req.user._id;
-    console.log(roomId)
 
     const room = await Room.findById(roomId);
     if (!room) return res.status(404).json({ message: "room not found" });
 
     if (room?.owner?.toString() === userId.toString()) {
-      return res
-        .status(400)
-        .json({
-          message: "Owner cannot leave the room. Please delete the room.",
-        });
+      return res.status(400).json({
+        message: "Owner cannot leave the room. Please delete the room.",
+      });
     }
 
     await Room.findByIdAndUpdate(roomId, {
       $pull: { members: { user: userId } },
     });
-    res.status(200).json({message: "leave rooom successfully"})
+    res.status(200).json({ message: "leave rooom successfully" });
   } catch (error) {
-    res.status(500).json({message: "leave room failed"})
+    res.status(500).json({ message: "leave room failed" });
+  }
+};
+
+export const softDelete = async (req, res) => {
+  try {
+    const roomId = req.params.roomId;
+
+    const room = await Room.findById(roomId);
+
+    if (!room) return res.status(404).json({ message: "room not found" });
+    const roomUpdated = await Room.findByIdAndUpdate(
+      roomId,
+      {
+        isDeleted: true,
+        deletedAt: new Date(),
+      },
+      { returnDocument: "after" },
+    )
+      .populate("owner", "username email")
+      .populate("members.user", "avatar username _id");
+
+    return res.status(200).json(roomUpdated);
+  } catch (error) {
+    return res.status(500).json({ message: "delete room failed" });
+  }
+};
+
+export const getTrashRooms = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const {searchTerm} = req.query
+    let query = {owner: userId, isDeleted: true}
+
+    if(searchTerm && searchTerm.trim() !== ""){
+      query.name = { $regex: searchTerm, $options: "i"}
+    }
+
+    const trashRooms = await Room.find(query)
+      .sort({ deletedAt: -1 })
+      .populate("owner", "username email")
+      .populate("members.user", "avatar username _id");
+
+    res.json(trashRooms);
+  } catch (error) {
+    console.error("Backend Error Detail:", error);
+    return res.status(500).json({ message: "Fetch room failed" });
+  }
+};
+
+export const restoreRoom = async (req, res) => {
+  try {
+    const roomId = req.params.roomId;
+    const userId = req.user._id;
+
+    const restoreRoom = await Room.findByIdAndUpdate(roomId, {
+      isDeleted: false,
+    })
+      .sort({ createdAt: -1 })
+      .populate("owner", "username email")
+      .populate("members.user", "avatar username _id");
+    return res.json(restoreRoom);
+  } catch (error) {
+    return res.status(500).json({ message: "Restore room failed" });
+  }
+};
+
+export const permanentlyDelete = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const roomId = req.params.roomId;
+
+    // ค้นหาห้องที่ ID ตรงกัน และ OWNER ต้องตรงกับคนสั่งลบด้วย
+    const room = await Room.findOneAndDelete({
+      _id: roomId,
+      owner: userId,
+    });
+
+    // ถ้าไม่เจอห้อง (อาจจะ ID ผิด หรือไม่ใช่เจ้าของ)
+    if (!room) {
+      return res
+        .status(404)
+        .json({ message: "Room not found or unauthorized" });
+    }
+
+    return res
+      .status(200)
+      .json({ message: "Permanently deleted room successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: "Server error during deletion" });
   }
 };

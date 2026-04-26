@@ -19,6 +19,7 @@ import SettingAccountLayout from "./layouts/settingAccountLayout";
 import SettingAccountProfile from "./components/settingAccount-profile";
 import ProtectedRoute from "./components/protectedRoute";
 import useAuthStore from "./store/useAuthStore";
+import useRoomStore from "./store/useRoomStore";
 import Explore from "./pages/explore";
 
 function App() {
@@ -26,6 +27,8 @@ function App() {
   const isInitialized = useAuthStore((state) => state.isInitialized);
 
   useEffect(() => {
+    const saveRecent = JSON.parse(localStorage.getItem("recent-rooms") || "[]")
+    useRoomStore.setState({ recentRooms: saveRecent})
     checkAuth();
   }, []);
 

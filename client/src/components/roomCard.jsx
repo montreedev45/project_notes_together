@@ -10,15 +10,26 @@ function RoomCard({ data = {} }) {
   const location = useLocation();
   const user = useAuthStore((state) => state.user);
   const leaveRoom = useRoomStore((state) => state.leaveRoom);
+  const saveToRecent = useRoomStore((state) => state.saveToRecent);
+  const deleteRoom = useRoomStore((state) => state.deleteRoom);
+  const restoreRoom = useRoomStore((state)=> state.restoreRoom);
+  const permanentlyDelete = useRoomStore((state)=> state.permanentlyDelete);
 
   const [isOpenMenuModal, setIsOpenMenuModal] = useState(false);
   const isUrlFromTrash = location.pathname.includes("trash");
   const [isOpenJoinRoomModal, setIsOpenJoinRoomModal] = useState(false);
-  //console.log(isUrlFromTrash);
 
-  //test nacigate
+  //test navigate
   const handleClickRoom = (e) => {
 
+    if(data?.isDeleted === true){
+      if(window.confirm("This room deleted, Do you want to restore this room ?")){
+        restoreRoom(data?._id)
+      }
+      return;
+    }
+
+    saveToRecent(data)
     const isOwner = data?.owner?._id === user?._id;
     // 1. เช็คว่าเป็นสมาชิกในห้องอยู่แล้วหรือไม่ (ค้นหาใน Array members)
     const isAlreadyMember = data?.members?.some(
@@ -36,7 +47,7 @@ function RoomCard({ data = {} }) {
     }
   };
 
-  const handleLeaveRoome = (e) => {
+  const handleLeaveRoom = (e) => {
     e.stopPropagation();
 
     if (data?.owner?._id === user?._id) {
@@ -55,6 +66,32 @@ function RoomCard({ data = {} }) {
       alert("you not member this room");
     }
   };
+
+  const handleDeleteRoom = (e)=> {
+    e.stopPropagation();
+
+    if(data?.owner?._id !== user._id){
+      return alert("Only owner room can delete room")
+    }
+
+    if(window.confirm(`Are you sure delete room: ${data.name}`)){
+      deleteRoom(data._id)
+    }
+  }
+
+  const handleRestore = (e)=> {
+    e.stopPropagation()
+
+    restoreRoom(data?._id)
+  }
+
+
+  const handleDeleteForever = (e)=> {
+    e.stopPropagation()
+    if(window.confirm("Are you sure? once deleted, it cannot be retore")){
+      permanentlyDelete(data?._id)
+    }
+  }
 
   return (
     <>
@@ -92,12 +129,12 @@ function RoomCard({ data = {} }) {
                   <ul className="relative z-10 flex flex-col gap-1">
                     {isUrlFromTrash ? (
                       <>
-                        <li onClick={(e) => e.stopPropagation()}>
+                        <li onClick={handleRestore}>
                           <Link className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-green-100 hover:text-green-500 cursor-pointer transition-colors">
                             restore
                           </Link>
                         </li>
-                        <li onClick={(e) => e.stopPropagation()}>
+                        <li onClick={handleDeleteForever}>
                           <Link className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-red-200 hover:text-red-400 cursor-pointer transition-colors">
                             delete forever
                           </Link>
@@ -123,12 +160,12 @@ function RoomCard({ data = {} }) {
                             invite
                           </Link>
                         </li>
-                        <li onClick={handleLeaveRoome}>
+                        <li onClick={handleLeaveRoom}>
                           <Link className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-black cursor-pointer transition-colors">
                             leave
                           </Link>
                         </li>
-                        <li onClick={(e) => e.stopPropagation()}>
+                        <li onClick={handleDeleteRoom}>
                           <Link className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-red-500 cursor-pointer transition-colors">
                             delete
                           </Link>
