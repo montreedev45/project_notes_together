@@ -1,7 +1,14 @@
 import { Icon } from "@iconify/react";
 import { useState } from "react";
+import useAuthStore from "../store/useAuthStore";
 
 function DeleteAccountModal({ isOpen, onClose }) {
+  const user = useAuthStore((state)=> state.user)
+  const deleteAccount = useAuthStore((state)=> state.deleteAccount)
+
+  const handleDelete = () => {
+    deleteAccount()
+  }
 
   if (!isOpen) return null;
 
@@ -28,7 +35,7 @@ function DeleteAccountModal({ isOpen, onClose }) {
           <button onClick={onClose} className="px-6 py-2.5 bg-secondary text-white font-normal  rounded-lg hover:scale-105 cursor-pointer active:scale-95 transition-all">
             cancle
           </button>
-          <button className="px-6 py-2.5 bg-red-500 text-white font-normal rounded-lg hover:scale-105 cursor-pointer active:scale-95 transition-all">
+          <button onClick={handleDelete} className="px-6 py-2.5 bg-red-500 text-white font-normal rounded-lg hover:scale-105 cursor-pointer active:scale-95 transition-all">
             delete
           </button>
         </div>

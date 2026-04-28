@@ -1,10 +1,22 @@
 import { Icon } from "@iconify/react";
 import { useState } from "react";
+import useAuthStore from "../store/useAuthStore";
 
 function ChangeEmailModal({ isOpen, onClose }) {
-  const [step, setStep] = useState(1); //1 is change email step , 2 is confirm code step
+  const checkDuplicateEmail = useAuthStore(
+    (state) => state.checkDuplicateEmail,
+  );
+
+  const changeEmail = useAuthStore((state) => state.changeEmail);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [step, setStep] = useState(1);
+  const [localLoading, setLocalLoading] = useState(false); //use instead loading in store
   const [otp, setOtp] = useState(new Array(6).fill(""));
-  if (!isOpen) return null;
+
+  const [formData, setFormData] = useState({
+    newEmail: "",
+    currentPassword: "",
+  });
 
   const handleClose = () => {
     onClose();
@@ -26,10 +38,37 @@ function ChangeEmailModal({ isOpen, onClose }) {
 
     // เมื่อกรอกครบ 6 ตัว ให้เรียก API ทันที
     if (newOtp.join("").length === 6) {
-      alert("api send otp is working");
-      //verifyOTP(newOtp.join(""));
+      let formData = {
+        temporalyToken : localStorage.getItem("temporalyToken"),
+        verifyCode : newOtp.join("")
+      };
+      
+      changeEmail(formData);
     }
   };
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLocalLoading(true);
+
+    try {
+      const res = await checkDuplicateEmail(formData);
+
+      if (res.success) {
+        setStep(2);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLocalLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
@@ -48,21 +87,43 @@ function ChangeEmailModal({ isOpen, onClose }) {
         <div className="mt-6  text-black">
           {step === 1 ? (
             <>
-              <div className="flex gap-5 items-center mx-6 ">
+              <div className="flex flex-col gap-5 mx-6 ">
                 <input
                   type="text"
+                  value={formData.newEmail}
+                  onChange={handleChange}
+                  name="newEmail"
                   placeholder="New email"
                   className="flex-1 py-2 outline-none px-4 text-lg rounded-lg border-2 border-gray text-secondary"
                 />
-
+                <div className="relative flex items-center">
+                  <input
+                    type={showCurrentPassword ? "text" : "password"}
+                    value={formData.currentPassword}
+                    onChange={handleChange}
+                    name="currentPassword"
+                    placeholder="Current password"
+                    className="flex-1 py-2 outline-none px-4 text-lg rounded-lg border-2 border-gray text-secondary"
+                  />
+                  <Icon
+                    icon="mdi:eye"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    width="20"
+                    className="text-gray absolute right-3 cursor-pointer"
+                  />
+                </div>
                 <button
-                  onClick={() => setStep(2)}
+                  type="button"
+                  onClick={handleSubmit}
                   className="cursor-pointer bg-primary hover:bg-blue-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors"
                 >
                   Send
                 </button>
               </div>
-              <div className="p-6 mx-6 my-6  bg-yellow">
+              <div
+                className="p-6 mx-6 my-6  bg-yellow "
+                style={{ userSelect: "none" }}
+              >
                 Didn’t receive code? Resend in 30sA verification code will be
                 sent to your new email address. Please enter the verification
                 code in the field below.
@@ -75,28 +136,25 @@ function ChangeEmailModal({ isOpen, onClose }) {
                   <span>Verify identity</span>
                   <div className=" flex items-center justify-center gap-3 mt-5">
                     {otp.map((data, index) => (
-                      <>
-                        <input
-                          key={index}
-                          id={`otp-${index}`}
-                          type="text"
-                          maxLength="1"
-                          className=" w-10 h-12 border-2 rounded-lg text-center text-xl font-semibold focus:border-blue-500 outline-none"
-                          value={data}
-                          onChange={(e) => handleFillOtp(e.target, index)}
-                          onKeyDown={(e) => {
-                            // ถ้ากด Backspace ให้ถอยกลับไปช่องก่อนหน้า
-                            if (
-                              e.key === "Backspace" &&
-                              !otp[index] &&
-                              e.target.previousSibling
-                            ) {
-                              e.target.previousSibling.focus();
-                            }
-                          }}
-                        />
-                        
-                      </>
+                      <input
+                        key={index}
+                        id={`otp-${index}`}
+                        type="text"
+                        maxLength="1"
+                        className=" w-10 h-12 border-2 rounded-lg text-center text-xl font-semibold focus:border-blue-500 outline-none"
+                        value={data}
+                        onChange={(e) => handleFillOtp(e.target, index)}
+                        onKeyDown={(e) => {
+                          // ถ้ากด Backspace ให้ถอยกลับไปช่องก่อนหน้า
+                          if (
+                            e.key === "Backspace" &&
+                            !otp[index] &&
+                            e.target.previousSibling
+                          ) {
+                            e.target.previousSibling.focus();
+                          }
+                        }}
+                      />
                     ))}
                   </div>
                 </div>

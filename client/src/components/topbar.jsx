@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import useAuthStore from "../store/useAuthStore";
 
 function Topbar() {
-  const user = useAuthStore((state=> state.user))
+  const user = useAuthStore((state) => state.user);
   const [isOpenNotificationModal, setIsOpenNotificationModal] = useState(false);
   return (
     <>
@@ -26,15 +26,27 @@ function Topbar() {
               className="py-1 ps-9 rounded-4xl outline-0 font-medium text-secondary border-2 border-gray"
             />
           </div>
-          <div className="flex items-center gap-3 me-5 cursor-pointer hover:scale-105 transition-transform">
-            <div className="flex flex-col min-w-0 leading-tight">
-              <span className="font-bold text-sm truncate text-slate-800">
-                {user?.username}
-              </span>
-            </div>
-            <div style={{borderColor: user?.avatar}} className={`flex-none bg-white border-2  w-10 h-10 rounded-full flex items-center justify-center cursor-pointer`}>
-              <Icon icon="mdi:account" style={{color: user?.avatar}}  width="30" />
-            </div>
+          <div className="me-5 cursor-pointer hover:scale-105 transition-transform">
+            <Link
+              to="/notes-together/01/setting-account"
+              className="flex items-center gap-3 "
+            >
+              <div className="flex flex-col min-w-0 leading-tight">
+                <span className="font-bold text-sm truncate text-slate-800">
+                  {user?.username}
+                </span>
+              </div>
+              <div
+                style={{ borderColor: user?.avatar }}
+                className={`flex-none bg-white border-2  w-10 h-10 rounded-full flex items-center justify-center cursor-pointer`}
+              >
+                <Icon
+                  icon="mdi:account"
+                  style={{ color: user?.avatar }}
+                  width="30"
+                />
+              </div>
+            </Link>
           </div>
           <Icon
             onClick={() => setIsOpenNotificationModal(!isOpenNotificationModal)}
@@ -63,8 +75,12 @@ function Topbar() {
                         </div>
                         <span>montree.dev</span>
                       </div>
-                      <span className="grow-0 text-right text-md text-secondary font-medium">joined room</span>
-                      <span className="ps-4 grow-0 text-right text-md text-gray font-normal">5 min ago</span>
+                      <span className="grow-0 text-right text-md text-secondary font-medium">
+                        joined room
+                      </span>
+                      <span className="ps-4 grow-0 text-right text-md text-gray font-normal">
+                        5 min ago
+                      </span>
                     </li>
                     <li className="flex justify-between items-center p-3">
                       <div className="grow flex items-center font-medium text-md gap-2">
@@ -77,8 +93,12 @@ function Topbar() {
                         </div>
                         <span>john.dev</span>
                       </div>
-                      <span className="grow-0 text-right text-md text-secondary font-medium">joined room</span>
-                      <span className="ps-4 grow-0 text-right text-md text-gray font-normal">8 min ago</span>
+                      <span className="grow-0 text-right text-md text-secondary font-medium">
+                        joined room
+                      </span>
+                      <span className="ps-4 grow-0 text-right text-md text-gray font-normal">
+                        8 min ago
+                      </span>
                     </li>
                     <li className="flex justify-between items-center p-3">
                       <div className="grow flex items-center font-medium text-md gap-2">
@@ -91,8 +111,12 @@ function Topbar() {
                         </div>
                         <span>peter.dev</span>
                       </div>
-                      <span className="grow-0 text-right text-md text-secondary font-medium">joined room</span>
-                      <span className="ps-4 grow-0 text-right text-md text-gray font-normal">9 min ago</span>
+                      <span className="grow-0 text-right text-md text-secondary font-medium">
+                        joined room
+                      </span>
+                      <span className="ps-4 grow-0 text-right text-md text-gray font-normal">
+                        9 min ago
+                      </span>
                     </li>
                     <li className="flex justify-between items-center p-3">
                       <div className="grow flex items-center font-medium text-md gap-2">
@@ -105,10 +129,13 @@ function Topbar() {
                         </div>
                         <span>ben.dev</span>
                       </div>
-                      <span className="grow-0 text-right text-md text-secondary font-medium">joined room</span>
-                      <span className="ps-4 grow-0 text-right text-md text-gray font-normal">10 min ago</span>
+                      <span className="grow-0 text-right text-md text-secondary font-medium">
+                        joined room
+                      </span>
+                      <span className="ps-4 grow-0 text-right text-md text-gray font-normal">
+                        10 min ago
+                      </span>
                     </li>
-                    
                   </ul>
                 </div>
               </div>

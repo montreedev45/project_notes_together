@@ -4,14 +4,14 @@ import useAuthStore from "../store/useAuthStore";
 import useRoomStore from "../store/useRoomStore";
 
 function Sidebar() {
-  const resetRoomStore = useRoomStore((state)=> state.resetRoomStore)
-  const logout = useAuthStore((state)=> state.logout)
-  const user = useAuthStore((state)=> state.user)
+  const resetRoomStore = useRoomStore((state) => state.resetRoomStore);
+  const logout = useAuthStore((state) => state.logout);
+  const user = useAuthStore((state) => state.user);
 
-  const handleLogout=()=>{
-    resetRoomStore()
-    logout()
-  }
+  const handleLogout = () => {
+    resetRoomStore();
+    logout();
+  };
 
   return (
     <div className="w-60 h-full border-r-2 border-gray-200 flex flex-col justify-between py-8 px-6 bg-third">
@@ -57,26 +57,42 @@ function Sidebar() {
       </nav>
 
       <div className="flex flex-col gap-6">
-        <div className="flex items-center gap-3 cursor-pointer hover:scale-105 transition-transform">
-          <div style={{borderColor: user.avatar}} className="flex-none bg-white border-2 w-10 h-10 rounded-full flex items-center justify-center cursor-pointer">
-            <Icon icon="mdi:account" style={{color: user.avatar}} width="30" />
-          </div>
-          <div className="flex flex-col min-w-0 leading-tight">
-            <span className="font-bold text-sm truncate text-slate-800">
-              {user.username}
-            </span>
-            <span className="font-normal text-xs text-secondary truncate">
-              {user.email}
-            </span>
-          </div>
+        <div className="cursor-pointer hover:scale-105 transition-transform">
+          <Link to="/notes-together/01/setting-account" className="flex items-center gap-3 ">
+            <div
+              style={{ borderColor: user?.avatar }}
+              className="flex-none bg-white border-2 w-10 h-10 rounded-full flex items-center justify-center cursor-pointer"
+            >
+              <Icon
+                icon="mdi:account"
+                style={{ color: user?.avatar }}
+                width="30"
+              />
+            </div>
+            <div className="flex flex-col min-w-0 leading-tight">
+              <span className="font-bold text-sm truncate text-slate-800">
+                {user?.username}
+              </span>
+              <span className="font-normal text-xs text-secondary truncate">
+                {user?.email}
+              </span>
+            </div>
+          </Link>
         </div>
 
         <div className="flex flex-col gap-6 text-secondary font-medium ">
-          <Link to="/notes-together/01/setting-account" className="flex items-center gap-4 cursor-pointer hover:text-primary transition-colors">
+          <Link
+            to="/notes-together/01/setting-account"
+            className="flex items-center gap-4 cursor-pointer hover:text-primary transition-colors"
+          >
             <Icon icon="mdi:cog" width="30" />
             <span>Settings</span>
           </Link>
-          <Link to="/" onClick={handleLogout} className="flex items-center gap-4 cursor-pointer hover:text-red-500 transition-colors">
+          <Link
+            to="/"
+            onClick={handleLogout}
+            className="flex items-center gap-4 cursor-pointer hover:text-red-500 transition-colors"
+          >
             <Icon icon="mdi:log-out" width="30" />
             <span>Log out</span>
           </Link>

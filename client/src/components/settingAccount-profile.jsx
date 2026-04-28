@@ -8,25 +8,38 @@ import ChangeEmailModal from "./changeEmailModal";
 import useAuthStore from "../store/useAuthStore";
 
 function SettingAccountProfile() {
-  const [selectedColor, setSelectedColor] = useState("blue");
+  const user = useAuthStore((state) => state.user);
+  const updateProfile = useAuthStore((state) => state.updateProfile);
+  const [selectedColor, setSelectedColor] = useState(user?.avatar);
   const [showOnlineStatus, setShowOnlineStatus] = useState(true);
-  const [isOpenChangePasswordModal, setIsOpenChangePasswordModal] = useState(false);
+  const [isOpenChangePasswordModal, setIsOpenChangePasswordModal] =
+    useState(false);
   const [isOpenSaveModal, setIsOpenSaveModal] = useState(false);
   const [isOpenChangeEmailModal, setIsOpenChangeEmailModal] = useState(false);
 
-  const user = useAuthStore((state)=> state.user)
-  const [formData, setFormData]=useState({
+  const [formData, setFormData] = useState({
     username: user?.username,
     email: user?.email,
-  })
+    avatar: selectedColor,
+  });
 
-
-  const handleChange = (e)=>{
+  const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name] : e.target.value
-    })
-  }
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleColorChange = (color) => {
+    setSelectedColor(color);
+    setFormData({ ...formData, avatar: color });
+  };
+
+  const handleSubmit = async (e) => {
+    e.stopPropagation();
+    const result = await updateProfile(formData);
+  };
+
   return (
     <>
       <div className=" border-s-2 border-gray px-15 pt-9 flex flex-col gap-4">
@@ -56,30 +69,38 @@ function SettingAccountProfile() {
             />
 
             <button
-              onClick={()=> setIsOpenChangeEmailModal(true)}
+              onClick={() => setIsOpenChangeEmailModal(true)}
               className="cursor-pointer bg-gray-400 hover:bg-gray-500 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors"
             >
               Change
             </button>
-            <ChangeEmailModal isOpen={isOpenChangeEmailModal} onClose={()=> setIsOpenChangeEmailModal(false)}/>
+            <ChangeEmailModal
+              //key={isOpenChangeEmailModal}
+              isOpen={isOpenChangeEmailModal}
+              onClose={() => setIsOpenChangeEmailModal(false)}
+            />
           </div>
         </div>
         <div className="flex flex-col gap-3 relative">
           <div className="flex gap-5 items-center ">
             <button
-              onClick={()=> setIsOpenChangePasswordModal(true)}
+              onClick={() => setIsOpenChangePasswordModal(true)}
               className="cursor-pointer bg-red hover:bg-red-400 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors"
             >
               Change Password
             </button>
-            <ChangePasswordModal isOpen={isOpenChangePasswordModal} onClose={()=> setIsOpenChangePasswordModal(false)}/>
+            <ChangePasswordModal
+              key={isOpenChangePasswordModal}
+              isOpen={isOpenChangePasswordModal}
+              onClose={() => setIsOpenChangePasswordModal(false)}
+            />
           </div>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-xl font-semibold">Avatar Color :</span>
           <ColorPicker
             selectedColor={selectedColor}
-            setSelectedColor={setSelectedColor}
+            setSelectedColor={handleColorChange}
           />
         </div>
         <div className="grow flex flex-col justify-start  gap-3">
@@ -91,12 +112,17 @@ function SettingAccountProfile() {
             <span className="text-lg">show online status</span>
           </div>
         </div>
-        <button  onClick={()=> setIsOpenSaveModal(true)} className="w-full text-center text-lg cursor-pointer button-primary bg-primary rounded-lg hover:bg-blue-500 transition-all mb-8">
-          Save
+        <button
+          onClick={handleSubmit}
+          className="w-full text-center text-lg cursor-pointer button-primary bg-primary rounded-lg hover:bg-blue-500 transition-all mb-8"
+        >
+          Save Changes
         </button>
-         <SaveModal isOpen={isOpenSaveModal} onClose={()=> setIsOpenSaveModal(false)}/>
+        <SaveModal
+          isOpen={isOpenSaveModal}
+          onClose={() => setIsOpenSaveModal(false)}
+        />
       </div>
-      
     </>
   );
 }

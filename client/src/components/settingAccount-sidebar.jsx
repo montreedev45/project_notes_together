@@ -5,7 +5,8 @@ import DeleteAccountModal from "./deleteAccountModal";
 
 function SettingAccountSidebar() {
   const { id } = useParams();
-    const [isOpenDeleteAccountModal, setIsOpenDeleteAccountModal] = useState(false);
+  const [isOpenDeleteAccountModal, setIsOpenDeleteAccountModal] =
+    useState(false);
 
   return (
     <>
@@ -20,9 +21,17 @@ function SettingAccountSidebar() {
               profile
             </Link>
           </li>
-          <li >
-            <button onClick={()=> setIsOpenDeleteAccountModal(true)} className="w-full text-start hover:text-red-700 cursor-pointer transition-all rounded-lg hover:bg-red p-3">delete account</button>
-            <DeleteAccountModal isOpen={isOpenDeleteAccountModal} onClose={()=> setIsOpenDeleteAccountModal(false)}/>
+          <li>
+            <button
+              onClick={() => setIsOpenDeleteAccountModal(true)}
+              className="w-full text-start hover:text-red-700 cursor-pointer transition-all rounded-lg hover:bg-red p-3"
+            >
+              delete account
+            </button>
+            <DeleteAccountModal
+              isOpen={isOpenDeleteAccountModal}
+              onClose={() => setIsOpenDeleteAccountModal(false)}
+            />
           </li>
         </ul>
       </div>

@@ -45,18 +45,113 @@ const useAuthStore = create((set) => ({
     try {
       const res = await api.post("/auth/register", formData)
 
-      if(res?.data?.user && res?.data?.token){
-        localStorage.setItem("token", res.data.token)
-        set({ user:res.data.user, isAuthenticated: true, loading: false})
-        
+      if (res?.data?.user && res?.data?.token) {
+        localStorage.setItem("token", res.data.token);
+        set({ user: res.data.user, isAuthenticated: true, loading: false });
+
         return { success: true };
       }
 
-      set({loading: false})
-      return {success: false, message:"Unexpected response from server"}
+      set({ loading: false });
+      return { success: false, message: "Unexpected response from server" };
     } catch (error) {
-      set({loading: false})
-      return {success: false, message: error?.response?.data?.message || "register failed"}
+      set({ loading: false });
+      return {
+        success: false,
+        message: error?.response?.data?.message || "register failed",
+      };
+    }
+  },
+
+  updateProfile: async (data) => {
+    set({ loading: true });
+
+    try {
+      const res = await api.put(`/auth/profile`, data);
+
+      if (res?.data) {
+        if (res?.data?.user && res?.data?.newToken) {
+          localStorage.setItem("token", res.data.newToken);
+          set({ user: res.data.user, loading: false });
+          return { success: true };
+        }
+      }
+
+      set({ loading: false });
+      return { success: false, message: "Unexpected response from server" };
+    } catch (error) {
+      set({ loading: false });
+      return { success: false, message: "Update profile failed" };
+    }
+  },
+
+  changePassword: async (formData) => {
+    set({ loading: true });
+    try {
+      const res = await api.put("/auth/change-password", formData);
+
+      if (res?.data) {
+        set({ loading: false });
+        return { success: true };
+      }
+
+      set({ loading: false });
+      return { success: false, message: "Unexpected response from server" };
+    } catch (error) {
+      set({ loading: false });
+      return { success: false, message: "change password failed" };
+    }
+  },
+
+  checkDuplicateEmail: async (formData) => {
+    try {
+      const res = await api.post("/auth/check-duplicate-email", formData);
+      if (res?.data) {
+        localStorage.setItem("temporalyToken", res.data.temporalyToken);
+        localStorage.setItem("newEmail", res.data.newEmail);
+        localStorage.setItem("verificationCode", res.data.verificationCode);
+        return { success: true };
+      }
+      return { success: false };
+    } catch (error) {
+      return { success: false };
+    }
+  },
+
+  changeEmail: async (formData) => {
+    set({ loading: true });
+    try {
+      const res = await api.post("/auth/change-email", formData);
+
+      if (res?.data) {
+        localStorage.setItem("token", res.data.token);
+        set({ user: res.data.user, loading: false });
+        return { success: true };
+      }
+
+      set({ loading: false });
+      return { success: false };
+    } catch (error) {
+      set({ loading: false });
+      return { success: false };
+    }
+  },
+
+  deleteAccount: async () => {
+    set({ loading: true });
+    try {
+      const res = await api.delete("/auth/delete-account");
+
+      if (res?.data) {
+        set({ loading: false, user: null, isAuthenticated: false });
+        return { success: true };
+      }
+
+      set({ loading: false });
+      return { success: false, message: "Unexpected response from server" };
+    } catch (error) {
+      set({ loading: false });
+      return { success: false };
     }
   },
 
@@ -69,7 +164,7 @@ const useAuthStore = create((set) => ({
     const token = localStorage.getItem("token");
 
     if (!token) {
-      set({ isAuthenticated: false, loading: false , isInitialized: true});
+      set({ isAuthenticated: false, loading: false, isInitialized: true });
       return;
     }
 
@@ -77,10 +172,20 @@ const useAuthStore = create((set) => ({
       const res = await api.get("/auth/verify", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      set({ user: res.data.user, isAuthenticated: true, loading: false, isInitialized: true });
+      set({
+        user: res.data.user,
+        isAuthenticated: true,
+        loading: false,
+        isInitialized: true,
+      });
     } catch (error) {
       localStorage.removeItem("token");
-      set({ user: null, isAuthenticated: false, loading: false, isInitialized: true});
+      set({
+        user: null,
+        isAuthenticated: false,
+        loading: false,
+        isInitialized: true,
+      });
     }
   },
 }));

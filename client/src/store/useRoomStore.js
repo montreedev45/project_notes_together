@@ -125,7 +125,6 @@ const useRoomStore = create((set) => ({
 
     try {
       const res = await api.post("/rooms", data);
-      console.log(res.data);
 
       if (res?.data) {
         set((state) => ({
