@@ -1,18 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // รับ props: label (ชื่อ), description (คำอธิบาย),
 // และ onToggle (ฟังก์ชันส่งค่ากลับ)
-function Toggle({ label, onToggle, defaultChecked = false }) {
+function Toggle({ label, onToggle, defaultChecked }) {
   const [enabled, setEnabled] = useState(defaultChecked);
+  useEffect(() => {
+    if (defaultChecked !== undefined) {
+      setEnabled(defaultChecked);
+    }
+  }, [defaultChecked]);
 
   const handleToggle = () => {
-    const newState = !enabled;
-    setEnabled(newState);
-
-    // ถ้ามีการส่งฟังก์ชัน onToggle มา ให้รันฟังก์ชันนั้นพร้อมส่งค่าใหม่กลับไป
-    if (onToggle) {
-      onToggle(newState);
-    }
+    const newValue = !enabled;
+    setEnabled(newValue);
+    onToggle(newValue);
   };
 
   return (

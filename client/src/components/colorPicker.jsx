@@ -10,39 +10,48 @@ const colors = [
   { id: "#c7c6c6", bg: "bg-gray" },
 ];
 
-function ColorPicker({ label, selectedColor, setSelectedColor }) {
+function ColorPicker({
+  label,
+  selectedColor,
+  setSelectedColor,
+  name = "color",
+  onChange = () => {},
+}) {
   return (
-    <div className="flex gap-4">
-      <div className="flex flex-col">
+    <div className="flex flex-col gap-2">
+      {label && (
         <span className="text-sm font-bold text-slate-800">{label}</span>
+      )}
+
+      <div className="flex gap-4">
+        {colors.map((color) => (
+          <label key={color.id} className="relative cursor-pointer">
+            <input
+              type="radio"
+              name={name}
+              value={color.id}
+              className="peer sr-only"
+              checked={selectedColor === color.id}
+              onChange={() => {
+                setSelectedColor(color.id);
+                onChange({ target: { name, value: color.id } });
+              }}
+            />
+
+            <div
+              className={`w-6 h-6 rounded-full ${color.bg} transition-all 
+              peer-checked:ring-offset-2 peer-checked:ring-2 peer-checked:ring-slate-400
+              hover:scale-110 active:scale-95 shadow-sm`}
+            ></div>
+
+            {selectedColor === color.id && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <Icon icon="mdi:check" className="text-white text-xs" />
+              </div>
+            )}
+          </label>
+        ))}
       </div>
-      {colors.map((color) => (
-        <label key={color.id} className="relative cursor-pointer">
-          {/* 1. ซ่อน Radio จริงไว้ข้างหลัง */}
-          <input
-            type="radio"
-            name="color-choice"
-            value={color.id}
-            className="peer sr-only" // sr-only คือซ่อนแต่ยังกดได้
-            onChange={() => setSelectedColor(color.id)}
-            checked={selectedColor === color.id}
-          />
-
-          {/* 2. สร้างวงกลมสี (Custom UI) */}
-          <div
-            className={`w-5 h-5 rounded-full ${color.bg} transition-all 
-            peer-checked:ring-offset-2 peer-checked:ring-2 peer-checked:ring-slate-400
-            hover:scale-110 active:scale-95 `}
-          ></div>
-
-          {/* 3. เครื่องหมายถูก (โชว์เฉพาะตอนเลือก) */}
-          {selectedColor === color.id && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <Icon icon="mdi:check" className="text-white" width="16" />
-            </div>
-          )}
-        </label>
-      ))}
     </div>
   );
 }

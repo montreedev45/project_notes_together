@@ -249,8 +249,8 @@ const useRoomStore = create((set) => ({
       const res = await api.post(`rooms/restore/${roomId}`);
       if (res?.data) {
         set((state) => ({
-          rooms:[res.data, ...state.rooms],
-          myRooms:[res.data, ...state.myRooms],
+          rooms: [res.data, ...state.rooms],
+          myRooms: [res.data, ...state.myRooms],
           trashRooms: state.trashRooms.filter((r) => r._id !== roomId),
         }));
       }
@@ -263,13 +263,21 @@ const useRoomStore = create((set) => ({
     try {
       const res = await api.delete(`/rooms/permanent/${roomId}`);
       set((state) => ({
-        rooms: state.rooms.filter(r => r._id !== roomId),
-        myRooms: state.rooms.filter(r => r._id !== roomId),
-        trashRooms: state.trashRooms.filter(r => r._id !== roomId),
+        rooms: state.rooms.filter((r) => r._id !== roomId),
+        myRooms: state.rooms.filter((r) => r._id !== roomId),
+        trashRooms: state.trashRooms.filter((r) => r._id !== roomId),
       }));
     } catch (error) {
       return { success: false, message: "restore room failed" };
     }
+  },
+
+  updateRoomLocal: (roomId, newData) => {
+    set((state) => ({
+      myRooms: state.myRooms.map((r) =>
+        r._id === roomId ? { ...r, ...newData } : r,
+      ),
+    }));
   },
 
   resetRoomStore: () => set(initialState),

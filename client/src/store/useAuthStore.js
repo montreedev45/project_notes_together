@@ -108,8 +108,6 @@ const useAuthStore = create((set) => ({
       const res = await api.post("/auth/check-duplicate-email", formData);
       if (res?.data) {
         localStorage.setItem("temporalyToken", res.data.temporalyToken);
-        localStorage.setItem("newEmail", res.data.newEmail);
-        localStorage.setItem("verificationCode", res.data.verificationCode);
         return { success: true };
       }
       return { success: false };
@@ -155,8 +153,13 @@ const useAuthStore = create((set) => ({
     }
   },
 
+  
   logout: () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("newEmail");
+    localStorage.removeItem("recent-rooms");
+    localStorage.removeItem("temporalyToken");
+    localStorage.removeItem("verificationCode");
     set({ user: null, isAuthenticated: false, loading: false });
   },
 

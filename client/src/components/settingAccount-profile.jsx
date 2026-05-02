@@ -75,7 +75,7 @@ function SettingAccountProfile() {
               Change
             </button>
             <ChangeEmailModal
-              //key={isOpenChangeEmailModal}
+              key={isOpenChangeEmailModal}
               isOpen={isOpenChangeEmailModal}
               onClose={() => setIsOpenChangeEmailModal(false)}
             />

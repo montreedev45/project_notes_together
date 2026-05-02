@@ -17,18 +17,21 @@ import Recent from "./pages/recent";
 import Trash from "./pages/trash";
 import SettingAccountLayout from "./layouts/settingAccountLayout";
 import SettingAccountProfile from "./components/settingAccount-profile";
+import Explore from "./pages/explore";
+import DeleteRoomModal from "./components/deleteRoomModal";
 import ProtectedRoute from "./components/protectedRoute";
+import useModalStore from "./store/useModalStore";
 import useAuthStore from "./store/useAuthStore";
 import useRoomStore from "./store/useRoomStore";
-import Explore from "./pages/explore";
 
 function App() {
+  const { deleteModal, closeDeleteModal } = useModalStore();
   const checkAuth = useAuthStore((state) => state.checkAuth);
   const isInitialized = useAuthStore((state) => state.isInitialized);
 
   useEffect(() => {
-    const saveRecent = JSON.parse(localStorage.getItem("recent-rooms") || "[]")
-    useRoomStore.setState({ recentRooms: saveRecent})
+    const saveRecent = JSON.parse(localStorage.getItem("recent-rooms") || "[]");
+    useRoomStore.setState({ recentRooms: saveRecent });
     checkAuth();
   }, []);
 
@@ -84,6 +87,11 @@ function App() {
         <Route path="*" element={<Error404 />} />
         <Route path="/500" element={<Error500 />} />
       </Routes>
+      <DeleteRoomModal
+        isOpen={deleteModal.isOpen}
+        roomId={deleteModal.roomId}
+        onClose={closeDeleteModal}
+      />
     </>
   );
 }

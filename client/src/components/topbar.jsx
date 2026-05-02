@@ -13,19 +13,6 @@ function Topbar() {
           <img src="/logo.svg" alt="" className="w-60 cursor-pointer" />
         </Link>
         <div className=" flex justify-end items-center w-full">
-          <div className="bg-white flex items-center me-10 rounded-xl relative">
-            <Icon
-              icon="mdi:search"
-              width="20"
-              height="20"
-              className="absolute left-2 text-secondary cursor-pointer"
-            />
-            <input
-              type="text"
-              placeholder="search..."
-              className="py-1 ps-9 rounded-4xl outline-0 font-medium text-secondary border-2 border-gray"
-            />
-          </div>
           <div className="me-5 cursor-pointer hover:scale-105 transition-transform">
             <Link
               to="/notes-together/01/setting-account"

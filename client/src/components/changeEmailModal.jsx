@@ -42,7 +42,7 @@ function ChangeEmailModal({ isOpen, onClose }) {
         temporalyToken : localStorage.getItem("temporalyToken"),
         verifyCode : newOtp.join("")
       };
-      
+
       changeEmail(formData);
     }
   };
@@ -65,6 +65,40 @@ function ChangeEmailModal({ isOpen, onClose }) {
       console.error(error);
     } finally {
       setLocalLoading(false);
+    }
+  };
+
+  const handlePaste = async (e) => {
+    e.preventDefault();
+    const pasteData = e.clipboardData.getData("text").slice(0, 6);
+
+    if (!/^\d+$/.test(pasteData)) return;
+
+    const newOtp = [...otp];
+    const characters = pasteData.split("");
+
+    characters.forEach((char, index) => {
+      if (index < 6) newOtp[index] = char;
+    });
+
+    // ✅ แก้เป็นแบบนี้ครับ ส่ง Array ที่อัปเดตแล้วเข้าไปเลย
+    setOtp(newOtp);
+
+    const fullOtp = newOtp.join("");
+
+    // Focus ไปที่ช่องสุดท้ายที่มีข้อมูล หรือช่องที่ 6
+    const nextIndex = Math.min(characters.length, 5);
+    document.getElementById(`otp-${nextIndex}`)?.focus();
+
+    // ถ้าวางแล้วครบ 6 ตัว ให้เรียก API ทันที
+    if (fullOtp.length === 6) {
+      let formData = {
+        temporalyToken: localStorage.getItem("temporalyToken"),
+        verifyCode: fullOtp,
+      };
+
+      const res = await changeEmail(formData);
+      if (res.success) onClose();
     }
   };
 
@@ -139,6 +173,7 @@ function ChangeEmailModal({ isOpen, onClose }) {
                       <input
                         key={index}
                         id={`otp-${index}`}
+                        onPaste={index === 0 ? handlePaste : undefined}
                         type="text"
                         maxLength="1"
                         className=" w-10 h-12 border-2 rounded-lg text-center text-xl font-semibold focus:border-blue-500 outline-none"

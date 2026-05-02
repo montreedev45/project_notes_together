@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { Icon } from "@iconify/react";
+import { useParams, useOutletContext } from "react-router-dom";
+import SettingRoomPreview from "./SettingRoom-preview";
+import useRoomStore from "../store/useRoomStore";
 
 function SettingRoomMember() {
+  const { roomData } = useOutletContext();
   const [isCopied, setIsCopied] = useState(false);
 
   const link = "https://notes-together/0/editor";
@@ -10,6 +14,7 @@ function SettingRoomMember() {
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 1000);
   };
+
   return (
     <>
       <div className=" border-s-2 border-gray px-15 pt-9 flex flex-col gap-8">
@@ -199,9 +204,7 @@ function SettingRoomMember() {
               >
                 <option value="editor">Editor</option>
                 <option value="viewer">Viewer</option>
-                <option value="commenter">
-                  Commenter
-                </option>
+                <option value="commenter">Commenter</option>
               </select>
               <Icon
                 icon="mdi:trash"
@@ -232,12 +235,10 @@ function SettingRoomMember() {
                 name="permission"
                 id=""
                 className="cursor-pointer px-2 outline-0 rounded-lg border-2 border-gray text-md font-semibold text-secondary"
-              defaultValue="viewer"
+                defaultValue="viewer"
               >
                 <option value="editor">Editor</option>
-                <option value="viewer">
-                  Viewer
-                </option>
+                <option value="viewer">Viewer</option>
                 <option value="commenter">Commenter</option>
               </select>
               <Icon
@@ -249,6 +250,7 @@ function SettingRoomMember() {
           </div>
         </div>
       </div>
+      {/* <SettingRoomPreview roomData={roomData}/> */}
     </>
   );
 }

@@ -18,7 +18,7 @@ const userSchema = new mongoose.Schema(
     },
     avatar: {
       type: String,
-      default: "#3888f1",
+      default: "#4b9fff",
     },
     changeEmailCode: { type: String },
     changeEmailExpire: { type: Date },

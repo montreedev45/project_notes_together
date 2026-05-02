@@ -42,6 +42,18 @@ const roomSchema = new mongoose.Schema({
     },
     deletedAt:{
         type: Date
+    },
+    isOnlineStatus: {
+        type: Boolean,
+        default: true
+    },
+    isLastEditTime:{
+        type: Boolean,
+        default: true
+    },
+    isPeopleJoinRoom:{
+        type: Boolean,
+        default: true
     }
 }, {timestamps: true})
 
