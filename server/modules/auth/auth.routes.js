@@ -6,7 +6,8 @@ import {
   changePassword,
   checkDuplicateEmail,
   changeEmail,
-  deleteAccount
+  deleteAccount,
+  getUser
 } from "./auth.controller.js";
 import authMiddleware from "../../middleware/auth.middleware.js";
 
@@ -25,5 +26,6 @@ router.put("/change-password", authMiddleware, changePassword);
 router.post("/check-duplicate-email", authMiddleware, checkDuplicateEmail);
 router.post("/change-email", authMiddleware, changeEmail);
 router.delete("/delete-account", authMiddleware, deleteAccount);
+router.post("/users", authMiddleware, getUser)
 
 export default router;

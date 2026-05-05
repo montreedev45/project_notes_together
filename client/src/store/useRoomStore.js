@@ -9,7 +9,7 @@ const initialState = {
   loading: false,
 };
 
-const useRoomStore = create((set) => ({
+const useRoomStore = create((set, get) => ({
   ...initialState,
   rooms: [],
   myRooms: [],
@@ -278,6 +278,130 @@ const useRoomStore = create((set) => ({
         r._id === roomId ? { ...r, ...newData } : r,
       ),
     }));
+  },
+
+  updateRoom: async (roomId, newData) => {
+    set({ loading: true });
+    try {
+      const finalData = {
+        roomId: roomId,
+        newData: newData.find((r) => r._id === roomId) || {},
+      };
+
+      const res = await api.put("/rooms", finalData);
+
+      if (res.data) {
+        set((state) => ({
+          rooms: state.rooms.map((r) =>
+            r._id === roomId ? { ...r, ...res.data } : r,
+          ),
+          myRooms: state.myRooms.map((r) =>
+            r._id === roomId ? { ...r, ...res.data } : r,
+          ),
+          recentRooms: state.recentRooms.map((r) =>
+            r._id === roomId ? { ...r, ...res.data } : r,
+          ),
+          loading: false,
+        }));
+
+        const latestRecent = get().recentRooms;
+
+        localStorage.setItem("recent-rooms", JSON.stringify(latestRecent));
+
+        return { success: true };
+      }
+
+      set({ loading: false });
+      return { success: false, message: "Unexpected response from server" };
+    } catch (error) {
+      set({ loading: false });
+      return { success: false, message: "Updated room failed" };
+    }
+  },
+
+  addMember: async (roomId, memberId, role) => {
+    set({ loading: true });
+    try {
+      const finalData = {
+        roomId,
+        memberId,
+        role,
+      };
+
+      const res = await api.put("/rooms/add-member", finalData);
+
+      if (res?.data) {
+        set((state) => ({
+          myRooms: state.myRooms.map((r) =>
+            r._id === roomId
+              ? {
+                  ...r,
+                  members: res.data.members,
+                }
+              : r,
+          ),
+          rooms: state.rooms.map((r) =>
+            r._id === roomId
+              ? {
+                  ...r,
+                  members: res.data.members,
+                }
+              : r,
+          ),
+          recentRooms: state.recentRooms.map((r) =>
+            r._id === roomId ? { ...r, members: res.data.members } : r,
+          ),
+          loading: false,
+        }));
+
+        const latestRecent = get().recentRooms;
+        localStorage.setItem("recent-rooms", JSON.stringify(latestRecent));
+
+        return { success: true };
+      }
+
+      set({ loading: false });
+      return { success: false, message: "Unexpected response from server" };
+    } catch (error) {
+      set({ loading: false });
+      return { success: false, message: "Add member failed" };
+    }
+  },
+
+  updateRole: async (roomId, memberId, role) => {
+    set({ loadaing: true });
+    try {
+      const finalData = {
+        roomId,
+        memberId,
+        role,
+      };
+
+      const res = await api.put("/rooms/update-role", finalData);
+
+      if (res?.data) {
+        set((state) => ({
+          ...state,
+          myRooms: state.myRooms.map((r) =>
+            r._id === roomId ? { ...r, ...res.data } : r,
+          ),
+          rooms: state.rooms.map((r) =>
+            r._id === roomId ? { ...r, ...res.data } : r,
+          ),
+          recentRooms: state.recentRooms.map((r) =>
+            r._id === roomId ? { ...r, ...res.data } : r,
+          ),
+          loading: false,
+        }));
+        return { success: true };
+      }
+
+      set({ loading: false });
+      return { success: false, message: "Unexpeced response from server" };
+    } catch (error) {
+      set({ loading: false });
+      return { success: false, message: "Update role failed" };
+    }
   },
 
   resetRoomStore: () => set(initialState),

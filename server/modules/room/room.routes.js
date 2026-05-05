@@ -10,12 +10,16 @@ import {
   softDelete,
   getTrashRooms,
   restoreRoom,
-  permanentlyDelete
+  permanentlyDelete,
+  updateRoom,
+  addMember,
+  updateRole
 } from "./room.controller.js";
 
 const router = express.Router();
 
 //warning route matching conflict
+router.put("/", authMiddleware, updateRoom)
 router.post("/", authMiddleware, createRoom);
 router.get("/trash", authMiddleware, getTrashRooms);
 router.post("/my-rooms", authMiddleware, getMyRooms);
@@ -23,6 +27,8 @@ router.post("/all-rooms", authMiddleware, getAllRooms);
 
 router.post("/join", authMiddleware, joinRoom);
 router.post("/leave", authMiddleware, leaveRoom);
+router.put("/add-member", authMiddleware, addMember)
+router.put("/update-role", authMiddleware, updateRole)
 
 router.get("/:id", authMiddleware, getRoomById); 
 

@@ -129,7 +129,7 @@ function RoomCard({ data = {} }) {
       <div
         key={data._id}
         onClick={handleClickRoom}
-        className="w-55 bg-white shadow-md p-3 rounded-lg cursor-pointer hover:scale-105 transition-transform"
+        className="min-w-55 max-w-55 min-h-55 max-h-55 bg-white shadow-md p-3 rounded-lg cursor-pointer hover:scale-105 transition-transform flex flex-col justify-between"
       >
         <div className="flex items-center justify-between mb-1">
           <Icon icon="mdi:folder" width="50" style={{ color: data.color }} />
@@ -233,27 +233,49 @@ function RoomCard({ data = {} }) {
           )}
         </span>
 
-        <p className="text-secondary text-sm font-medium">{data.description}</p>
-        <div className="flex items-center gap-1 my-4">
-          {data?.members?.map((member) => (
-            <div
-              key={member._id}
-              style={{ borderColor: member?.user?.avatar }}
-              className="flex-none bg-white border-2 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
-            >
-              <Icon
-                icon="mdi:account"
-                style={{ color: member?.user?.avatar }}
-                width="30"
-              />
-            </div>
-          ))}
+        <p className="text-secondary text-sm font-medium">
+          {data?.description}
+        </p>
+        <div className="flex items-center gap-1 my-4 -space-x-4">
+          {data.isPeopleJoinRoom && (
+            <>
+              {data?.members?.slice(0, 5).map((member) => (
+                <div
+                  key={member._id}
+                  style={{ borderColor: member?.user?.avatar }}
+                  className="flex-none bg-white border-2 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
+                >
+                  <Icon
+                    icon="mdi:account"
+                    style={{ color: member?.user?.avatar }}
+                    width="30"
+                  />
+                </div>
+              ))}
+              {data?.members?.length > 5 && (
+                <div className="flex-none bg-gray-200 border-2 border-white w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold text-gray-600 z-0">
+                  +{data.members.length - 5}
+                </div>
+              )}
+            </>
+          )}
         </div>
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-2 text-secondary text-sm">
-            <div className="w-3 h-3 rounded-full bg-green-400"></div> 2 online
+            {data?.isOnlineStatus && (
+              <>
+                <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                <span>2 online</span>
+              </>
+            )}
           </span>
-          <span className="text-sm text-secondary">edited 5 min ago</span>
+          <span className="text-sm text-secondary">
+            {data?.isLastEditTime && (
+              <>
+                <span>edited 5 min ago</span>
+              </>
+            )}
+          </span>
         </div>
       </div>
       <JoinRoomModal

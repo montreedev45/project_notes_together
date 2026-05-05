@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import api from "../services/api";
 const useAuthStore = create((set) => ({
+  users: [],
   user: null,
   isAuthenticated: false,
   loading: false,
@@ -153,7 +154,19 @@ const useAuthStore = create((set) => ({
     }
   },
 
-  
+  getUser: async (searchTerm) => {
+    try {
+      const res = await api.post("/auth/users", { searchTerm });
+      if (res?.data) {
+        set({ users: res.data });
+        return { success: true };
+      }
+
+      return { success: false, message: "Unexpected response from server" };
+    } catch (error) {
+      return { success: false };
+    }
+  },
   logout: () => {
     localStorage.removeItem("token");
     localStorage.removeItem("newEmail");

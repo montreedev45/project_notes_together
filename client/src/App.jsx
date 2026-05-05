@@ -13,6 +13,7 @@ import Dashboard from "./pages/dashboard";
 import SettingRoomLayout from "./layouts/settingRoomLayout";
 import SettingRoomGeneral from "./components/settingRoom-general";
 import SettingRoomMember from "./components/settingRoom-member";
+import SettingRoomShare from "./components/settingRoom-share";
 import Recent from "./pages/recent";
 import Trash from "./pages/trash";
 import SettingAccountLayout from "./layouts/settingAccountLayout";
@@ -72,6 +73,7 @@ function App() {
               <Route index element={<SettingRoomGeneral />} />
               <Route path="general" element={<SettingRoomGeneral />} />
               <Route path="member" element={<SettingRoomMember />} />
+              <Route path="share" element={<SettingRoomShare />} />
             </Route>
             //Setting Account
             <Route

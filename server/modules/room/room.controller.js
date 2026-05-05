@@ -71,7 +71,7 @@ export const getMyRooms = async (req, res) => {
     const rooms = await Room.find(query)
       .sort({ createdAt: -1 })
       .populate("owner", "username email")
-      .populate("members.user", "avatar username _id");
+      .populate("members.user", "avatar username _id email");
 
     res.json(rooms);
   } catch (error) {
@@ -106,7 +106,7 @@ export const getAllRooms = async (req, res) => {
     if (searchTerm && searchTerm.trim() !== "") {
       query.name = { $regex: searchTerm.trim(), $options: "i" };
     }
-    
+
 
     const rooms = await Room.find(query)
       .sort({ createdAt: -1 })
@@ -226,6 +226,53 @@ export const leaveRoom = async (req, res) => {
   }
 };
 
+export const addMember = async (req, res) => {
+  try {
+    const { roomId, memberId, role } = req.body;
+
+    const updatedRoom = await Room.findByIdAndUpdate(
+      roomId,
+      { $addToSet: { members: { user: memberId, role: role } } },
+      { returnDocument: "after" },
+    )
+      .populate("owner", "username email avatar")
+      .populate("members.user", "avatar email username");
+
+    if (!updatedRoom)
+      return res.status(404).json({ message: "Room not found" });
+
+    res.json(updatedRoom);
+  } catch (error) {
+    return res.status(500).json({ message: "Add member failed" });
+  }
+};
+
+export const updateRole = async (req, res) => {
+  try {
+    const { roomId, memberId, role } = req.body;
+
+    const updatedRole = await Room.findByIdAndUpdate(
+      roomId,
+      {
+        $set: { "members.$[elem].role": role },
+      },
+      {
+        arrayFilters: [{ "elem.user": memberId }],
+        returnDocument: "after",
+      },
+    )
+      .populate("owner", "username email avatar")
+      .populate("members.user", "avatar email username");
+
+    if (!updatedRole)
+      return res.status(404).json({ message: "Room not found" });
+
+    res.json(updatedRole);
+  } catch (error) {
+    return res.status(500).json({ message: "Update role failed" });
+  }
+};
+
 export const softDelete = async (req, res) => {
   try {
     const roomId = req.params.roomId;
@@ -312,5 +359,33 @@ export const permanentlyDelete = async (req, res) => {
       .json({ message: "Permanently deleted room successfully" });
   } catch (error) {
     return res.status(500).json({ message: "Server error during deletion" });
+  }
+};
+
+export const updateRoom = async (req, res) => {
+  try {
+    const { roomId, newData } = req.body;
+
+    if (!roomId || !newData) {
+      return res
+        .status(400)
+        .json({ message: "roomId and newData are required" });
+    }
+
+    const updatedRoom = await Room.findByIdAndUpdate(
+      roomId,
+      { $set: newData },
+      { returnDocument: "after" },
+    )
+      .populate("owner", "username email")
+      .populate("members.user", "avatar username _id");
+
+    if (!updateRoom) {
+      return res.status(404).json({ message: "Room not found" });
+    }
+
+    return res.status(200).json(updatedRoom);
+  } catch (error) {
+    return res.status(500).json({ message: "Update room failed" });
   }
 };

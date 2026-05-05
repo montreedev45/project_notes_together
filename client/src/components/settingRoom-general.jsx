@@ -8,6 +8,8 @@ import useRoomStore from "../store/useRoomStore";
 
 function SettingRoomGeneral() {
   const updateRoomLocal = useRoomStore((state) => state.updateRoomLocal);
+  const myRooms = useRoomStore((state)=> state.myRooms)
+  const updateRoom = useRoomStore((state)=> state.updateRoom)
 
   const { roomData } = useOutletContext();
   const { id } = useParams();
@@ -25,10 +27,15 @@ function SettingRoomGeneral() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    console.log(id, { [name]: value });
 
     updateRoomLocal(id, { [name]: value });
   };
+
+  const handleUpdate = () => {
+    updateRoom(id, myRooms)
+  }
+
+
   return (
     <>
       <div className=" border-s-2 border-gray px-15 pt-9 flex flex-col gap-4">
@@ -100,7 +107,7 @@ function SettingRoomGeneral() {
             <span className="text-lg">show people join room</span>
           </div>
         </div>
-        <span className="w-full text-center text-lg cursor-pointer button-primary bg-primary rounded-lg hover:bg-blue-500 transition-colors mb-8">
+        <span onClick={handleUpdate} className="w-full text-center text-lg cursor-pointer button-primary bg-primary rounded-lg hover:bg-blue-500 transition-colors mb-8">
           Save
         </span>
       </div>

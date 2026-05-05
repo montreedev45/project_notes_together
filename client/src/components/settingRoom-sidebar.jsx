@@ -30,6 +30,11 @@ function SettingRoomSidebar() {
               member
             </li>
           </Link>
+          <Link to={`/notes-together/${id}/setting-room/share`}>
+            <li className="hover:text-black cursor-pointer transition-all rounded-lg hover:bg-blue-200 p-3">
+              share
+            </li>
+          </Link>
           <li
             onClick={() => setIsOpenDeleteRoomModal(true)}
             className="hover:text-red-700 cursor-pointer transition-all rounded-lg hover:bg-red p-3"

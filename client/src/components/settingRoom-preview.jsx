@@ -4,7 +4,7 @@ function SettingRoomPreview({ roomData }) {
   return (
     <div className="border-s-2 border-gray pt-9 ps-5 flex flex-col justify-start items-center gap-4">
       <span className="text-2xl font-semibold mb-2 rounded-lg">preview</span>
-      <div className="w-55 bg-white shadow-md p-3 rounded-lg">
+      <div className="min-w-55 max-w-55 min-h-55 max-h-55 bg-white shadow-md p-3 rounded-lg flex flex-col justify-between">
         <div className="flex items-center justify-between mb-1">
           <Icon
             icon="mdi:folder"
@@ -19,22 +19,27 @@ function SettingRoomPreview({ roomData }) {
         <p className="text-secondary text-sm font-medium">
           {roomData?.description}
         </p>
-        <div className="flex items-center gap-1 my-4">
+        <div className="flex items-center gap-1 my-4 -space-x-4">
           {roomData?.isPeopleJoinRoom && (
             <>
-              {roomData?.members?.map((m) => (
+              {roomData?.members?.slice(0, 5).map((member) => (
                 <div
-                  key={m?.user?._id}
-                  style={{ borderColor: m?.user?.avatar }}
+                  key={member._id}
+                  style={{ borderColor: member?.user?.avatar }}
                   className="flex-none bg-white border-2 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
                 >
                   <Icon
                     icon="mdi:account"
-                    style={{ color: m?.user?.avatar }}
+                    style={{ color: member?.user?.avatar }}
                     width="30"
                   />
                 </div>
               ))}
+              {roomData?.members?.length > 5 && (
+                <div className="flex-none bg-gray-200 border-2 border-white w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold text-gray-600 z-0">
+                  +{roomData.members.length - 5}
+                </div>
+              )}
             </>
           )}
         </div>

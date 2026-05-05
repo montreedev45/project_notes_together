@@ -179,17 +179,17 @@ export const changeEmail = async (req, res) => {
     const decode = jwt.verify(temporalyToken, process.env.JWT_SECRET);
     if (!decode || decode.type !== "CHANGE_EMAIL_VERIFY")
       return res
-        .stattus(401)
+        .status(401)
         .json({ message: "Invalid or expired token session" });
 
     const user = await User.findById(decode.id);
-    if (!user) return res.stattus(400).json({ message: "Invalid credentials" });
+    if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
     if (user.changeEmailCode !== verifyCode)
       return res.status(400).json({ message: "Invalid verification code" });
 
     if (Date.now() > user.changeEmailExpire)
-      return res.stattus(400).json({ message: "Verify code has expired" });
+      return res.status(400).json({ message: "Verify code has expired" });
 
     user.email = decode.newEmail;
     user.changeEmailCode = undefined;
@@ -205,6 +205,27 @@ export const changeEmail = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const getUser = async (req, res) => {
+  try {
+    const { searchTerm } = req.body;
+    const userId = req.user._id;
+
+    if (!searchTerm || searchTerm.trim() === "") {
+      return res.status(200).json([]); 
+    }
+
+    let query = { _id: { $ne: userId } };
+    query.username = { $regex: searchTerm, $options: "i" };
+
+    const users = await User.find(query).select("username email avatar");
+
+    return res.status(200).json(users);
+  } catch (error) {
+    console.error("Fetch user error:", error);
+    return res.status(500).json({ message: "Fetch user failed" });
   }
 };
 
