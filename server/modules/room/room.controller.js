@@ -389,3 +389,29 @@ export const updateRoom = async (req, res) => {
     return res.status(500).json({ message: "Update room failed" });
   }
 };
+
+export const deleteMember = async (req, res) => {
+  try {
+    const { roomId, memberId } = req.body;
+
+    if(memberId === req.user._id){
+      return res.status(400).json({message: "Can not delete owner of room"})
+    }
+
+    //ใช้ $pull เพื่อลบ Object ใน members ที่มี user ตรงกับ memberId
+    const updatedRoom = await Room.findByIdAndUpdate(
+      roomId,
+      { $pull: { members: { user: memberId } } },
+      { returnDocument: "after" }
+    )
+    .populate("owner", "username email avatar")
+    .populate("members.user", "avatar email username");
+
+    if (!updatedRoom) return res.status(404).json({ message: "Room not found" });
+
+    return res.json(updatedRoom);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Delete member failed" });
+  }
+};

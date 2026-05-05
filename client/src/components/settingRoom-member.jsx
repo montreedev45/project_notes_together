@@ -10,7 +10,8 @@ function SettingRoomMember() {
   const users = useAuthStore((state) => state.users);
   const getUser = useAuthStore((state) => state.getUser);
   const addMember = useRoomStore((state) => state.addMember);
-  const updateRole = useRoomStore((state)=> state.updateRole)
+  const updateRole = useRoomStore((state) => state.updateRole);
+  const deleteMember = useRoomStore((state)=> state.deleteMember)
   const { roomData } = useOutletContext();
   const [isCopied, setIsCopied] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -31,6 +32,24 @@ function SettingRoomMember() {
     addMember(roomData?._id, user._id, roleToSend);
   };
 
+  const handleRoleChange = (userId, role) => {
+    setSelectedRoles((prev) => ({ ...prev, [userId]: role }));
+  };
+
+  const handleUpdateRole = (userId, role) => {
+    if (window.confirm("Are you sure you want to change this user's role?")) {
+      setSelectedRoles((prev) => ({ ...prev, [userId]: role }));
+
+      updateRole(roomData?._id, userId, role);
+    }
+  };
+
+  const handleDeleteMember = (userId) => {
+    if (window.confirm("Are you sure you want to delete this user?")) {
+      deleteMember(roomData?._id, userId);
+    }
+  };
+
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       getUser(searchTerm);
@@ -38,21 +57,6 @@ function SettingRoomMember() {
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm]);
-
-  const handleRoleChange = (userId, role) => {
-    setSelectedRoles((prev) => ({ ...prev, [userId]: role }));
-  };
-
-  const handleUpdateRole = (userId, role) => {
-  if (window.confirm("Are you sure you want to change this user's role?")) {
-    
-    setSelectedRoles((prev) => ({ ...prev, [userId]: role }));
-
-    updateRole(roomData?._id, userId, role);
-
-  }
-};
-
 
   return (
     <>
@@ -212,6 +216,7 @@ function SettingRoomMember() {
                         </div>
                         <Icon
                           icon="mdi:trash"
+                          onClick={() => handleDeleteMember(m?.user?._id)}
                           className="text-secondary cursor-pointer hover:text-olive-500 transition-all"
                           width="24"
                         ></Icon>

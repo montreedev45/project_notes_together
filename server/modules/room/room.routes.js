@@ -13,7 +13,8 @@ import {
   permanentlyDelete,
   updateRoom,
   addMember,
-  updateRole
+  updateRole,
+  deleteMember
 } from "./room.controller.js";
 
 const router = express.Router();
@@ -29,6 +30,7 @@ router.post("/join", authMiddleware, joinRoom);
 router.post("/leave", authMiddleware, leaveRoom);
 router.put("/add-member", authMiddleware, addMember)
 router.put("/update-role", authMiddleware, updateRole)
+router.put("/delete-member", authMiddleware, deleteMember)
 
 router.get("/:id", authMiddleware, getRoomById); 
 

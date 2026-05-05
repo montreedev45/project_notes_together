@@ -404,6 +404,41 @@ const useRoomStore = create((set, get) => ({
     }
   },
 
+  deleteMember: async (roomId, memberId) => {
+    set({ loading: true });
+    try {
+      const finalData = {
+        roomId,
+        memberId,
+      };
+
+      const res = await api.put("/rooms/delete-member", finalData);
+
+      if (res?.data) {
+        set((state) => ({
+          ...state,
+          myRooms: state.myRooms.map((r) => (r._id === roomId ? res.data : r)),
+          rooms: state.rooms.map((r) => (r._id === roomId ? res.data : r)),
+          recentRooms: state.recentRooms.map((r) =>
+            r._id === roomId ? res.data : r,
+          ),
+          loading: false,
+        }));
+
+        const latestRecent = get().recentRooms;
+        localStorage.setItem("recent-rooms", JSON.stringify(latestRecent));
+
+        return { success: true };
+      }
+
+      set({ loading: false });
+      return { success: false, message: "Unexpeced response from server" };
+    } catch (error) {
+      set({ loadaing: false });
+      return { success: false, message: "Delete member failed" };
+    }
+  },
+
   resetRoomStore: () => set(initialState),
 }));
 
