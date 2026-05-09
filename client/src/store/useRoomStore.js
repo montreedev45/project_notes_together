@@ -164,11 +164,14 @@ const useRoomStore = create((set, get) => ({
         useRoomStore.getState().saveToRecent(res.data);
 
         set({ loading: false });
-        return { success: true };
+        return res.data;
       }
     } catch (error) {
       set({ loading: false });
-      return { success: false, message: "join room failed" };
+      return {
+        success: false,
+        status: error.response?.status, // ส่ง 403 กลับไป
+      };
     }
   },
 
@@ -210,7 +213,7 @@ const useRoomStore = create((set, get) => ({
           myRooms: state.myRooms.filter((r) => r._id !== roomId),
           rooms: state.rooms.filter((r) => r._id !== roomId),
           recentRooms: state.recentRooms.filter((r) => r._id !== roomId),
-          trashRooms: [res.data, ...state.trashRooms]
+          trashRooms: [res.data, ...state.trashRooms],
         }));
 
         //manage localstorage
@@ -436,6 +439,39 @@ const useRoomStore = create((set, get) => ({
     } catch (error) {
       set({ loadaing: false });
       return { success: false, message: "Delete member failed" };
+    }
+  },
+
+  joinLink: async (roomId, role) => {
+    set({ loading: true });
+    try {
+      const res = await api.post(`rooms/join-link/${roomId}/${role}`);
+
+      if (res?.data) {
+        set((state) => ({
+          ...state,
+          myRooms: state.myRooms.map((r) => (r._id === roomId ? res.data : r)),
+          rooms: state.rooms.map((r) => (r._id === roomId ? res.data : r)),
+          recentRooms: state.recentRooms.map((r) =>
+            r._id === roomId ? { ...r, members: res.data.members } : r,
+          ),
+          loading: false,
+        }));
+
+        const latestRecent = get().recentRooms;
+        localStorage.setItem("recent-rooms", JSON.stringify(latestRecent));
+
+        return { success: true };
+      }
+
+      set({ loading: false });
+      return { success: false, message: "Unexpected response from server" };
+    } catch (error) {
+      set({ loading: false });
+      return {
+        success: false,
+        status: error.response?.status, // ส่ง 403 กลับไป
+      };
     }
   },
 

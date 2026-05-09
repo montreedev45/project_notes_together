@@ -38,7 +38,7 @@ function SettingRoomGeneral() {
 
   return (
     <>
-      <div className=" border-s-2 border-gray px-15 pt-9 flex flex-col gap-4">
+      <div className="overflow-auto border-s-2 border-gray px-15 pt-9 flex flex-col gap-4">
         <div className="flex flex-col gap-3 relative">
           <span className="text-2xl font-semibold">Room name</span>
           <input
@@ -105,6 +105,24 @@ function SettingRoomGeneral() {
               defaultChecked={roomData?.isPeopleJoinRoom}
             />
             <span className="text-lg">show people join room</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <Toggle
+              name="isAllowLinkSharing"
+              key={roomData?._id}
+              onToggle={(val) => handleChange({ target: { name: "isAllowLinkSharing", value: val } })}
+              defaultChecked={roomData?.isAllowLinkSharing}
+            />
+            <span className="text-lg">allow access room with link</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <Toggle
+              name="isAllowCodeSharing"
+              key={roomData?._id}
+              onToggle={(val) => handleChange({ target: { name: "isAllowCodeSharing", value: val } })}
+              defaultChecked={roomData?.isAllowCodeSharing}
+            />
+            <span className="text-lg">allow access room with code</span>
           </div>
         </div>
         <span onClick={handleUpdate} className="w-full text-center text-lg cursor-pointer button-primary bg-primary rounded-lg hover:bg-blue-500 transition-colors mb-8">

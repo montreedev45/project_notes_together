@@ -6,27 +6,15 @@ import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
 import { createYjs } from "../lib/yjs";
 import { Icon } from "@iconify/react";
 import Underline from "@tiptap/extension-underline";
-const getUserColor = (name = "guest") => {
-  const colors = [
-    "#6366f1",
-    "#8b5cf6",
-    "#ec4899",
-    "#f43f5e",
-    "#f59e0b",
-    "#10b981",
-    "#06b6d4",
-    "#3b82f6",
-  ];
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return colors[Math.abs(hash) % colors.length];
-};
+import { useParams } from "react-router-dom";
+import useAuthStore from "../store/useAuthStore";
 
-function Editor({ roomId, user }) {
+function Editor() {
+  const user = useAuthStore((state)=> state.user)
+
   const [yjs, setYjs] = useState(null);
   const instanceRef = useRef(null);
+  const { roomId, role } = useParams()
 
   useEffect(() => {
     let destroyed = false;
@@ -78,7 +66,7 @@ function EditorInner({ yjs, user }) {
           provider: yjs.provider,
           user: {
             name: user?.username || "Guest",
-            color: getUserColor(user?.username),
+            color: user?.avatar || "#4893e8",
           },
           render(user) {
             const cursor = document.createElement("span");

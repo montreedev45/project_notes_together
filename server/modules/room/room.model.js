@@ -8,7 +8,7 @@ const memberSchema = new mongoose.Schema({
     role: {
         type: String,
         enum: ["owner", "editor", "viewer", "commenter"],
-        default: "owner"
+        default: "viewer"
     }
 })
 
@@ -54,6 +54,14 @@ const roomSchema = new mongoose.Schema({
     isPeopleJoinRoom:{
         type: Boolean,
         default: true
+    },
+    isAllowLinkSharing: {
+        type: Boolean,
+        default: false
+    },
+    isAllowCodeSharing: {
+        type: Boolean,
+        default: false
     }
 }, {timestamps: true})
 

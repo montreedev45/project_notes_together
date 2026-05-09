@@ -14,7 +14,8 @@ import {
   updateRoom,
   addMember,
   updateRole,
-  deleteMember
+  deleteMember,
+  joinLink
 } from "./room.controller.js";
 
 const router = express.Router();
@@ -34,6 +35,7 @@ router.put("/delete-member", authMiddleware, deleteMember)
 
 router.get("/:id", authMiddleware, getRoomById); 
 
+router.post("/join-link/:roomId/:role", authMiddleware, joinLink)
 router.post("/delete/:roomId", authMiddleware, softDelete);
 router.post("/restore/:roomId", authMiddleware, restoreRoom);
 router.delete("/permanent/:roomId", authMiddleware, permanentlyDelete);

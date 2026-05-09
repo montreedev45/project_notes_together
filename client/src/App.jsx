@@ -25,6 +25,8 @@ import useModalStore from "./store/useModalStore";
 import useAuthStore from "./store/useAuthStore";
 import useRoomStore from "./store/useRoomStore";
 
+import JoinLink from "./pages/join-link";
+
 function App() {
   const { deleteModal, closeDeleteModal } = useModalStore();
   const checkAuth = useAuthStore((state) => state.checkAuth);
@@ -58,31 +60,31 @@ function App() {
         {/* private */}
         <Route element={<ProtectedRoute />}>
           <Route path="/notes-together" element={<DashboardLayout />}>
+            {/* 1. Static Routes (หน้าคงที่) */}
             <Route index element={<Explore />} />
             <Route path="explore" element={<Explore />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="recent" element={<Recent />} />
             <Route path="trash" element={<Trash />} />
-            //Editor
-            <Route
-              path=":id/editor"
-              element={<Editor roomId="69c22a40c269a4b7f2b3942b" />}
-            />
-            //Setting Room
+            <Route path="join-link/:roomId/:role" element={<JoinLink />} />
+
+            {/* 2. Setting Account (จัดการโปรไฟล์) */}
+            <Route path="setting-account" element={<SettingAccountLayout />}>
+              <Route index element={<SettingAccountProfile />} />
+              <Route path="profile" element={<SettingAccountProfile />} />
+            </Route>
+
+            {/* 3. Setting Room (จัดการห้อง - ใช้ :id) */}
             <Route path=":id/setting-room" element={<SettingRoomLayout />}>
               <Route index element={<SettingRoomGeneral />} />
               <Route path="general" element={<SettingRoomGeneral />} />
               <Route path="member" element={<SettingRoomMember />} />
               <Route path="share" element={<SettingRoomShare />} />
             </Route>
-            //Setting Account
-            <Route
-              path=":id/setting-account"
-              element={<SettingAccountLayout />}
-            >
-              <Route index element={<SettingAccountProfile />} />
-              <Route path="profile" element={<SettingAccountProfile />} />
-            </Route>
+
+            {/* 4. Editor (Dynamic สุด ย้ายมาไว้ล่างสุด) */}
+            {/* URL: /notes-together/room123/editor */}
+            <Route path=":roomId/:role" element={<Editor />} />
           </Route>
         </Route>
 

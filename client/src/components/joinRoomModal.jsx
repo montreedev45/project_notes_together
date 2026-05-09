@@ -3,9 +3,13 @@ import { useState } from "react";
 import ColorPicker from "./colorPicker";
 import useRoomStore from "../store/useRoomStore";
 import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 function JoinRoomModal({ isOpen, onClose }) {
+  const navigate = useNavigate();
   const [code, setCode] = useState(new Array(6).fill(""));
+
+  const [status, setStatus] = useState("loading");
 
   const joinRoom = useRoomStore((state) => state.joinRoom);
 
@@ -52,19 +56,39 @@ function JoinRoomModal({ isOpen, onClose }) {
       if (index < 6) newCode[index] = char;
     });
 
-    // ✅ แก้เป็นแบบนี้ครับ ส่ง Array ที่อัปเดตแล้วเข้าไปเลย
     setCode(newCode);
-
     const fullCode = newCode.join("");
 
-    // Focus ไปที่ช่องสุดท้ายที่มีข้อมูล หรือช่องที่ 6
     const nextIndex = Math.min(characters.length, 5);
     document.getElementById(`code-${nextIndex}`)?.focus();
 
-    // ถ้าวางแล้วครบ 6 ตัว ให้เรียก API ทันที
     if (fullCode.length === 6) {
-      const res = await joinRoom(fullCode);
-      if (res.success) onClose();
+      // 🚩 ตรวจสอบใน Store ว่า joinRoom คืนค่าอะไร
+      // ถ้าคืนค่า { success: true, data: room } ให้ใช้ res.data._id
+      // แต่จากภาพ image_f9d4aa.png ข้อมูลอยู่ที่ root เลย
+
+      try {
+        const res = await joinRoom(fullCode);
+        if (res?.success) {
+          setStatus("success");
+          navigate(`/notes-together/${roomId}/${role}`);
+        } else {
+          setStatus(res?.status || "error");
+        }
+
+        // 🚩 ปรับการเช็คให้ตรงกับโครงสร้างในภาพ (res._id หรือ res.data._id)
+        const roomId = res?._id || res?.data?._id;
+
+        if (roomId) {
+          onClose();
+          // นำทางไปยังหน้า editor ของห้องนั้นๆ
+          navigate(`/notes-together/${roomId}/editor`);
+        } else {
+          console.error("Join failed: Invalid Room ID");
+        }
+      } catch (error) {
+        setStatus("error");
+      }
     }
   };
 
@@ -76,7 +100,10 @@ function JoinRoomModal({ isOpen, onClose }) {
         <div className="flex items-center justify-between p-6 border-b-2 border-secondary">
           <h2 className="text-xl font-semibold text-slate-800">join room</h2>
           <button
-            onClick={onClose}
+            onClick={() => {
+              onClose();
+              setStatus("");
+            }}
             className="p-1 hover:bg-slate-100 rounded-full cursor-pointer transition-colors"
           >
             <Icon icon="mdi:close" width="24" className="text-slate-500" />
@@ -84,7 +111,7 @@ function JoinRoomModal({ isOpen, onClose }) {
         </div>
 
         {/* Form Body */}
-        <div className="p-6 pt-8 space-y-6">
+        <div className="p-6 pt-6 space-y-6">
           <div className=" flex items-center justify-center gap-3 my-5">
             {code.map((data, index) => (
               <input
@@ -108,6 +135,13 @@ function JoinRoomModal({ isOpen, onClose }) {
                 }}
               />
             ))}
+          </div>
+          <div className="h-5">
+            {status === 403 && (
+              <span className="text-red-600 flex justify-center items-center">
+                The room owner has disabled sharing via code.
+              </span>
+            )}
           </div>
         </div>
       </div>

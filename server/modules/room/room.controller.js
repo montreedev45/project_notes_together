@@ -1,4 +1,5 @@
 import Room from "./room.model.js";
+import User from "../auth/auth.model.js";
 import generateCode from "../../utils/generateCode.js";
 
 //create room
@@ -106,7 +107,7 @@ export const getAllRooms = async (req, res) => {
     if (searchTerm && searchTerm.trim() !== "") {
       query.name = { $regex: searchTerm.trim(), $options: "i" };
     }
-
+    
 
     const rooms = await Room.find(query)
       .sort({ createdAt: -1 })
@@ -158,6 +159,11 @@ export const joinRoom = async (req, res) => {
       room = await Room.findOne({ code });
       if (!room)
         return res.status(404).json({ message: "Invalid invite code" });
+
+      if (!room.isAllowCodeSharing)
+        return res
+          .status(403)
+          .json({ message: "The room owner has disabled sharing via code." });
     } else if (roomId) {
       // ถ้าส่ง roomId มา (ใช้สำหรับห้อง Public)
       room = await Room.findById(roomId);
@@ -189,7 +195,7 @@ export const joinRoom = async (req, res) => {
     }
 
     // 3. เพิ่มสมาชิกใหม่
-    room.members.push({ user: userId, role: "editor" });
+    room.members.push({ user: userId, role: "viewer" });
     await room.save();
 
     // 4. ส่งข้อมูลกลับพร้อม Populate
@@ -300,11 +306,11 @@ export const softDelete = async (req, res) => {
 export const getTrashRooms = async (req, res) => {
   try {
     const userId = req.user._id;
-    const {searchTerm} = req.query
-    let query = {owner: userId, isDeleted: true}
+    const { searchTerm } = req.query;
+    let query = { owner: userId, isDeleted: true };
 
-    if(searchTerm && searchTerm.trim() !== ""){
-      query.name = { $regex: searchTerm, $options: "i"}
+    if (searchTerm && searchTerm.trim() !== "") {
+      query.name = { $regex: searchTerm, $options: "i" };
     }
 
     const trashRooms = await Room.find(query)
@@ -394,24 +400,68 @@ export const deleteMember = async (req, res) => {
   try {
     const { roomId, memberId } = req.body;
 
-    if(memberId === req.user._id){
-      return res.status(400).json({message: "Can not delete owner of room"})
+    if (memberId === req.user._id) {
+      return res.status(400).json({ message: "Can not delete owner of room" });
     }
 
     //ใช้ $pull เพื่อลบ Object ใน members ที่มี user ตรงกับ memberId
     const updatedRoom = await Room.findByIdAndUpdate(
       roomId,
       { $pull: { members: { user: memberId } } },
-      { returnDocument: "after" }
+      { returnDocument: "after" },
     )
-    .populate("owner", "username email avatar")
-    .populate("members.user", "avatar email username");
+      .populate("owner", "username email avatar")
+      .populate("members.user", "avatar email username");
 
-    if (!updatedRoom) return res.status(404).json({ message: "Room not found" });
+    if (!updatedRoom)
+      return res.status(404).json({ message: "Room not found" });
 
     return res.json(updatedRoom);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Delete member failed" });
+  }
+};
+
+export const joinLink = async (req, res) => {
+  try {
+    const { roomId, role } = req.params;
+    const userId = req.user._id;
+
+    const room = await Room.findById(roomId);
+    if (!room) return res.status(404).json({ message: "Room not found" });
+
+    if (!room.isAllowLinkSharing) {
+      return res
+        .status(403)
+        .json({ message: "The room owner has disabled sharing via link." });
+    }
+
+    if (role === "owner") {
+      return res
+        .status(400)
+        .json({ message: "Cannot join as owner via link." });
+    }
+
+    const isMember = room.members.some(
+      (m) => m.user.toString() === userId.toString(),
+    );
+
+    if (isMember) {
+      return res.status(200).json(room);
+    } else {
+      const updatedRoom = await Room.findByIdAndUpdate(
+        roomId,
+        { $addToSet: { members: { user: userId, role: role } } },
+        { returnDocument: "after" },
+      )
+        .populate("owner", "username email avatar")
+        .populate("members.user", "avatar email username");
+
+      return res.status(200).json(updatedRoom);
+    }
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Join link failed" });
   }
 };

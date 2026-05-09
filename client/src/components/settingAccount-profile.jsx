@@ -104,13 +104,13 @@ function SettingAccountProfile() {
           />
         </div>
         <div className="grow flex flex-col justify-start  gap-3">
-          <div className="flex items-center gap-3">
+          {/* <div className="flex items-center gap-3">
             <Toggle
               onToggle={(val) => setShowOnlineStatus(val)}
               defaultChecked={showOnlineStatus}
             />
             <span className="text-lg">show online status</span>
-          </div>
+          </div> */}
         </div>
         <button
           onClick={handleSubmit}

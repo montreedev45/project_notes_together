@@ -17,7 +17,6 @@ function SettingRoomMember() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRoles, setSelectedRoles] = useState({});
 
-  const link = "https://notes-together/0/editor";
   const roles = ["editor", "viewer", "commenter"];
 
   const handleCopy = () => {

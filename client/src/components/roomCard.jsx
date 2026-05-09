@@ -25,6 +25,14 @@ function RoomCard({ data = {} }) {
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
 
+  const memberData = data?.members?.find((m) => m.user?._id === user?._id);
+  const role = memberData?.role || "viewer";
+
+  const isAlreadyMember = data?.members?.some(
+    (m) => (m.user?._id || m.user) === user?._id,
+  );
+  const isOwner = data?.owner?._id === user?._id;
+
   useEffect(() => {
     // ฟังก์ชันตรวจจับการคลิกข้างนอก
     const handleClickOutside = (event) => {
@@ -73,7 +81,7 @@ function RoomCard({ data = {} }) {
       setIsOpenMenuModal(false);
     } else {
       // ถ้าเป็น Public หรือเป็นสมาชิกอยู่แล้ว ให้เข้า Editor ได้เลย
-      navigate(`/notes-together/${data._id}/editor`);
+      navigate(`/notes-together/${data._id}/${role}`);
     }
   };
 
@@ -124,6 +132,18 @@ function RoomCard({ data = {} }) {
     setIsOpenMenuModal(false);
   };
 
+  const handleSettingRoom = () => {
+    const isAlreadyMember = data?.members.some(
+      (m) => m?.user?._id === user?._id,
+    );
+
+    if (!isAlreadyMember) {
+      alert(`Only owner room can access setting page.`);
+    } else {
+      navigate(`/notes-together/${data._id}/setting-room/general`);
+    }
+  };
+
   return (
     <>
       <div
@@ -167,56 +187,52 @@ function RoomCard({ data = {} }) {
                       {isUrlFromTrash ? (
                         <>
                           <li onClick={handleRestore}>
-                            <Link className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-green-100 hover:text-green-500 cursor-pointer transition-colors">
+                            <span className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-green-100 hover:text-green-500 cursor-pointer transition-colors">
                               restore
-                            </Link>
+                            </span>
                           </li>
                           <li onClick={handleDeleteForever}>
-                            <Link className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-red-200 hover:text-red-400 cursor-pointer transition-colors">
+                            <span className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-red-200 hover:text-red-400 cursor-pointer transition-colors">
                               delete forever
-                            </Link>
+                            </span>
                           </li>
                         </>
                       ) : (
                         <>
                           <li onClick={handleClickRoom}>
-                            <Link className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-black cursor-pointer transition-colors">
+                            <span className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-black cursor-pointer transition-colors">
                               open
-                            </Link>
+                            </span>
                           </li>
-                          <li
-                            onClick={() => {
-                              (e) => e.stopPropagation();
-                              setIsOpenMenuModal(false);
-                            }}
-                          >
-                            <Link
-                              to={`/notes-together/${data._id}/setting-room/general`}
-                              className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-black cursor-pointer transition-colors"
+                          {isOwner && (
+                            <li
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIsOpenMenuModal(false);
+                              }}
                             >
-                              setting
-                            </Link>
-                          </li>
-                          <li
-                            onClick={() => {
-                              (e) => e.stopPropagation();
-                              setIsOpenMenuModal(false);
-                            }}
-                          >
-                            <Link className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-black cursor-pointer transition-colors">
-                              invite
-                            </Link>
-                          </li>
-                          <li onClick={handleLeaveRoom}>
-                            <Link className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-black cursor-pointer transition-colors">
-                              leave
-                            </Link>
-                          </li>
-                          <li onClick={handleDeleteRoom}>
-                            <button className="w-full block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-red-500 cursor-pointer transition-colors">
-                              delete
-                            </button>
-                          </li>
+                              <span
+                                onClick={handleSettingRoom}
+                                className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-black cursor-pointer transition-colors"
+                              >
+                                setting
+                              </span>
+                            </li>
+                          )}
+                          {isAlreadyMember && (
+                            <li onClick={handleLeaveRoom}>
+                              <span className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-black cursor-pointer transition-colors">
+                                leave
+                              </span>
+                            </li>
+                          )}
+                          {isOwner && (
+                            <li onClick={handleDeleteRoom}>
+                              <button className="w-full block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-red-500 cursor-pointer transition-colors">
+                                delete
+                              </button>
+                            </li>
+                          )}
                         </>
                       )}
                     </ul>
