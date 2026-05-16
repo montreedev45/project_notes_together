@@ -58,7 +58,7 @@ function Sidebar() {
 
       <div className="flex flex-col gap-6">
         <div className="cursor-pointer hover:scale-105 transition-transform">
-          <Link to="/notes-together/01/setting-account" className="flex items-center gap-3 ">
+          <Link to={`/notes-together/${user?._id}/setting-account`} className="flex items-center gap-3 ">
             <div
               style={{ borderColor: user?.avatar }}
               className="flex-none bg-white border-2 w-10 h-10 rounded-full flex items-center justify-center cursor-pointer"
@@ -82,7 +82,7 @@ function Sidebar() {
 
         <div className="flex flex-col gap-6 text-secondary font-medium ">
           <Link
-            to="/notes-together/01/setting-account"
+            to={`/notes-together/${user?._id}/setting-account`}
             className="flex items-center gap-4 cursor-pointer hover:text-primary transition-colors"
           >
             <Icon icon="mdi:cog" width="30" />

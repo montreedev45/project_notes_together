@@ -1,6 +1,8 @@
 import Room from "./room.model.js";
 import User from "../auth/auth.model.js";
+import Notification from "../notification/notification.model.js";
 import generateCode from "../../utils/generateCode.js";
+import { sendNotification } from "../../sockets/socket.manage.js";
 
 //create room
 export const createRoom = async (req, res) => {
@@ -153,9 +155,7 @@ export const joinRoom = async (req, res) => {
     const userId = req.user._id;
     let room;
 
-    // 1. ค้นหาห้อง (ลำดับความสำคัญ: ใช้ Code ก่อน ถ้าไม่มีค่อยใช้ roomId)
     if (code) {
-      // ถ้าส่ง Code มา ให้หาห้องจาก Code (ใช้สำหรับห้อง Private)
       room = await Room.findOne({ code });
       if (!room)
         return res.status(404).json({ message: "Invalid invite code" });
@@ -165,11 +165,9 @@ export const joinRoom = async (req, res) => {
           .status(403)
           .json({ message: "The room owner has disabled sharing via code." });
     } else if (roomId) {
-      // ถ้าส่ง roomId มา (ใช้สำหรับห้อง Public)
       room = await Room.findById(roomId);
       if (!room) return res.status(404).json({ message: "Room not found" });
 
-      // 🔐 Security Check: ถ้าห้องนี้เป็น Private แต่พยายามเข้าผ่าน ID โดยไม่มี Code
       if (room.isPrivate) {
         return res.status(403).json({
           message: "This room is private. Please use an invite code.",
@@ -203,6 +201,31 @@ export const joinRoom = async (req, res) => {
       .populate("owner", "username email avatar")
       .populate("members.user", "avatar username");
 
+    const newMemberData = joinedRoom.members.find(
+      (m) => m.user._id.toString() === req.user._id.toString(),
+    );
+
+    //save
+    // 🚩 1. สร้าง Notification ลง Database
+    const newNotice = await Notification.create({
+      recipient: room.owner, // ส่งถึงเจ้าของห้อง
+      sender: req.user._id, // คนที่กด Join
+      type: "JOIN",
+      roomId: room._id,
+      roomName: room.name,
+      message: `${req.user.username} joined your room: ${room.name}`,
+    });
+
+    // 🚩 2. Populate ข้อมูล sender เพื่อส่งไปกับ Socket (ให้เห็นชื่อและรูปทันที)
+    const populatedNotice = await newNotice.populate(
+      "sender",
+      "username avatar",
+    );
+
+    sendNotification(room.owner.toString(), populatedNotice, {
+      newMemberData,
+    });
+
     res.json(joinedRoom);
   } catch (error) {
     res.status(500).json({ message: "join room failed" });
@@ -226,6 +249,24 @@ export const leaveRoom = async (req, res) => {
     await Room.findByIdAndUpdate(roomId, {
       $pull: { members: { user: userId } },
     });
+
+    const newNotice = await Notification.create({
+      recipient: room.owner, // ส่งถึงเจ้าของห้อง
+      sender: req.user._id, // คนที่กด Leave
+      type: "LEAVE",
+      roomId: room._id,
+      roomName: room.name,
+      message: `${req.user.username} leave your room: ${room.name}`,
+    });
+
+    // 🚩 2. Populate ข้อมูล sender เพื่อส่งไปกับ Socket (ให้เห็นชื่อและรูปทันที)
+    const populatedNotice = await newNotice.populate(
+      "sender",
+      "username avatar",
+    );
+
+    sendNotification(room.owner.toString(), populatedNotice);
+
     res.status(200).json({ message: "leave rooom successfully" });
   } catch (error) {
     res.status(500).json({ message: "leave room failed" });

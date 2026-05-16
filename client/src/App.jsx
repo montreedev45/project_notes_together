@@ -26,11 +26,50 @@ import useAuthStore from "./store/useAuthStore";
 import useRoomStore from "./store/useRoomStore";
 
 import JoinLink from "./pages/join-link";
+import { connectSocket, disconnectSocket } from "./socket";
+import useNotificationStore from "./store/useNotificationStore";
 
 function App() {
   const { deleteModal, closeDeleteModal } = useModalStore();
+  const user = useAuthStore((state) => state.user);
   const checkAuth = useAuthStore((state) => state.checkAuth);
   const isInitialized = useAuthStore((state) => state.isInitialized);
+  const getNotifications = useNotificationStore((state) => state.getNotifications)
+  const addNotification = useNotificationStore((state) => state.addNotification)
+
+  //socket
+  useEffect(() => {
+    if (user && user._id) {
+      // 🚩 เชื่อมต่อเมื่อ Login แล้วเท่านั้น
+      const socket = connectSocket(user._id);
+
+      socket.on("connect", () => {
+        console.log("Connected as:", user.username);
+        // ส่ง setup event ไปที่ backend ตามที่คุณทำไว้
+        socket.emit("setup", user._id);
+      });
+
+      socket.on("new_notification", (data) => {
+        console.log("Noti:", data);
+        // แสดง toast ตรงนี้
+
+        addNotification(data)
+      });
+
+      socket.on("new_member", (data) => {
+        console.log("new_member:", data);
+        // แสดง toast ตรงนี้
+      });
+    } else {
+      // 🚩 ตัดการเชื่อมต่อเมื่อไม่มี user (Logout)
+      disconnectSocket();
+    }
+
+    // Clean up เมื่อ Component ถูกทำลาย
+    return () => {
+      disconnectSocket();
+    };
+  }, [user]); // ทำงานใหม่ทุกครั้งที่ค่า user เปลี่ยน
 
   useEffect(() => {
     const saveRecent = JSON.parse(localStorage.getItem("recent-rooms") || "[]");
@@ -69,7 +108,10 @@ function App() {
             <Route path="join-link/:roomId/:role" element={<JoinLink />} />
 
             {/* 2. Setting Account (จัดการโปรไฟล์) */}
-            <Route path="setting-account" element={<SettingAccountLayout />}>
+            <Route
+              path=":id/setting-account"
+              element={<SettingAccountLayout />}
+            >
               <Route index element={<SettingAccountProfile />} />
               <Route path="profile" element={<SettingAccountProfile />} />
             </Route>

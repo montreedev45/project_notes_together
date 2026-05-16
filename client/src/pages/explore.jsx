@@ -4,6 +4,7 @@ import CreateRoomModal from "../components/createRoomModal";
 import JoinRoomModal from "../components/joinRoomModal";
 import RoomCard from "../components/roomCard";
 import useRoomStore from "../store/useRoomStore";
+import useNotificationStore from "../store/useNotificationStore";
 import { useEffect, useMemo } from "react";
 
 function Explore() {
@@ -16,10 +17,13 @@ function Explore() {
 
   const getAllRooms = useRoomStore((state) => state.getAllRooms);
   const rooms = useRoomStore((state) => state.rooms);
-  ///console.log("rooms", rooms);
+  const getNotifications = useNotificationStore(
+    (state) => state.getNotifications,
+  );
 
   useEffect(() => {
-      getAllRooms();
+    getNotifications();
+    getAllRooms();
   }, []);
 
   const sortedRooms = useMemo(() => {
@@ -30,7 +34,6 @@ function Explore() {
     return isSorting ? result.reverse() : result;
   }, [rooms, isSorting]);
 
-
   // filter
   const handleFilter = (e) => {
     const criteria = e.currentTarget.name;
@@ -38,16 +41,15 @@ function Explore() {
     getAllRooms(criteria);
   };
 
-
   //search
-useEffect(() => {
-  const delayDebounceFn = setTimeout(() => {
-    // ยิง API โดยส่งทั้งค่า Filter ปัจจุบัน และคำค้นหา
-    getAllRooms(activeFilter, searchTerm);
-  }, 500); // รอ 500ms หลังหยุดพิมพ์ถึงจะยิง API
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      // ยิง API โดยส่งทั้งค่า Filter ปัจจุบัน และคำค้นหา
+      getAllRooms(activeFilter, searchTerm);
+    }, 500); // รอ 500ms หลังหยุดพิมพ์ถึงจะยิง API
 
-  return () => clearTimeout(delayDebounceFn);
-}, [searchTerm, activeFilter]); // ทำงานเมื่อพิมพ์ หรือเมื่อเปลี่ยน Filter
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm, activeFilter]); // ทำงานเมื่อพิมพ์ หรือเมื่อเปลี่ยน Filter
 
   return (
     <>
@@ -89,7 +91,7 @@ useEffect(() => {
               type="text"
               placeholder="Search room name"
               value={searchTerm}
-              onChange={(e)=>setSearchTerm(e.target.value)}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="py-2 ps-9 rounded-lg outline-0 font-medium text-secondary border-2 border-secodary w-80"
             />
           </div>
@@ -120,11 +122,14 @@ useEffect(() => {
                   <li>
                     <button
                       name="all"
-                      onClick={handleFilter}
+                      onClick={(e) => {
+                        handleFilter(e);
+                        setIsOpenFilterModal(false);
+                      }}
                       className={`w-full text-left px-4 py-1.5 font-medium rounded-lg text-sm transition-colors ${
                         activeFilter === "all"
-                          ? "bg-blue-100 text-blue-600" 
-                          : "text-slate-500 hover:bg-gray-200 hover:text-black" 
+                          ? "bg-blue-100 text-blue-600"
+                          : "text-slate-500 hover:bg-gray-200 hover:text-black"
                       }`}
                     >
                       all
@@ -133,11 +138,14 @@ useEffect(() => {
                   <li>
                     <button
                       name="owner"
-                      onClick={handleFilter}
+                      onClick={(e) => {
+                        handleFilter(e);
+                        setIsOpenFilterModal(false);
+                      }}
                       className={`w-full text-left px-4 py-1.5 font-medium rounded-lg text-sm transition-colors ${
                         activeFilter === "owner"
-                          ? "bg-blue-100 text-blue-600" 
-                          : "text-slate-500 hover:bg-gray-200 hover:text-black" 
+                          ? "bg-blue-100 text-blue-600"
+                          : "text-slate-500 hover:bg-gray-200 hover:text-black"
                       }`}
                     >
                       owner
@@ -146,11 +154,14 @@ useEffect(() => {
                   <li>
                     <button
                       name="joined"
-                      onClick={handleFilter}
+                      onClick={(e) => {
+                        handleFilter(e);
+                        setIsOpenFilterModal(false);
+                      }}
                       className={`w-full text-left px-4 py-1.5 font-medium rounded-lg text-sm transition-colors ${
                         activeFilter === "joined"
-                          ? "bg-blue-100 text-blue-600" 
-                          : "text-slate-500 hover:bg-gray-200 hover:text-black" 
+                          ? "bg-blue-100 text-blue-600"
+                          : "text-slate-500 hover:bg-gray-200 hover:text-black"
                       }`}
                     >
                       joined
@@ -159,11 +170,14 @@ useEffect(() => {
                   <li>
                     <button
                       name="public"
-                      onClick={handleFilter}
+                      onClick={(e) => {
+                        handleFilter(e);
+                        setIsOpenFilterModal(false);
+                      }}
                       className={`w-full text-left px-4 py-1.5 font-medium rounded-lg text-sm transition-colors ${
                         activeFilter === "public"
-                          ? "bg-blue-100 text-blue-600" 
-                          : "text-slate-500 hover:bg-gray-200 hover:text-black" 
+                          ? "bg-blue-100 text-blue-600"
+                          : "text-slate-500 hover:bg-gray-200 hover:text-black"
                       }`}
                     >
                       public
@@ -172,11 +186,14 @@ useEffect(() => {
                   <li>
                     <button
                       name="private"
-                      onClick={handleFilter}
+                      onClick={(e) => {
+                        handleFilter(e);
+                        setIsOpenFilterModal(false);
+                      }}
                       className={`w-full text-left px-4 py-1.5 font-medium rounded-lg text-sm transition-colors ${
                         activeFilter === "private"
-                          ? "bg-blue-100 text-blue-600" 
-                          : "text-slate-500 hover:bg-gray-200 hover:text-black" 
+                          ? "bg-blue-100 text-blue-600"
+                          : "text-slate-500 hover:bg-gray-200 hover:text-black"
                       }`}
                     >
                       private

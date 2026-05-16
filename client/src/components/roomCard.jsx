@@ -219,7 +219,7 @@ function RoomCard({ data = {} }) {
                               </span>
                             </li>
                           )}
-                          {isAlreadyMember && (
+                          {isAlreadyMember && !isOwner && (
                             <li onClick={handleLeaveRoom}>
                               <span className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-black cursor-pointer transition-colors">
                                 leave
@@ -257,7 +257,7 @@ function RoomCard({ data = {} }) {
             <>
               {data?.members?.slice(0, 5).map((member) => (
                 <div
-                  key={member._id}
+                  key={member.user?._id || member._id || Math.random()}
                   style={{ borderColor: member?.user?.avatar }}
                   className="flex-none bg-white border-2 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
                 >

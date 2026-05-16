@@ -400,7 +400,7 @@ const useRoomStore = create((set, get) => ({
       }
 
       set({ loading: false });
-      return { success: false, message: "Unexpeced response from server" };
+      return { success: false, message: "Unexpected response from server" };
     } catch (error) {
       set({ loading: false });
       return { success: false, message: "Update role failed" };
@@ -435,7 +435,7 @@ const useRoomStore = create((set, get) => ({
       }
 
       set({ loading: false });
-      return { success: false, message: "Unexpeced response from server" };
+      return { success: false, message: "Unexpected response from server" };
     } catch (error) {
       set({ loadaing: false });
       return { success: false, message: "Delete member failed" };

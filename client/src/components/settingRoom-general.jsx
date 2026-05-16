@@ -81,6 +81,15 @@ function SettingRoomGeneral() {
         <div className="grow flex flex-col justify-start  gap-3">
           <div className="flex items-center gap-3">
             <Toggle
+              name="isPrivate"
+              key={roomData?._id}
+              onToggle={(val) => handleChange({ target: { name: "isPrivate", value: val } })}
+              defaultChecked={roomData?.isPrivate}
+            />
+            <span className="text-lg">private room</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <Toggle
               name="isOnlineStatus"
               key={roomData?._id}
               onToggle={(val) => handleChange({ target: { name: "isOnlineStatus", value: val } })}

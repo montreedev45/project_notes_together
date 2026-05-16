@@ -9,7 +9,7 @@ const generateToken = (user) => {
       id: user._id,
       email: user.email,
       username: user.username,
-      avatar: user.avatar
+      avatar: user.avatar,
     },
     process.env.JWT_SECRET,
     {
@@ -23,7 +23,13 @@ export const register = async (req, res) => {
     const { username, email, password } = req.body;
 
     const existing = await User.findOne({ email });
+
     if (existing) {
+      if (existing.isDeleted) {
+        return res.status(400).json({
+          message: "This account has been deactivated. Please contact support.",
+        });
+      }
       return res.status(400).json({ message: "Email already used" });
     }
 
@@ -57,6 +63,12 @@ export const login = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    if (user.isDeleted) {
+      return res.status(400).json({
+        message: "This account has been deactivated. Please contact support.",
+      });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -143,6 +155,9 @@ export const checkDuplicateEmail = async (req, res) => {
 
     const checkEmail = await User.findOne({ email: newEmail });
     if (checkEmail) {
+      if(checkEmail.isDeleted){
+        return res.status(400).json({ message: "This account has been deactivated. Please contact support." })
+      }
       return res.status(400).json({ message: "Email already in use" });
     }
 
@@ -214,10 +229,10 @@ export const getUser = async (req, res) => {
     const userId = req.user._id;
 
     if (!searchTerm || searchTerm.trim() === "") {
-      return res.status(200).json([]); 
+      return res.status(200).json([]);
     }
 
-    let query = { _id: { $ne: userId } };
+    let query = { _id: { $ne: userId }, isDeleted: false};
     query.username = { $regex: searchTerm, $options: "i" };
 
     const users = await User.find(query).select("username email avatar");
@@ -236,7 +251,14 @@ export const deleteAccount = async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "Invalid credentials" });
 
-    await User.findByIdAndDelete(userId);
+    const softDeleteUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        isDeleted: true,
+        deletedAt: new Date(),
+      },
+      { returnDocument: "after" },
+    );
 
     await Room.updateMany(
       { owner: userId },

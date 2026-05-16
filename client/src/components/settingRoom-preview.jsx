@@ -11,7 +11,12 @@ function SettingRoomPreview({ roomData }) {
             width="50"
             style={{ color: roomData?.color }}
           />
-          <div className="relative">
+          <div className="relative flex items-center">
+            {roomData?.isPrivate ? (
+              <Icon icon="mdi:lock" className="text-black" width={20} />
+            ) : (
+              ""
+            )}
             <Icon icon="mdi:menu" width="30" className="text-secondary" />
           </div>
         </div>

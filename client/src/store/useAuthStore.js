@@ -167,6 +167,8 @@ const useAuthStore = create((set) => ({
       return { success: false };
     }
   },
+  
+  
   logout: () => {
     localStorage.removeItem("token");
     localStorage.removeItem("newEmail");

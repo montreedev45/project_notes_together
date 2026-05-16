@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import { useParams, useOutletContext } from "react-router-dom";
 import SettingRoomPreview from "./SettingRoom-preview";
@@ -12,12 +12,15 @@ function SettingRoomShare() {
   const [isCopiedCode, setIsCopiedCode] = useState(false);
   const [selectedRoles, setSelectedRoles] = useState({});
 
-  const [isAllowLinkSharing, setIsAllowLinkSharing] = useState(
-    roomData?.isAllowLinkSharing || false,
-  );
-  const [isAllowCodeSharing, setIsAllowCodeSharing] = useState(
-    roomData?.isAllowCodeSharing || false,
-  );
+  const [isAllowLinkSharing, setIsAllowLinkSharing] = useState(true);
+  const [isAllowCodeSharing, setIsAllowCodeSharing] = useState(true);
+
+  useEffect(() => {
+    if (roomData) {
+      setIsAllowLinkSharing(roomData.isAllowLinkSharing ?? true);
+      setIsAllowCodeSharing(roomData.isAllowCodeSharing ?? true);
+    }
+  }, [roomData]);
 
   const roles = ["editor", "viewer", "commenter"];
   const link = `localhost:5173/notes-together/join-link/${roomData?._id}/${selectedRoles[user?._id] || "editor"}`;
@@ -41,7 +44,7 @@ function SettingRoomShare() {
   return (
     <>
       <div className=" border-s-2 border-gray px-15 pt-9 flex flex-col gap-8">
-        <div className="flex flex-col gap-3 relative mb-3">
+        <div className="flex flex-col gap-3 relative mb-1">
           <div className="flex items-center gap-5 mb-2">
             <span className="text-2xl font-semibold">Share Link</span>
             <div className="px-4 border-2 border-gray rounded-lg">
@@ -75,11 +78,12 @@ function SettingRoomShare() {
             <input
               type="text"
               readOnly
-              value={link}
+              value={link || ""}
               className="flex-1 py-2 outline-none px-4 text-md rounded-lg border-2 border-gray text-black"
             />
 
             <button
+              disabled={!isAllowLinkSharing}
               onClick={handleCopy}
               className="cursor-pointer bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
             >
@@ -100,11 +104,12 @@ function SettingRoomShare() {
             <input
               type="text"
               readOnly
-              value={roomData?.code}
+              value={roomData?.code || ""}
               className=" py-2 outline-none px-4 text-md rounded-lg border-2 border-gray text-black"
             />
 
             <button
+              disabled={!isAllowCodeSharing}
               onClick={handleCopyCode}
               className="cursor-pointer bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
             >

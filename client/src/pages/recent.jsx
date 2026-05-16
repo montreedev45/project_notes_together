@@ -88,7 +88,7 @@ function Recent() {
           <Icon
             onClick={() => setIsOpenFilterModal(!isOpenFilterModal)}
             icon="mdi:filter"
-            width="30"
+            width="40"
             className="text-secondary hover:scale-105 transition-transform cursor-pointer"
           />
 
@@ -122,20 +122,7 @@ function Recent() {
                     >
                       owner
                     </button>
-                  </li>
-                  <li>
-                    <button
-                      name="joined"
-                      onClick={handleFilter}
-                      className={`w-full text-left px-4 py-1.5 font-medium rounded-lg text-sm transition-colors ${
-                        activeFilter === "joined"
-                          ? "bg-blue-100 text-blue-600"
-                          : "text-slate-500 hover:bg-gray-200 hover:text-black"
-                      }`}
-                    >
-                      joined
-                    </button>
-                  </li>
+                  </li> 
                   <li>
                     <button
                       name="public"

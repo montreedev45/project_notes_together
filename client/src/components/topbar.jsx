@@ -1,21 +1,29 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import { Link } from "react-router-dom";
 import useAuthStore from "../store/useAuthStore";
+import NotificationModal from "./notificationModal";
+import useNotificationStore from "../store/useNotificationStore";
 
 function Topbar() {
   const user = useAuthStore((state) => state.user);
   const [isOpenNotificationModal, setIsOpenNotificationModal] = useState(false);
+
+  const { notifications, getUnreadCount, markAllAsRead } =
+    useNotificationStore();
+
+  const unreadCount = getUnreadCount();
+
   return (
     <>
       <div className="bg-third flex px-15 h-20 border-b-2 border-gray-200">
         <Link to="/" className="flex items-center">
           <img src="/logo.svg" alt="" className="w-60 cursor-pointer" />
         </Link>
-        <div className=" flex justify-end items-center w-full">
+        <div className="relative flex justify-end items-center w-full">
           <div className="me-5 cursor-pointer hover:scale-105 transition-transform">
             <Link
-              to="/notes-together/01/setting-account"
+              to={`/notes-together/${user?._id}/setting-account`}
               className="flex items-center gap-3 "
             >
               <div className="flex flex-col min-w-0 leading-tight">
@@ -35,99 +43,27 @@ function Topbar() {
               </div>
             </Link>
           </div>
-          <Icon
-            onClick={() => setIsOpenNotificationModal(!isOpenNotificationModal)}
-            icon="mdi:bell"
-            className="cursor-pointer hover:scale-105 transition-transform text-secondary"
-            width="30"
+          <span>
+            <Icon
+              onClick={() => {
+                setIsOpenNotificationModal(!isOpenNotificationModal);
+                if (unreadCount > 0) markAllAsRead();
+              }}
+              icon="mdi:bell"
+              className="cursor-pointer hover:scale-105 transition-transform text-secondary"
+              width="30"
+            />
+            {unreadCount > 0 && (
+              <span
+                style={{ backgroundColor: "#eb4034" }}
+                className="w-2.5 h-2.5 absolute top-7 right-1 rounded-full"
+              ></span>
+            )}
+          </span>
+          <NotificationModal
+            isOpen={isOpenNotificationModal}
+            onClose={() => setIsOpenNotificationModal(false)}
           />
-          {isOpenNotificationModal && (
-            <>
-              <div className="relative bg-green  right-85 top-8 z-50 select-none">
-                <div className="absolute w-90 h-60 bg-white border border-slate-200 rounded-xl shadow-lg">
-                  <div className="absolute right-6 -top-2 w-5 h-5 bg-gray-200 -rotate-45"></div>
-                  <div className="px-4 py-2 text-xl font-medium border-b-2 border-gray bg-gray-200 rounded-tl-lg rounded-tr-lg">
-                    <span>notification</span>
-                  </div>
-
-                  <ul className="relative mt-1.5 h-45 overflow-auto z-10 flex flex-col gap-1">
-                    <li className="flex justify-between items-center p-3">
-                      <div className="grow flex items-center font-medium text-md gap-2">
-                        <div className="flex-none bg-white border-2 border-primary w-8 h-8 rounded-full flex items-center justify-center cursor-pointer">
-                          <Icon
-                            icon="mdi:account"
-                            className="text-primary"
-                            width="20"
-                          />
-                        </div>
-                        <span>montree.dev</span>
-                      </div>
-                      <span className="grow-0 text-right text-md text-secondary font-medium">
-                        joined room
-                      </span>
-                      <span className="ps-4 grow-0 text-right text-md text-gray font-normal">
-                        5 min ago
-                      </span>
-                    </li>
-                    <li className="flex justify-between items-center p-3">
-                      <div className="grow flex items-center font-medium text-md gap-2">
-                        <div className="flex-none bg-white border-2 border-red w-8 h-8 rounded-full flex items-center justify-center cursor-pointer">
-                          <Icon
-                            icon="mdi:account"
-                            className="text-red"
-                            width="20"
-                          />
-                        </div>
-                        <span>john.dev</span>
-                      </div>
-                      <span className="grow-0 text-right text-md text-secondary font-medium">
-                        joined room
-                      </span>
-                      <span className="ps-4 grow-0 text-right text-md text-gray font-normal">
-                        8 min ago
-                      </span>
-                    </li>
-                    <li className="flex justify-between items-center p-3">
-                      <div className="grow flex items-center font-medium text-md gap-2">
-                        <div className="flex-none bg-white border-2 border-orange w-8 h-8 rounded-full flex items-center justify-center cursor-pointer">
-                          <Icon
-                            icon="mdi:account"
-                            className="text-orange"
-                            width="20"
-                          />
-                        </div>
-                        <span>peter.dev</span>
-                      </div>
-                      <span className="grow-0 text-right text-md text-secondary font-medium">
-                        joined room
-                      </span>
-                      <span className="ps-4 grow-0 text-right text-md text-gray font-normal">
-                        9 min ago
-                      </span>
-                    </li>
-                    <li className="flex justify-between items-center p-3">
-                      <div className="grow flex items-center font-medium text-md gap-2">
-                        <div className="flex-none bg-white border-2 border-pink w-8 h-8 rounded-full flex items-center justify-center cursor-pointer">
-                          <Icon
-                            icon="mdi:account"
-                            className="text-pink"
-                            width="20"
-                          />
-                        </div>
-                        <span>ben.dev</span>
-                      </div>
-                      <span className="grow-0 text-right text-md text-secondary font-medium">
-                        joined room
-                      </span>
-                      <span className="ps-4 grow-0 text-right text-md text-gray font-normal">
-                        10 min ago
-                      </span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </>
-          )}
         </div>
       </div>
     </>

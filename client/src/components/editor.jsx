@@ -8,13 +8,34 @@ import { Icon } from "@iconify/react";
 import Underline from "@tiptap/extension-underline";
 import { useParams } from "react-router-dom";
 import useAuthStore from "../store/useAuthStore";
+import { connectSocket, disconnectSocket } from "../socket";
 
 function Editor() {
-  const user = useAuthStore((state)=> state.user)
+  const user = useAuthStore((state) => state.user);
 
   const [yjs, setYjs] = useState(null);
   const instanceRef = useRef(null);
-  const { roomId, role } = useParams()
+  const { roomId, role } = useParams();
+
+  //socket
+  useEffect(() => {
+    const socket = connectSocket(user._id);
+
+    if (roomId) {
+      socket.emit("join_room", roomId);
+    }
+
+    // รอรับสมาชิกใหม่
+    socket.on("new_member", (data) => {
+      console.log("New member joined this room:", data);
+      // อัปเดต State รายชื่อสมาชิกในหน้าจอ (Real-time update)
+      //setMembers((prev) => [...prev, data.newMemberData]);
+    });
+
+    return () => {
+      socket.off("new_member");
+    };
+  }, [roomId]);
 
   useEffect(() => {
     let destroyed = false;
@@ -205,7 +226,6 @@ function EditorInner({ yjs, user }) {
               <Icon icon="mdi:format-clear" width="20" />
             </button>
           </div>
-          
         </div>
 
         {/* Editor Area */}
