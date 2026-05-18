@@ -12,7 +12,15 @@ function Topbar() {
   const { notifications, getUnreadCount, markAllAsRead } =
     useNotificationStore();
 
+  const getNotifications = useNotificationStore(
+    (state) => state.getNotifications,
+  );
+
   const unreadCount = getUnreadCount();
+
+  useEffect(() => {
+    getNotifications()
+  }, [])
 
   return (
     <>

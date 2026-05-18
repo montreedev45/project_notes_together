@@ -34,42 +34,58 @@ function App() {
   const user = useAuthStore((state) => state.user);
   const checkAuth = useAuthStore((state) => state.checkAuth);
   const isInitialized = useAuthStore((state) => state.isInitialized);
-  const getNotifications = useNotificationStore((state) => state.getNotifications)
-  const addNotification = useNotificationStore((state) => state.addNotification)
+  const setRoomOnlineCount = useRoomStore((state) => state.setRoomOnlineCount);
+  const setRelativeTime = useRoomStore((state) => state.setRelativeTime);
+  const getNotifications = useNotificationStore(
+    (state) => state.getNotifications,
+  );
+  const addNotification = useNotificationStore(
+    (state) => state.addNotification,
+  );
 
   //socket
   useEffect(() => {
+    // 🚩 ประกาศตัวแปรไว้ด้านนอก เพื่อให้ฟังก์ชัน return ด้านล่างเรียกใช้ล้างท่อได้
+    let socket;
+
     if (user && user._id) {
-      // 🚩 เชื่อมต่อเมื่อ Login แล้วเท่านั้น
-      const socket = connectSocket(user._id);
+      socket = connectSocket(user._id);
 
       socket.on("connect", () => {
-        console.log("Connected as:", user.username);
-        // ส่ง setup event ไปที่ backend ตามที่คุณทำไว้
         socket.emit("setup", user._id);
       });
 
       socket.on("new_notification", (data) => {
         console.log("Noti:", data);
         // แสดง toast ตรงนี้
-
-        addNotification(data)
+        addNotification(data);
       });
 
-      socket.on("new_member", (data) => {
-        console.log("new_member:", data);
-        // แสดง toast ตรงนี้
+      socket.on("room_status", ({ roomId, onlineCount }) => {
+        setRoomOnlineCount(roomId, onlineCount);
+      });
+
+      socket.on("send_relative_time", ({ roomId, time }) => {
+        setRelativeTime(roomId, time);
       });
     } else {
-      // 🚩 ตัดการเชื่อมต่อเมื่อไม่มี user (Logout)
+      // 🚩 ถ้าระบบตรวจสอบแล้วไม่มี user (กด Logout) ให้ปิดท่อทันที
       disconnectSocket();
     }
 
-    // Clean up เมื่อ Component ถูกทำลาย
+    // 🟢 รวมฟังก์ชัน Cleanup ไว้ที่ก้อนท้ายสุดก้อนเดียว สะอาด ปลอดภัย 100%
     return () => {
+      if (socket) {
+        // 🚩 ล้าง Event Listener ทุกตัวที่เคยผูกไว้ให้เกลี้ยง ป้องกันสเตทเบิ้ล
+        socket.off("connect");
+        socket.off("new_notification");
+        socket.off("room_status");
+        socket.off("send_relative_time");
+      }
+      // สั่งปิดท่อหลักป้องกันสายค้าง
       disconnectSocket();
     };
-  }, [user]); // ทำงานใหม่ทุกครั้งที่ค่า user เปลี่ยน
+  }, [user]); // 🚩 รันใหม่ทุกครั้งที่สถานะผู้ใช้เปลี่ยน (Login / Logout)// ทำงานใหม่ทุกครั้งที่ค่า user เปลี่ยน
 
   useEffect(() => {
     const saveRecent = JSON.parse(localStorage.getItem("recent-rooms") || "[]");

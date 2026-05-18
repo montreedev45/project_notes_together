@@ -17,12 +17,8 @@ function Explore() {
 
   const getAllRooms = useRoomStore((state) => state.getAllRooms);
   const rooms = useRoomStore((state) => state.rooms);
-  const getNotifications = useNotificationStore(
-    (state) => state.getNotifications,
-  );
 
   useEffect(() => {
-    getNotifications();
     getAllRooms();
   }, []);
 

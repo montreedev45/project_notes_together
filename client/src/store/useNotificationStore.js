@@ -114,8 +114,6 @@ const useNotificationStore = create((set, get) => ({
 
   markAllAsRead: async () => {
     try {
-      const notifications = useNotificationStore.getState();
-      console.log("notic", notifications.notifications);
       const res = await api.put("/notifications/mark-as-read");
       set((state) => ({
         notifications: state.notifications.map((n) => ({ ...n, isRead: true })),
@@ -124,6 +122,45 @@ const useNotificationStore = create((set, get) => ({
       console.error(error);
     }
   },
+
+  deleteNotification: async (noticId) => {
+    set({ loading: true });
+    try {
+      const res = await api.delete(`/notifications/${noticId}`);
+
+      if (res?.data) {
+        set((state) => ({
+          notifications: state.notifications.filter((n) => n._id !== noticId),
+          loading: false,
+        }));
+        return { success: true };
+      }
+
+      set({ loading: false });
+      return { success: false, message: "Unexpected response from server" };
+    } catch (error) {
+      set({ loading: false });
+      return { success: false, message: "Delete notification failed" };
+    }
+  },
+
+  deleteAllNotification: async () => {
+    set({loading: true})
+    try {
+      const res = await api.delete("/notifications/all")
+
+      if(res?.status === 200){
+        set((state) => ({...state, notifications: [], loading: false}))
+        return {success: true}
+      }
+
+      set({loading: false})
+      return {success: false, message: "Unexpected response from server"}
+    } catch (error) {
+      set({loading: false})
+      return {success: false, message: "Delete notification failed"}
+    }
+  }
 }));
 
 export default useNotificationStore;

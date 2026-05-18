@@ -6,6 +6,7 @@ import DeleteRoomModal from "./deleteAccountModal";
 import useAuthStore from "../store/useAuthStore";
 import useRoomStore from "../store/useRoomStore";
 import useModalStore from "../store/useModalStore";
+import { getRelativeTimeEdit } from "../utils/getRelativeTimeEdit";
 
 function RoomCard({ data = {} }) {
   const navigate = useNavigate();
@@ -18,6 +19,13 @@ function RoomCard({ data = {} }) {
   const deleteRoom = useRoomStore((state) => state.deleteRoom);
   const openDeleteModal = useModalStore((state) => state.openDeleteModal);
 
+  const onlineUsers = useRoomStore((state) => state.onlineUsers[data._id] || 0);
+  const relativeTimeFromStore = useRoomStore(
+    (state) => state.relativeTime[data._id] || null,
+  );
+  const [displayTime, setDisplayTime] = useState(
+    getRelativeTimeEdit(relativeTimeFromStore),
+  );
   const [isOpenMenuModal, setIsOpenMenuModal] = useState(false);
   const [isOpenJoinRoomModal, setIsOpenJoinRoomModal] = useState(false);
   const isUrlFromTrash = location.pathname.includes("trash");
@@ -32,6 +40,21 @@ function RoomCard({ data = {} }) {
     (m) => (m.user?._id || m.user) === user?._id,
   );
   const isOwner = data?.owner?._id === user?._id;
+
+  //relative time
+
+  useEffect(() => {
+    // ⚡ 3. อัปเดตคำศัพท์หน้าจอทันทีเมื่อเปิดหน้า หรือเมื่อมีเวลาใหม่จาก Socket วิ่งเข้า Store
+    setDisplayTime(getRelativeTimeEdit(relativeTimeFromStore));
+
+    // ⚡ 4. ตั้งเวลานับเดินหน้าในโลกจริง (Live Ticking) ทุกๆ 1 นาที
+    const interval = setInterval(() => {
+      setDisplayTime(getRelativeTimeEdit(relativeTimeFromStore));
+    }, 60000);
+
+    // ⚡ 5. เคลียร์ท่อเวลาก่อนหน้า ป้องกัน Memory Leak
+    return () => clearInterval(interval);
+  }, [relativeTimeFromStore]); // 🚩 ใส่ตัวแปรนี้ เพื่อให้ระเบิดเวลาตั้งใหม่ทันทีที่คนพิมพ์และเซฟลงเบส
 
   useEffect(() => {
     // ฟังก์ชันตรวจจับการคลิกข้างนอก
@@ -281,14 +304,14 @@ function RoomCard({ data = {} }) {
             {data?.isOnlineStatus && (
               <>
                 <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                <span>2 online</span>
+                <span>{onlineUsers} online</span>
               </>
             )}
           </span>
           <span className="text-sm text-secondary">
             {data?.isLastEditTime && (
               <>
-                <span>edited 5 min ago</span>
+                <span>{displayTime}</span>
               </>
             )}
           </span>

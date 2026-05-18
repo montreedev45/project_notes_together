@@ -8,55 +8,65 @@ import { Icon } from "@iconify/react";
 import Underline from "@tiptap/extension-underline";
 import { useParams } from "react-router-dom";
 import useAuthStore from "../store/useAuthStore";
-import { connectSocket, disconnectSocket } from "../socket";
+import { connectSocket, disconnectSocket, getSocket } from "../socket";
+import useRoomStore from "../store/useRoomStore";
 
 function Editor() {
   const user = useAuthStore((state) => state.user);
 
   const [yjs, setYjs] = useState(null);
-  const instanceRef = useRef(null);
+
+  const providerRef = useRef(null);
+  const ydocRef = useRef(null);
   const { roomId, role } = useParams();
 
-  //socket
   useEffect(() => {
-    const socket = connectSocket(user._id);
+    // 🚩 ใช้ท่อ Socket หลักอันเดิมที่มีอยู่แล้ว ห้ามสร้างใหม่ด้วย connectSocket เคลียร์สายซ้ำซ้อน
+    const socket = getSocket();
 
-    if (roomId) {
-      socket.emit("join_room", roomId);
+    if (socket && roomId) {
+      console.log("📢 Sending join_room for room:", roomId);
+      socket.emit("join_room", { roomId, userId: user._id });
     }
 
-    // รอรับสมาชิกใหม่
-    socket.on("new_member", (data) => {
-      console.log("New member joined this room:", data);
-      // อัปเดต State รายชื่อสมาชิกในหน้าจอ (Real-time update)
-      //setMembers((prev) => [...prev, data.newMemberData]);
-    });
-
+    // 🚩 ตอนออกจากหน้า Editor (Cleanup)
     return () => {
-      socket.off("new_member");
+      if (socket && roomId) {
+        console.log("🏃‍♂️ User leaving editor page...");
+        // ส่งสัญญาณบอกหลังบ้านเบาๆ ว่าฉันกำลังจะเดินออกจากห้องนี้แล้วนะ (แต่ไม่ต้องสั่ง socket.disconnect() ปิดท่อหลักทิ้ง)
+        socket.emit("leave_room", { roomId });
+      }
     };
-  }, [roomId]);
+  }, [roomId, user._id]);
 
   useEffect(() => {
-    let destroyed = false;
+    let active = true;
+
+    // เรียกฟังก์ชันสร้างการเชื่อมต่อที่เราทำไว้
     const instance = createYjs(roomId, (readyYjs) => {
-      if (!destroyed) setYjs(readyYjs);
+      // ตรวจสอบว่า Component ยังไม่ได้โดนปิดหน้าหนี ค่อยอัปเดตสเตท
+      if (active) {
+        setYjs(readyYjs);
+      }
     });
-    instanceRef.current = instance;
+
+    // ฝากวัตถุไว้ใน ref เพื่อไม่ให้ลัดวงจรหายไปไหน
+    ydocRef.current = instance.ydoc;
+    providerRef.current = instance.provider;
 
     return () => {
-      destroyed = true;
-      setYjs(null);
-      setTimeout(() => {
-        instance.provider.destroy();
-        instance.ydoc.destroy();
-      }, 100);
+      active = false;
+      setYjs(null); // ล้างสเตทหน้าจอรอรับห้องใหม่
+
+      // สั่งตัดขาดสายเชื่อมต่อเฉพาะตอนที่ผู้ใช้เปลี่ยนห้อง หรือกดปิดหน้าต่างหนีจริง ๆ เท่านั้น
+      if (providerRef.current) providerRef.current.destroy();
+      if (ydocRef.current) ydocRef.current.destroy();
     };
   }, [roomId]);
 
   if (!yjs) {
     return (
-      <div className="flex items-center justify-center min-h-100">
+      <div className="flex items-center justify-center min-h-screen">
         <div className="animate-pulse text-slate-400 font-medium">
           Connecting to sync server...
         </div>
@@ -81,7 +91,7 @@ function EditorInner({ yjs, user }) {
         Underline,
         Collaboration.configure({
           document: yjs.ydoc,
-          field: "document",
+          field: "content", // 🚩 ปรับให้ชื่อฟิลด์โครงสร้างตรงกับโมเดลเบหลังบ้าน
         }),
         CollaborationCursor.configure({
           provider: yjs.provider,
@@ -110,8 +120,7 @@ function EditorInner({ yjs, user }) {
       ],
       editorProps: {
         attributes: {
-          // ใช้ Tailwind Typography (prose) ร่วมกับสีพื้นหลังที่ต้องการ
-          class: "prose prose-slate lg:prose-xl max-w-none focus:outline-none",
+          class: "prose max-w-none focus:outline-none",
         },
       },
     },

@@ -6,6 +6,8 @@ const initialState = {
   myRooms: [],
   recentRooms: [],
   trashRooms: [],
+  onlineUsers: {},
+  relativeTime: {},
   loading: false,
 };
 
@@ -15,6 +17,8 @@ const useRoomStore = create((set, get) => ({
   myRooms: [],
   recentRooms: JSON.parse(localStorage.getItem("recent-rooms") || "[]"),
   trashRooms: [],
+  onlineUsers: {},
+  relativeTime: {},
   loading: false,
 
   getMyRooms: async (criteria = "all", searchTerm = "") => {
@@ -473,6 +477,24 @@ const useRoomStore = create((set, get) => ({
         status: error.response?.status, // ส่ง 403 กลับไป
       };
     }
+  },
+
+  setRoomOnlineCount: (roomId, count) => {
+    set((state) => ({
+      onlineUsers: {
+        ...state.onlineUsers,
+        [roomId]: count, // เช่น { "room123": 3, "room456": 1 }
+      },
+    }));
+  },
+
+  setRelativeTime: (roomId, time) => {
+    set((state) => ({
+      relativeTime: {
+        ...state.relativeTime,
+        [roomId]: time, // เช่น { "room123": 03:00, "room456": 02:00 }
+      },
+    }));
   },
 
   resetRoomStore: () => set(initialState),

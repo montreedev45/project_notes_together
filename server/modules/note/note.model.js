@@ -9,7 +9,6 @@ const noteSchema = new mongoose.Schema({
     },
     content:{
         type: Buffer,
-        required: true
     }
 }, {timestamps: true})
 
