@@ -61,22 +61,22 @@ function App() {
         addNotification(data);
       });
 
-      socket.on("room_status", ({ roomId, onlineCount }) => {
-        setRoomOnlineCount(roomId, onlineCount);
+      socket.on("room_status", ({ roomId, onlineCount, activeUsers }) => {
+        setRoomOnlineCount(roomId, onlineCount, activeUsers);
       });
 
       socket.on("send_relative_time", ({ roomId, time }) => {
         setRelativeTime(roomId, time);
       });
     } else {
-      // 🚩 ถ้าระบบตรวจสอบแล้วไม่มี user (กด Logout) ให้ปิดท่อทันที
+      //user (กด Logout) ให้ปิดท่อทันที
       disconnectSocket();
     }
 
-    // 🟢 รวมฟังก์ชัน Cleanup ไว้ที่ก้อนท้ายสุดก้อนเดียว สะอาด ปลอดภัย 100%
+    // รวมฟังก์ชัน Cleanup ไว้ที่ก้อนท้ายสุดก้อนเดียว สะอาด ปลอดภัย 100%
     return () => {
       if (socket) {
-        // 🚩 ล้าง Event Listener ทุกตัวที่เคยผูกไว้ให้เกลี้ยง ป้องกันสเตทเบิ้ล
+        //ล้าง Event Listener ทุกตัวที่เคยผูกไว้ให้เกลี้ยง ป้องกันสเตทเบิ้ล
         socket.off("connect");
         socket.off("new_notification");
         socket.off("room_status");
@@ -85,7 +85,7 @@ function App() {
       // สั่งปิดท่อหลักป้องกันสายค้าง
       disconnectSocket();
     };
-  }, [user]); // 🚩 รันใหม่ทุกครั้งที่สถานะผู้ใช้เปลี่ยน (Login / Logout)// ทำงานใหม่ทุกครั้งที่ค่า user เปลี่ยน
+  }, [user]); // รันใหม่ทุกครั้งที่สถานะผู้ใช้เปลี่ยน (Login / Logout)// ทำงานใหม่ทุกครั้งที่ค่า user เปลี่ยน
 
   useEffect(() => {
     const saveRecent = JSON.parse(localStorage.getItem("recent-rooms") || "[]");

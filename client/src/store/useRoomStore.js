@@ -479,11 +479,11 @@ const useRoomStore = create((set, get) => ({
     }
   },
 
-  setRoomOnlineCount: (roomId, count) => {
+  setRoomOnlineCount: (roomId, count, activeUsers) => {
     set((state) => ({
       onlineUsers: {
         ...state.onlineUsers,
-        [roomId]: count, // เช่น { "room123": 3, "room456": 1 }
+        [roomId]: {count, activeUsers}, 
       },
     }));
   },
@@ -496,7 +496,7 @@ const useRoomStore = create((set, get) => ({
       },
     }));
   },
-
+  
   resetRoomStore: () => set(initialState),
 }));
 

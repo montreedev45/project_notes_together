@@ -16,44 +16,60 @@ const setSocket = (ioConfig) => {
       console.log(`User ${userId} connected socket`);
     });
 
-    // 🟢 ในไฟล์ socket server หลังบ้านของคุณ
+    const broadcastRoomStatus = async (roomId) => {
+      // 1. ดึง Sockets ทั้งหมดที่กำลังเชื่อมต่ออยู่ในห้องนี้
+      const socketsInRoom = await io.in(roomId).fetchSockets();
+
+      const uniqueUsers = [];
+      const seenIds = new Set();
+
+      // 2. วนลูปดึงข้อมูล user ที่เราฝากไว้กับ socket
+      for (const s of socketsInRoom) {
+        if (s.user && !seenIds.has(s.user._id)) {
+          seenIds.add(s.user._id); // ดักจับไม่ให้คนเดียวกันโชว์ 2 รูป (กรณีเปิด 2 แท็บ)
+          uniqueUsers.push(s.user);
+        }
+      }
+
+      // 3. ยิงข้อมูลชุดใหม่กลับไป (มีทั้งยอดรวม และ ข้อมูลรายบุคคล)
+      io.emit("room_status", {
+        roomId,
+        onlineCount: uniqueUsers.length,
+        activeUsers: uniqueUsers, // 📦 [ { _id, username, avatar }, ... ]
+      });
+    };
 
     // 1. จังหวะกดเข้าหน้า Editor
-    socket.on("join_room", ({ roomId, userId }) => {
+    socket.on("join_room", async ({ roomId, user }) => {
       socket.join(roomId);
-      socket.userId = userId;
-      socket.roomId = roomId;
 
-      const onlineCount = io.sockets.adapter.rooms.get(roomId)?.size || 0;
-      io.emit("room_status", { roomId, onlineCount });
+      // 🚩 ฝากข้อมูล user แปะติดไว้กับตัว socket นี้เลย
+      socket.roomId = roomId;
+      socket.user = user;
+
+      await broadcastRoomStatus(roomId);
     });
 
-    // 🚩 2. เพิ่ม Event: จังหวะผู้ใช้กดถอยออกจากหน้า Editor กลับมาหน้าแรก (ท่อเน็ตยังไม่ตัด)
-    socket.on("leave_room", ({ roomId }) => {
+    // 2. เพิ่ม Event: จังหวะผู้ใช้กดถอยออกจากหน้า Editor กลับมาหน้าแรก (ท่อเน็ตยังไม่ตัด)
+    socket.on("leave_room", async ({ roomId }) => {
       if (roomId) {
-        socket.leave(roomId); // สั่งให้ออกจากห้อง Socket
-
-        const onlineCount = io.sockets.adapter.rooms.get(roomId)?.size || 0;
-        console.log(
-          `🏃‍♂️ User left room ${roomId} via navigation. Remaining: ${onlineCount}`,
-        );
-
-        io.emit("room_status", { roomId, onlineCount }); // กระจายบอกทุกคนให้อัปเดต Room Card
+        socket.leave(roomId);
+        // พอเดินออกจากห้อง ก็สั่งอัปเดตรายชื่อใหม่
+        await broadcastRoomStatus(roomId);
       }
     });
 
     // 3. จังหวะปิดเบราว์เซอร์หนี หรือเน็ตหลุดจริงๆ (ท่อตัดขาด)
-    socket.on("disconnect", () => {
-      const { roomId } = socket;
-      if (roomId) {
-        const onlineCount = io.sockets.adapter.rooms.get(roomId)?.size || 0;
-        io.emit("room_status", { roomId, onlineCount });
+    socket.on("disconnect", async () => {
+      if (socket.roomId) {
+        // พอสายหลุด ก็สั่งอัปเดตรายชื่อคนที่เหลืออยู่ในห้อง
+        await broadcastRoomStatus(socket.roomId);
       }
     });
   });
 };
 
-// 🚩 สร้างฟังก์ชันช่วยส่งค่า io ตัวปัจจุบันออกไป
+// สร้างฟังก์ชันช่วยส่งค่า io ตัวปัจจุบันออกไป
 export const getIoInstance = () => {
   return io;
 };
@@ -61,14 +77,11 @@ export const getIoInstance = () => {
 export const sendNotification = (recipientId, data, newMember) => {
   console.log("sendNotification is working");
   if (io) {
-    // ส่งไปที่ Room ที่ชื่อเดียวกับ ID ของเจ้าของห้อง
     io.to(recipientId).emit("new_notification", data);
   }
 };
 
-// 🟢 ในไฟล์ socket_manage.js
 export const sendRelativeTime = (ioInstance, roomId, time) => {
-  // 🚩 เช็คเงื่อนไขจาก ioInstance ที่ส่งมาจาก hocuspocus ตรงๆ
   if (ioInstance) {
     console.log("🎯 io found! Emitting send_relative_time now.");
     ioInstance.emit("send_relative_time", { roomId, time });

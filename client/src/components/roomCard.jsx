@@ -44,22 +44,19 @@ function RoomCard({ data = {} }) {
   //relative time
 
   useEffect(() => {
-    // ⚡ 3. อัปเดตคำศัพท์หน้าจอทันทีเมื่อเปิดหน้า หรือเมื่อมีเวลาใหม่จาก Socket วิ่งเข้า Store
     setDisplayTime(getRelativeTimeEdit(relativeTimeFromStore));
 
-    // ⚡ 4. ตั้งเวลานับเดินหน้าในโลกจริง (Live Ticking) ทุกๆ 1 นาที
     const interval = setInterval(() => {
       setDisplayTime(getRelativeTimeEdit(relativeTimeFromStore));
     }, 60000);
 
-    // ⚡ 5. เคลียร์ท่อเวลาก่อนหน้า ป้องกัน Memory Leak
+    // เคลียร์ท่อเวลาก่อนหน้า ป้องกัน Memory Leak
     return () => clearInterval(interval);
   }, [relativeTimeFromStore]); // 🚩 ใส่ตัวแปรนี้ เพื่อให้ระเบิดเวลาตั้งใหม่ทันทีที่คนพิมพ์และเซฟลงเบส
 
   useEffect(() => {
     // ฟังก์ชันตรวจจับการคลิกข้างนอก
     const handleClickOutside = (event) => {
-      // ถ้าเมนูเปิดอยู่ และ จุดที่คลิก "ไม่ใช่" พื้นที่ของเมนู
       if (
         isOpenMenuModal &&
         menuRef.current &&
@@ -278,22 +275,22 @@ function RoomCard({ data = {} }) {
         <div className="flex items-center gap-1 my-4 -space-x-4">
           {data.isPeopleJoinRoom && (
             <>
-              {data?.members?.slice(0, 5).map((member) => (
+              {onlineUsers?.activeUsers?.slice(0, 5).map((member) => (
                 <div
-                  key={member.user?._id || member._id || Math.random()}
-                  style={{ borderColor: member?.user?.avatar }}
+                  key={member?._id || Math.random()}
+                  style={{ borderColor: member?.avatar }}
                   className="flex-none bg-white border-2 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
                 >
                   <Icon
                     icon="mdi:account"
-                    style={{ color: member?.user?.avatar }}
+                    style={{ color: member?.avatar }}
                     width="30"
                   />
                 </div>
               ))}
-              {data?.members?.length > 5 && (
+              {onlineUsers?.activeUsers?.length > 5 && (
                 <div className="flex-none bg-gray-200 border-2 border-white w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold text-gray-600 z-0">
-                  +{data.members.length - 5}
+                  +{onlineUsers?.activeUsers?.length - 5}
                 </div>
               )}
             </>
@@ -304,7 +301,7 @@ function RoomCard({ data = {} }) {
             {data?.isOnlineStatus && (
               <>
                 <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                <span>{onlineUsers} online</span>
+                <span>{onlineUsers?.count || 0} online</span>
               </>
             )}
           </span>

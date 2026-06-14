@@ -20,9 +20,6 @@ setSocket(io);
 
 const hocuspocusServer = createHocuspocus(io);
 hocuspocusServer.listen();
-console.log(
-  "🚀 Hocuspocus with MongoDB persistence running on ws://localhost:1234",
-);
 
 const PORT = process.env.SERVER_PORT || 5000;
 connectDB();

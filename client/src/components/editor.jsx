@@ -12,21 +12,39 @@ import { connectSocket, disconnectSocket, getSocket } from "../socket";
 import useRoomStore from "../store/useRoomStore";
 
 function Editor() {
+  const { roomId, role } = useParams();
   const user = useAuthStore((state) => state.user);
+  const getMyRooms = useRoomStore((state) => state.getMyRooms);
+  const myRooms = useRoomStore((state) => state.myRooms);
+  const roomData = myRooms.find((r) => r._id === roomId);
+
+  useEffect(() => {
+    getMyRooms();
+  }, []);
+
+  const roomOnlineData = useRoomStore((state) => state.onlineUsers[roomId]);
+
+  const quantityOnlineUsers = roomOnlineData?.count || 0;
+  const activeUsersList = roomOnlineData?.activeUsers || [];
 
   const [yjs, setYjs] = useState(null);
 
   const providerRef = useRef(null);
   const ydocRef = useRef(null);
-  const { roomId, role } = useParams();
 
   useEffect(() => {
     // 🚩 ใช้ท่อ Socket หลักอันเดิมที่มีอยู่แล้ว ห้ามสร้างใหม่ด้วย connectSocket เคลียร์สายซ้ำซ้อน
     const socket = getSocket();
 
     if (socket && roomId) {
-      console.log("📢 Sending join_room for room:", roomId);
-      socket.emit("join_room", { roomId, userId: user._id });
+      socket.emit("join_room", {
+        roomId,
+        user: {
+          _id: user._id,
+          username: user.username,
+          avatar: user.avatar,
+        },
+      });
     }
 
     // 🚩 ตอนออกจากหน้า Editor (Cleanup)
@@ -74,10 +92,19 @@ function Editor() {
     );
   }
 
-  return <EditorInner key={roomId} yjs={yjs} user={user} />;
+  return (
+    <EditorInner
+      key={roomId}
+      yjs={yjs}
+      user={user}
+      room={roomData}
+      onlineUsers={quantityOnlineUsers}
+      activeUsersList={activeUsersList}
+    />
+  );
 }
 
-function EditorInner({ yjs, user }) {
+function EditorInner({ yjs, user, room, onlineUsers, activeUsersList }) {
   const editor = useEditor(
     {
       extensions: [
@@ -130,115 +157,170 @@ function EditorInner({ yjs, user }) {
   if (!editor) return null;
 
   return (
-    <div className="w-full h-full bg-slate-50 pt-0 sm:p-8 sm:pt-0 overflow-y-auto">
-      <div className="max-w-4xl mx-auto">
-        {/* toolbar */}
-        <div className="sticky top-0 z-20 flex px-4 py-4 gap-3 flex-col items-center  bg-white/90 backdrop-blur-md mb-6 rounded-t-lg shadow-sm">
-          {/* --- Group 1: Text Styles (Marks) --- */}
-          <div className=" w-full flex items-center justify-between px-4 py-2  rounded-md shadow-sm border border-slate-200 text-xs text-slate-500">
-            <div className="flex items-center gap-2">
+    <div className="w-full h-full sm:p-0 sm:pt-0 overflow-y-auto">
+      <div className="">
+        <div className="w-full flex items-center justify-between p-5 px-8 bg-third border-b-2 border-gray-200">
+          <div className="text-2xl font-semibold">{room?.name || ""}</div>
+          <div className="flex gap-3 items-center">
+            <div className="flex items-center gap-1 my-4 -space-x-4">
+              {activeUsersList?.slice(0, 5).map((member) => (
+                <div
+                  key={member._id || Math.random()}
+                  style={{ borderColor: member?.avatar }}
+                  className="flex-none bg-white border-2 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
+                >
+                  <Icon
+                    icon="mdi:account"
+                    style={{ color: member?.avatar }}
+                    width="30"
+                  />
+                </div>
+              ))}
+              {activeUsersList?.length > 5 && (
+                <div className="flex-none bg-gray-200 border-2 border-white w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold text-gray-600 z-0">
+                  +{activeUsersList.length - 5}
+                </div>
+              )}
+            </div>
+            <button className="bg-primary cursor-pointer hover:bg-blue-500 px-3 py-1.5 flex items-center gap-1.5 rounded-lg text-sm font-semibold text-white">
+              <Icon icon="mdi:share" width="20" />
+              Share
+            </button>
+            <div className="flex items-center gap-2 bg-white px-4 py-1 rounded-lg text-secondary">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-ping"></span>
-              Live Syncing
+              {onlineUsers} online
             </div>
-            <div>
-              Room:{" "}
-              <span className="font-mono text-indigo-600">
-                {yjs.ydoc.guid.slice(0, 8)}
-              </span>
-            </div>
-          </div>
-          <div className=" w-full flex py-3 px-3 rounded-md shadow-sm border border-slate-200">
-            <button
-              onClick={() => editor.chain().focus().toggleBold().run()}
-              disabled={!editor.can().chain().focus().toggleBold().run()}
-              className={`p-2 rounded transition-colors ${editor.isActive("bold") ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
-              title="Bold (Ctrl+B)"
-            >
-              <Icon icon="mdi:format-bold" width="20" />
-            </button>
-            <button
-              onClick={() => editor.chain().focus().toggleItalic().run()}
-              disabled={!editor.can().chain().focus().toggleItalic().run()}
-              className={`p-2 rounded transition-colors ${editor.isActive("italic") ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
-              title="Italic (Ctrl+I)"
-            >
-              <Icon icon="mdi:format-italic" width="20" />
-            </button>
-            <button
-              onClick={() => editor.chain().focus().toggleUnderline().run()}
-              className={`p-2 rounded transition-colors ${editor.isActive("underline") ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
-              title="Underline (Ctrl+U)"
-            >
-              <Icon icon="mdi:format-underline" width="20" />
-            </button>
-            <button
-              onClick={() => editor.chain().focus().toggleStrike().run()}
-              className={`p-2 rounded transition-colors ${editor.isActive("strike") ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
-              title="Strikethrough"
-            >
-              <Icon icon="mdi:format-strikethrough-variant" width="20" />
-            </button>
-            <button
-              onClick={() => editor.chain().focus().toggleCode().run()}
-              className={`p-2 rounded transition-colors ${editor.isActive("code") ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
-              title="Inline Code"
-            >
-              <Icon icon="mdi:code-tags" width="20" />
-            </button>
-            <div className="w-px h-6 bg-slate-200 mx-1" /> {/* เส้นคั่น */}
-            {/* --- Group 2: Headings --- */}
-            <button
-              onClick={() =>
-                editor.chain().focus().toggleHeading({ level: 1 }).run()
-              }
-              className={`p-2 rounded font-bold ${editor.isActive("heading", { level: 1 }) ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
-            >
-              H1
-            </button>
-            <button
-              onClick={() =>
-                editor.chain().focus().toggleHeading({ level: 2 }).run()
-              }
-              className={`p-2 rounded font-bold ${editor.isActive("heading", { level: 2 }) ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
-            >
-              H2
-            </button>
-            <div className="w-px h-6 bg-slate-200 mx-1" /> {/* เส้นคั่น */}
-            {/* --- Group 3: Lists & Blocks --- */}
-            <button
-              onClick={() => editor.chain().focus().toggleBulletList().run()}
-              className={`p-2 rounded ${editor.isActive("bulletList") ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
-            >
-              <Icon icon="mdi:format-list-bulleted" width="20" />
-            </button>
-            <button
-              onClick={() => editor.chain().focus().toggleOrderedList().run()}
-              className={`p-2 rounded ${editor.isActive("orderedList") ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
-            >
-              <Icon icon="mdi:format-list-numbered" width="20" />
-            </button>
-            <button
-              onClick={() => editor.chain().focus().toggleBlockquote().run()}
-              className={`p-2 rounded ${editor.isActive("blockquote") ? "bg-slate-200 text-blue-600" : "hover:bg-slate-100 text-slate-600"}`}
-            >
-              <Icon icon="mdi:format-quote-close" width="20" />
-            </button>
-            <div className="flex-1 " /> {/* ดันปุ่มที่เหลือไปทางขวา */}
-            {/* --- Group 4: Clear Formatting --- */}
-            <button
-              onClick={() =>
-                editor.chain().focus().unsetAllMarks().clearNodes().run()
-              }
-              className="p-2 rounded hover:bg-red-50 text-red-400"
-              title="Clear Formatting"
-            >
-              <Icon icon="mdi:format-clear" width="20" />
-            </button>
           </div>
         </div>
+        {/* toolbar */}
+        <div className="flex justify-center">
+          <div className="w-full min-w-100 max-w-260 ">
+            <div className="w-250 top-0 py-5 gap-3">
+              <div className="w-full flex py-3 px-3 rounded-md shadow-sm bg-gray-100 border border-slate-200">
+                <button
+                  onClick={() => editor.chain().focus().toggleBold().run()}
+                  disabled={!editor.can().chain().focus().toggleBold().run()}
+                  className={`p-2 rounded transition-colors ${editor.isActive("bold") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
+                  title="Bold (Ctrl+B)"
+                >
+                  <Icon icon="mdi:format-bold" width="20" />
+                </button>
+                <button
+                  onClick={() => editor.chain().focus().toggleItalic().run()}
+                  disabled={!editor.can().chain().focus().toggleItalic().run()}
+                  className={`p-2 rounded transition-colors ${editor.isActive("italic") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
+                  title="Italic (Ctrl+I)"
+                >
+                  <Icon icon="mdi:format-italic" width="20" />
+                </button>
+                <button
+                  onClick={() => editor.chain().focus().toggleUnderline().run()}
+                  className={`p-2 rounded transition-colors ${editor.isActive("underline") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
+                  title="Underline (Ctrl+U)"
+                >
+                  <Icon icon="mdi:format-underline" width="20" />
+                </button>
+                <button
+                  onClick={() => editor.chain().focus().toggleStrike().run()}
+                  className={`p-2 rounded transition-colors ${editor.isActive("strike") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
+                  title="Strikethrough"
+                >
+                  <Icon icon="mdi:format-strikethrough-variant" width="20" />
+                </button>
+                <button
+                  onClick={() => editor.chain().focus().toggleCode().run()}
+                  className={`p-2 rounded transition-colors ${editor.isActive("code") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
+                  title="Inline Code"
+                >
+                  <Icon icon="mdi:code-tags" width="20" />
+                </button>
+                <div className="w-px h-6 bg-slate-200 mx-1" /> {/* เส้นคั่น */}
+                {/* --- Group 2: Headings --- */}
+                <button
+                  onClick={() =>
+                    editor.chain().focus().toggleHeading({ level: 1 }).run()
+                  }
+                  className={`p-2 rounded font-bold ${editor.isActive("heading", { level: 1 }) ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
+                >
+                  H1
+                </button>
+                <button
+                  onClick={() =>
+                    editor.chain().focus().toggleHeading({ level: 2 }).run()
+                  }
+                  className={`p-2 rounded font-bold ${editor.isActive("heading", { level: 2 }) ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
+                >
+                  H2
+                </button>
+                <div className="w-px h-6 bg-slate-200 mx-1" /> {/* เส้นคั่น */}
+                {/* --- Group 3: Lists & Blocks --- */}
+                <button
+                  onClick={() =>
+                    editor.chain().focus().toggleBulletList().run()
+                  }
+                  className={`p-2 rounded ${editor.isActive("bulletList") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
+                >
+                  <Icon icon="mdi:format-list-bulleted" width="20" />
+                </button>
+                <button
+                  onClick={() =>
+                    editor.chain().focus().toggleOrderedList().run()
+                  }
+                  className={`p-2 rounded ${editor.isActive("orderedList") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
+                >
+                  <Icon icon="mdi:format-list-numbered" width="20" />
+                </button>
+                <button
+                  onClick={() =>
+                    editor.chain().focus().toggleBlockquote().run()
+                  }
+                  className={`p-2 rounded ${editor.isActive("blockquote") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
+                >
+                  <Icon icon="mdi:format-quote-close" width="20" />
+                </button>
+                <div className="flex-1 " /> {/* ดันปุ่มที่เหลือไปทางขวา */}
+                {/* --- Group 4: Clear Formatting --- */}
+                <button
+                  onClick={() =>
+                    editor.chain().focus().unsetAllMarks().clearNodes().run()
+                  }
+                  className="p-2 rounded hover:bg-red-100 text-red-400"
+                  title="Clear Formatting"
+                >
+                  <Icon icon="mdi:format-clear" width="20" />
+                </button>
+              </div>
+            </div>
+            <div className="w-fit overflow-auto h-fit max-h-150">
+              <EditorContent
+                editor={editor}
+                className="border border-slate-300 w-250 h-300"
+              />
+            </div>
+          </div>
 
-        {/* Editor Area */}
-        <EditorContent editor={editor} className=" border border-slate-300" />
+          <div className="sticky z-0 top-0 w-70 h-fit">
+            <div className="flex flex-col pt-4">
+              <span className="flex items-center gap-2 font-semibold">
+                Comments <Icon icon="mdi:comment" className="" />
+              </span>
+              <div className="border-gray-300 border-2 rounded-lg w-full h-130 my-4 p-3">
+                test
+              </div>
+              <div className="flex flex-col justify-center relative">
+                <input
+                  type="text"
+                  className="border-2 border-gray-300 rounded-lg h-10 ps-3 pe-10 outline-none"
+                />
+                <Icon
+                  icon="mdi:send"
+                  className="absolute text-primary cursor-pointer hover:text-blue-500 right-3"
+                  width="20"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

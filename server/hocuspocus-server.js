@@ -24,14 +24,12 @@ export const createHocuspocus = (io) => {
   return new Server({
     port: 1234,
 
-    // Hook สำหรับตรวจสอบการเชื่อมต่อเบื้องต้น
     onConnect({ documentName }) {
       console.log(`📡 Client connecting to room: ${documentName}`);
     },
 
     extensions: [
       new Database({
-        // 🟢 1. ดึงข้อมูล: ถ้าไม่มี ให้คืนค่า null ไปเลย เพื่อให้ Yjs เริ่มนับหนึ่งอย่างถูกต้อง
         fetch: async ({ documentName }) => {
           console.log(`📖 Fetching data for room: ${documentName}`);
           try {
@@ -46,16 +44,14 @@ export const createHocuspocus = (io) => {
           }
         },
 
-        // 🟢 2. บันทึกข้อมูล: เมื่อหน้าบ้านพิมพ์ หรือเชื่อมต่อเสร็จ มันจะส่งก้อนโครงสร้างสมบูรณ์มาเซฟที่นี่
         store: async ({ documentName, state }) => {
           console.log(`💾 Saving data for room: ${documentName}`);
           if (!state) return;
 
           try {
             const roomObjectId = new mongoose.Types.ObjectId(documentName);
-            const currentUpdatedTime = new Date(); // 🚩 สร้างก้อนเวลาไว้รอเลย ชัวร์ที่สุด
+            const currentUpdatedTime = new Date();
 
-            // ใช้ findOneAndUpdate ร่วมกับ upsert
             // ถ้ายังไม่มีห้องนี้ในเบส มันจะสร้างเอกสารใหม่พ่วงก้อน state ที่ถูกต้องไปเซฟทันที
             const saveNote = await Note.findOneAndUpdate(
               { room: roomObjectId },
@@ -74,7 +70,6 @@ export const createHocuspocus = (io) => {
       }),
     ],
 
-    // (Option) ถ้าต้องการจัดการ Error ในระดับ Server
     onDisconnect({ documentName }) {
       console.log(`🔌 Client disconnected from: ${documentName}`);
     },
