@@ -51,6 +51,11 @@ function Login() {
               name="email"
               value={formData.email}
               onChange={handleChange}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleSubmit(e);
+                }
+              }}
               placeholder="Email"
               className=" font-normal ps-10 py-2 text-gray-400 outline-0 border-2 border-gray rounded-lg w-full"
             />
@@ -65,6 +70,11 @@ function Login() {
               type={showPassword ? "text" : "password"}
               name="password"
               onChange={handleChange}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleSubmit(e);
+                }
+              }}
               value={formData.password}
               placeholder="Password"
               className=" font-normal ps-10 py-2 text-gray-400 outline-0 border-2 border-gray rounded-lg w-full"
@@ -92,7 +102,9 @@ function Login() {
             onClose={() => setIsOpenForgotPasswordModal(false)}
           />
           <button
-            onClick={handleSubmit}
+            onClick={(e) => {
+              handleSubmit(e);
+            }}
             className="button-primary w-full py-2 rounded-lg font-medium hover:scale-105 transition-transform cursor-pointer"
           >
             Login

@@ -45,7 +45,7 @@ function NotificationModal({ isOpen, onClose }) {
             )}
           </div>
 
-          <ul className="relative mt-1.5 h-53 overflow-auto z-10 flex flex-col gap-1">
+          <ul className="relative mt-1.5 h-53 overflow-auto no-scrollbar z-10 flex flex-col gap-1">
             {notifications.map((n) => (
               <li
                 key={n._id}

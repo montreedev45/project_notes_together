@@ -4,7 +4,8 @@ import authRoutes from "./modules/auth/auth.routes.js";
 import userRoutes from "./modules/user/user.routes.js";
 import roomRoutes from "./modules/room/room.routes.js";
 import noteRoutes from "./modules/note/note.routes.js";
-import notification from "./modules/notification/notification.routes.js"
+import notificationRoutes from "./modules/notification/notification.routes.js";
+import commentRoutes from "./modules/comment/comment.routes.js"
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/notes", noteRoutes);
-app.use("/api/notifications", notification)
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/comments", commentRoutes);
 
 export default app;

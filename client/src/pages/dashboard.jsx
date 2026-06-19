@@ -185,7 +185,7 @@ function Dashboard() {
           )}
         </div>
 
-        <div className="bg-gray-200 mt-5 h-140 overflow-auto rounded-2xl p-6 grid grid-cols-5 grid-rows-auto gap-9 place-items-start">
+        <div className="bg-gray-200 mt-5 h-140 overflow-auto no-scrollbar rounded-2xl p-6 grid grid-cols-5 grid-rows-auto gap-9 place-items-start">
           {sortedRooms.map((room) => (
             <RoomCard key={room._id} data={room} />
           ))}

@@ -78,7 +78,7 @@ function SettingRoomMember() {
               />
             </div>
           </span>
-          <div className=" max-h-42 overflow-auto">
+          <div className=" max-h-42 overflow-auto no-scrollbar">
             {users.map((user) => {
               const isMember = roomData?.members?.some(
                 (member) => member?.user?._id === user?._id,
@@ -152,7 +152,7 @@ function SettingRoomMember() {
           <span className="flex  justify-between text-2xl font-semibold">
             Members ({roomData?.members?.length || 0})
           </span>
-          <div className="h-57 px-5 mt-1 overflow-auto">
+          <div className="h-57 px-5 mt-1 overflow-auto no-scrollbar">
             {roomData?.members?.map((m) => {
               const isRoomOwner = m?.user?._id === roomData?.owner?._id;
               return (

@@ -10,6 +10,8 @@ import { useParams } from "react-router-dom";
 import useAuthStore from "../store/useAuthStore";
 import { connectSocket, disconnectSocket, getSocket } from "../socket";
 import useRoomStore from "../store/useRoomStore";
+import useCommentStore from "../store/useCommentStore";
+import { formatChatTime } from "../utils/formatTime";
 
 function Editor() {
   const { roomId, role } = useParams();
@@ -17,9 +19,12 @@ function Editor() {
   const getMyRooms = useRoomStore((state) => state.getMyRooms);
   const myRooms = useRoomStore((state) => state.myRooms);
   const roomData = myRooms.find((r) => r._id === roomId);
+  const getComment = useCommentStore((state) => state.getComment);
 
+  //initial load
   useEffect(() => {
     getMyRooms();
+    getComment(roomId);
   }, []);
 
   const roomOnlineData = useRoomStore((state) => state.onlineUsers[roomId]);
@@ -33,7 +38,6 @@ function Editor() {
   const ydocRef = useRef(null);
 
   useEffect(() => {
-    // 🚩 ใช้ท่อ Socket หลักอันเดิมที่มีอยู่แล้ว ห้ามสร้างใหม่ด้วย connectSocket เคลียร์สายซ้ำซ้อน
     const socket = getSocket();
 
     if (socket && roomId) {
@@ -47,7 +51,6 @@ function Editor() {
       });
     }
 
-    // 🚩 ตอนออกจากหน้า Editor (Cleanup)
     return () => {
       if (socket && roomId) {
         console.log("🏃‍♂️ User leaving editor page...");
@@ -104,7 +107,124 @@ function Editor() {
   );
 }
 
+function ChatInput({ value, onChangeText, onSend }) {
+  return (
+    <div className="relative flex items-center">
+      <input
+        type="text"
+        value={value}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            onSend();
+          }
+        }}
+        onChange={(e) => onChangeText(e)}
+        className="w-full border-2 border-gray-300 rounded-lg h-10 ps-3 pe-10 outline-none"
+      />
+      <Icon
+        icon="mdi:send"
+        onClick={onSend}
+        className="absolute text-primary cursor-pointer hover:text-blue-500 right-3"
+        width="20"
+      />
+    </div>
+  );
+}
+
 function EditorInner({ yjs, user, room, onlineUsers, activeUsersList }) {
+  const comment = useCommentStore((state) => state.comment);
+  const addCommentFromSocket = useCommentStore(
+    (state) => state.addCommentFromSocket,
+  );
+  const socket = getSocket();
+
+  const [typedMessage, setTypedMessage] = useState("");
+  const addCommentFromMe = useCommentStore((state) => state.addCommentFromMe);
+
+  const [typingUsers, setTypingUsers] = useState({}); // เก็บรายชื่อคนที่กำลังพิมพ์อยู่ เช่น { "user_1": "Somchai" }
+  const isTypingRef = useRef(false); // ใช้จำสถานะตัวเองว่าตอนนี้กำลังพิมพ์อยู่ไหม
+  const timeoutRef = useRef(null); // ใช้เก็บเลเซอร์นับเวลาถอยหลังการหยุดพิมพ์
+
+
+  // check user typing
+  useEffect(()=> {
+    console.log("typingUsers", typingUsers)
+  }, [typingUsers])
+
+  // auto scroll
+  const messagesEndRef = useRef(null);
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [comment, typingUsers]);
+
+  // send comment
+  const handleSend = () => {
+    if (!typedMessage.trim()) return;
+
+    // 🚩 จังหวะกดส่ง: สั่งหยุดพิมพ์ทันที ไม่ต้องรอครบ 2 วินาที
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    isTypingRef.current = false;
+    socket?.emit("stop_typing");
+
+    addCommentFromMe(typedMessage, room?._id);
+
+    setTypedMessage("");
+  };
+
+  const handleTypingChange = (e) => {
+
+    console.log("typing fn is working")
+    setTypedMessage(e.target.value);
+
+    if (!isTypingRef.current) {
+      isTypingRef.current = true;
+      socket?.emit("typing");
+    }
+
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+    timeoutRef.current = setTimeout(() => {
+      isTypingRef.current = false;
+      socket?.emit("stop_typing");
+    }, 5000);
+  };
+
+  //event user typing
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("user_typing", ({ userId, username }) => {
+      console.log(`user_typing ${userId} and ${username}`);
+      setTypingUsers((prev) => ({ ...prev, [userId]: username }));
+    });
+
+    socket.on("user_stop_typing", ({ userId }) => {
+      console.log("user_stop_typing", {userId});
+      setTypingUsers((prev) => {
+        const updated = { ...prev };
+        delete updated[userId];
+        return updated;
+      });
+    });
+
+    socket.on("received_comment", ({ newComment }) => {
+      addCommentFromSocket(newComment);
+    });
+
+    return () => {
+      socket.off("user_typing");
+      socket.off("user_stop_typing");
+      socket.off("received_comment");
+    };
+  }, [room?._id, user?._id]);
+
+  // convert object of user typing to array
+  const typingUserNames = Object.values(typingUsers);
+
   const editor = useEditor(
     {
       extensions: [
@@ -165,7 +285,7 @@ function EditorInner({ yjs, user, room, onlineUsers, activeUsersList }) {
             <div className="flex items-center gap-1 my-4 -space-x-4">
               {activeUsersList?.slice(0, 5).map((member) => (
                 <div
-                  key={member._id || Math.random()}
+                  key={member._id}
                   style={{ borderColor: member?.avatar }}
                   className="flex-none bg-white border-2 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
                 >
@@ -188,7 +308,7 @@ function EditorInner({ yjs, user, room, onlineUsers, activeUsersList }) {
             </button>
             <div className="flex items-center gap-2 bg-white px-4 py-1 rounded-lg text-secondary">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-ping"></span>
-              {onlineUsers} online
+              {onlineUsers || 1} online
             </div>
           </div>
         </div>
@@ -291,7 +411,7 @@ function EditorInner({ yjs, user, room, onlineUsers, activeUsersList }) {
                 </button>
               </div>
             </div>
-            <div className="w-fit overflow-auto h-fit max-h-150">
+            <div className="w-fit overflow-auto no-scrollbar h-fit max-h-150">
               <EditorContent
                 editor={editor}
                 className="border border-slate-300 w-250 h-300"
@@ -304,18 +424,78 @@ function EditorInner({ yjs, user, room, onlineUsers, activeUsersList }) {
               <span className="flex items-center gap-2 font-semibold">
                 Comments <Icon icon="mdi:comment" className="" />
               </span>
-              <div className="border-gray-300 border-2 rounded-lg w-full h-130 my-4 p-3">
-                test
+              <div className="flex flex-col border-gray-300 border-2 rounded-lg w-full h-130 my-4 p-5 overflow-auto no-scrollbar">
+                {(comment?.comments || comment || []).map((c) => {
+                  const isMe = c?.sender?._id === user?._id;
+
+                  return (
+                    <div
+                      key={c?._id || Math.random()}
+                      className={`flex w-full ${isMe ? "justify-end" : "justify-start"}`}
+                    >
+                      <div
+                        className={`max-w-[85%] border border-gray-200 px-5 py-2 my-3 rounded-xl shadow-sm ${
+                          isMe
+                            ? "bg-blue-50/60 border-blue-200 rounded-tr-none"
+                            : "bg-white rounded-tl-none"
+                        }`}
+                      >
+                        <div
+                          className={`flex gap-2 items-center mb-1 ${isMe ? "flex-row-reverse" : "flex-row"}`}
+                        >
+                          <div
+                            style={{ borderColor: c?.sender?.avatar }}
+                            className="flex-none border-2 w-10 h-10 rounded-full flex items-center justify-center cursor-pointer bg-white"
+                          >
+                            <Icon
+                              icon="mdi:account"
+                              color={c?.sender?.avatar}
+                              width="30"
+                            />
+                          </div>
+
+                          <div
+                            className={`flex flex-col leading-tight ${isMe ? "items-end" : "items-start"}`}
+                          >
+                            <span className="font-bold text-sm text-slate-800">
+                              {isMe ? "You" : c?.sender?.username}
+                            </span>
+                            <span className="font-normal text-[10px] text-gray-400">
+                              {formatChatTime(c.createdAt)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div
+                          style={{ borderColor: c?.sender?.avatar }}
+                          className={`py-2 px-4 text-sm text-slate-700 whitespace-pre-wrap wrap-break-word ${
+                            isMe
+                              ? "border-e-2 me-1 text-right"
+                              : "border-s-2 ms-1"
+                          }`}
+                        >
+                          {c.text}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div className="h-6 text-sm text-gray-500 italic px-2 rounded-md bg-gray-100">
+                  {typingUserNames.length > 0 && (
+                    <span className="">
+                      {typingUserNames.join(", ")}{" "}
+                      {typingUserNames.length === 1 ? "is" : "are"} typing...
+                    </span>
+                  )}
+                </div>
+                <div ref={messagesEndRef} />{" "}
+                {/* จุดปักหมุดสำหรับ Auto Scroll */}
               </div>
               <div className="flex flex-col justify-center relative">
-                <input
-                  type="text"
-                  className="border-2 border-gray-300 rounded-lg h-10 ps-3 pe-10 outline-none"
-                />
-                <Icon
-                  icon="mdi:send"
-                  className="absolute text-primary cursor-pointer hover:text-blue-500 right-3"
-                  width="20"
+                <ChatInput
+                  value={typedMessage}
+                  onChangeText={handleTypingChange}
+                  onSend={handleSend}
                 />
               </div>
             </div>

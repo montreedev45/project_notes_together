@@ -59,6 +59,28 @@ const setSocket = (ioConfig) => {
       }
     });
 
+    socket.on("typing", () => {
+      // ตรวจสอบก่อนว่าตัว socket นี้มีห้อง (roomId) และมีข้อมูลผู้ใช้ (user) สิงสถิตอยู่จริงไหม
+      if (socket.roomId && socket.user) {
+        console.log("typing backend woring")
+        // 🚩 สั่ง socket.to().emit() เพื่อส่งสัญญาณหา "คนอื่นทุกคนในห้อง" ยกเว้นตัวคนพิมพ์เอง
+        socket.to(socket.roomId).emit("user_typing", {
+          userId: socket.user._id,
+          username: socket.user.username,
+        });
+      }
+    });
+
+    // ดักฟังเมื่อหยุดพิมพ์
+    socket.on("stop_typing", () => {
+      if (socket.roomId && socket.user) {
+        // 🚩 ส่งสัญญาณบอกคนอื่นให้เอาชื่อคนนี้ออกจากแท็บ "กำลังพิมพ์..."
+        socket.to(socket.roomId).emit("user_stop_typing", {
+          userId: socket.user._id,
+        });
+      }
+    });
+
     // 3. จังหวะปิดเบราว์เซอร์หนี หรือเน็ตหลุดจริงๆ (ท่อตัดขาด)
     socket.on("disconnect", async () => {
       if (socket.roomId) {
@@ -75,9 +97,15 @@ export const getIoInstance = () => {
 };
 
 export const sendNotification = (recipientId, data, newMember) => {
-  console.log("sendNotification is working");
   if (io) {
     io.to(recipientId).emit("new_notification", data);
+  }
+};
+
+export const sendComment = (roomId, newComment) => {
+  if (io) {
+    console.log("sendComment is working");
+    io.to(roomId).emit("received_comment", { newComment });
   }
 };
 

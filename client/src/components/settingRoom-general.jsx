@@ -38,7 +38,7 @@ function SettingRoomGeneral() {
 
   return (
     <>
-      <div className="overflow-auto border-s-2 border-gray px-15 pt-9 flex flex-col gap-4">
+      <div className="overflow-auto no-scrollbar border-s-2 border-gray px-15 pt-9 flex flex-col gap-4">
         <div className="flex flex-col gap-3 relative">
           <span className="text-2xl font-semibold">Room name</span>
           <input
