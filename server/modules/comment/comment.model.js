@@ -5,7 +5,7 @@ const commentSchema = new mongoose.Schema(
     room: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Room",
-      requires: true,
+      required: true,
       index: true,
     },
     sender: {
@@ -15,8 +15,17 @@ const commentSchema = new mongoose.Schema(
     },
     text: {
       type: String,
-      required: true,
+      default: "",
       trim: true,
+    },
+    type: {
+      type: String,
+      enum: ["text", "sticker"],
+      default: "text",
+    },
+    stickerUrl: {
+      type: String,
+      default: "",
     },
   },
   {
@@ -24,6 +33,5 @@ const commentSchema = new mongoose.Schema(
   },
 );
 
-
-const Comment = mongoose.model("Comment", commentSchema)
+const Comment = mongoose.model("Comment", commentSchema);
 export default Comment;

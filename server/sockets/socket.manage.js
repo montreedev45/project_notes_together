@@ -104,7 +104,6 @@ export const sendNotification = (recipientId, data, newMember) => {
 
 export const sendComment = (roomId, newComment) => {
   if (io) {
-    console.log("sendComment is working");
     io.to(roomId).emit("received_comment", { newComment });
   }
 };

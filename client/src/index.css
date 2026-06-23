@@ -1,4 +1,7 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Bitcount+Single:wght@100..900&family=Mooli&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bitcount+Single:wght@100..900&family=Indie+Flower&family=Mooli&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Amatic+SC:wght@400;700&family=Bitcount+Single:wght@100..900&family=Indie+Flower&family=Mooli&display=swap');
 
 /* 1. Theme Configuration */
 @theme {
