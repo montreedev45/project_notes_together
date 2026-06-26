@@ -19,6 +19,7 @@ import { Extension } from "@tiptap/core";
 import { Color } from "@tiptap/extension-color";
 import Image from "@tiptap/extension-image";
 import FontFamily from "@tiptap/extension-font-family";
+import useNoteStore from "../store/useNoteStore";
 
 function Editor() {
   const { roomId, role } = useParams();
@@ -182,6 +183,8 @@ function EditorInner({ yjs, user, room, onlineUsers, activeUsersList }) {
 
   const [typedMessage, setTypedMessage] = useState("");
   const addCommentFromMe = useCommentStore((state) => state.addCommentFromMe);
+  const uploadImage = useNoteStore((state) => state.uploadImage);
+  const imageUrl = useNoteStore((state) => state.imageUrl);
 
   const [typingUsers, setTypingUsers] = useState({}); // เก็บรายชื่อคนที่กำลังพิมพ์อยู่ เช่น { "user_1": "Somchai" }
   const isTypingRef = useRef(false); // ใช้จำสถานะตัวเองว่าตอนนี้กำลังพิมพ์อยู่ไหม
@@ -238,19 +241,15 @@ function EditorInner({ yjs, user, room, onlineUsers, activeUsersList }) {
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
-    console.log("file", file);
     if (!file) return;
 
-    // จำลองการอัปโหลด (ในของจริงให้ยิง API ไปที่ Backend หรือ Cloudinary/S3)
-    // const formData = new FormData();
-    // formData.append("image", file);
-    // const res = await api.post("/upload", formData);
-    // const imageUrl = res.data.url;
+    const formData = new FormData();
+    formData.append("image", file);
+    const uploadedUrl = await uploadImage(formData);
 
-    const dummyUrl = URL.createObjectURL(file); // ใช้ชั่วคราวเพื่อแสดงผล
-
-    // ตัวอย่างคำสั่งเสียบรูป (ถ้าใช้ TipTap)
-    editor.chain().focus().setImage({ src: dummyUrl }).run();
+    if (uploadedUrl) {
+      editor.chain().focus().setImage({ src: uploadedUrl }).run();
+    }
   };
 
   // auto scroll
@@ -259,8 +258,14 @@ function EditorInner({ yjs, user, room, onlineUsers, activeUsersList }) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const editorStartRef = useRef(null);
+  const scrollToTop = () => {
+    editorStartRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   useEffect(() => {
     scrollToBottom();
+    scrollToTop();
   }, [comments, typingUsers]);
 
   // send comment
@@ -336,7 +341,7 @@ function EditorInner({ yjs, user, room, onlineUsers, activeUsersList }) {
       extensions: [
         StarterKit.configure({
           history: false,
-          heading: { levels: [1, 2, 3] },
+          heading: { levels: [1, 2, 3, 4, 5, 6] },
           bulletList: true,
           orderedList: true,
           blockquote: true,
@@ -384,6 +389,7 @@ function EditorInner({ yjs, user, room, onlineUsers, activeUsersList }) {
           class: "prose max-w-none focus:outline-none",
         },
       },
+      content: "<h1>หัวข้อรายงาน A4</h1><p>เริ่มพิมพ์ข้อความตรงนี้...</p>",
     },
     [yjs],
   );
@@ -391,12 +397,12 @@ function EditorInner({ yjs, user, room, onlineUsers, activeUsersList }) {
   if (!editor) return null;
 
   return (
-    <div className="w-full h-full sm:p-0 sm:pt-0 overflow-y-auto">
-      <div className="">
+    <div className="w-full h-full sm:p-0 sm:pt-0 overflow-y-auto no-scrollbar">
+      <div className="" ref={editorStartRef}>
         <div className="w-full flex items-center justify-between p-5 px-8 bg-third border-b-2 border-gray-200">
           <div className="text-2xl font-semibold">{room?.name || ""}</div>
           <div className="flex gap-3 items-center">
-            <div className="flex items-center gap-1 my-4 -space-x-4">
+            <div className="flex items-center gap-1 -space-x-4">
               {activeUsersList?.slice(0, 5).map((member) => (
                 <div
                   key={member._id}
@@ -427,9 +433,9 @@ function EditorInner({ yjs, user, room, onlineUsers, activeUsersList }) {
           </div>
         </div>
         {/* toolbar */}
-        <div className="flex justify-center">
+        <div className="flex justify-evenly">
           <div className="w-full min-w-100 max-w-260 ">
-            <div className="w-250 top-0 py-5 gap-3">
+            <div className="w-full top-0 py-5 gap-3 sticky z-1000">
               <div className="w-full flex py-3 px-3 rounded-md shadow-sm bg-gray-100 border border-slate-200">
                 <button
                   onClick={() => editor.chain().focus().toggleBold().run()}
@@ -470,23 +476,32 @@ function EditorInner({ yjs, user, room, onlineUsers, activeUsersList }) {
                 </button>
                 <div className="w-px h-6 bg-slate-200 mx-1" /> {/* เส้นคั่น */}
                 {/* --- Group 2: Headings --- */}
-                <button
-                  onClick={() =>
-                    editor.chain().focus().toggleHeading({ level: 1 }).run()
-                  }
-                  className={`p-2 rounded font-bold ${editor.isActive("heading", { level: 1 }) ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
+                <select
+                  onChange={(e) => {
+                    if (e.target.value === "none") {
+                      editor.chain().focus().setParagraph().run();
+                    } else {
+                      const levelValue = Number(e.target.value);
+
+                      editor
+                        .chain()
+                        .focus()
+                        .setHeading({ level: levelValue })
+                        .run();
+                    }
+                  }}
+                  className="p-1.5 border border-slate-300 rounded text-sm text-slate-600 bg-white outline-none cursor-pointer hover:border-blue-400"
+                  title="Headings"
                 >
-                  H1
-                </button>
-                <button
-                  onClick={() =>
-                    editor.chain().focus().toggleHeading({ level: 2 }).run()
-                  }
-                  className={`p-2 rounded font-bold ${editor.isActive("heading", { level: 2 }) ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                >
-                  H2
-                </button>
-                <div className="w-px h-6 bg-slate-200 mx-1" /> {/* เส้นคั่น */}
+                  <option value="none">Heading</option>
+                  <option value="1">H1</option>
+                  <option value="2">H2</option>
+                  <option value="3">H3</option>
+                  <option value="4">H4</option>
+                  <option value="5">H5</option>
+                  <option value="6">H6</option>
+                </select>
+                <div className="w-px h-6 bg-slate-200 ms-1" /> {/* เส้นคั่น */}
                 {/* font style */}
                 {/* 🔤 1. Dropdown เลือกฟอนต์ (Font Family) */}
                 <select
@@ -645,11 +660,13 @@ function EditorInner({ yjs, user, room, onlineUsers, activeUsersList }) {
                 </button>
               </div>
             </div>
-            <div className="w-fit overflow-auto no-scrollbar h-fit max-h-150">
-              <EditorContent
-                editor={editor}
-                className="border border-slate-300 w-250 h-300"
-              />
+            <div className="editor-background">
+              <div className="w-fit overflow-auto no-scrollbar">
+                <EditorContent
+                  editor={editor}
+                  className="border border-slate-300 "
+                />
+              </div>
             </div>
           </div>
 
@@ -658,7 +675,7 @@ function EditorInner({ yjs, user, room, onlineUsers, activeUsersList }) {
               <span className="flex items-center gap-2 font-semibold">
                 Comments <Icon icon="mdi:comment" className="" />
               </span>
-              <div className="flex flex-col border-gray-300 border-2 rounded-lg w-full h-130 my-4 p-5 overflow-auto no-scrollbar">
+              <div className="flex flex-col border-gray-300 border-2 rounded-lg w-full h-150 my-4 p-5 overflow-auto no-scrollbar">
                 {(comments?.comments || comments || []).map((c) => {
                   const isMe = c?.sender?._id === user?._id;
 

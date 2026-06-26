@@ -1,7 +1,7 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Bitcount+Single:wght@100..900&family=Mooli&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Bitcount+Single:wght@100..900&family=Indie+Flower&family=Mooli&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Amatic+SC:wght@400;700&family=Bitcount+Single:wght@100..900&family=Indie+Flower&family=Mooli&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Bitcount+Single:wght@100..900&family=Mooli&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Bitcount+Single:wght@100..900&family=Indie+Flower&family=Mooli&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Amatic+SC:wght@400;700&family=Bitcount+Single:wght@100..900&family=Indie+Flower&family=Mooli&display=swap");
 
 /* 1. Theme Configuration */
 @theme {
@@ -115,6 +115,34 @@
   .tiptap ::selection {
     @apply bg-primary/20;
   }
+
+  .tiptap h1 {
+    font-size: 2.25rem; /* ตัวหนาใหญ่สะใจ */
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+  .tiptap h2 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+  .tiptap h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+  }
+  .tiptap h4 {
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+  .tiptap h5 {
+    font-size: 1.125rem;
+    font-weight: 600;
+  }
+  .tiptap h6 {
+    font-size: 1rem;
+    font-weight: 600;
+  }
 }
 
 @layer utilities {
@@ -122,7 +150,55 @@
     display: none; /* สำหรับ Chrome, Safari และ Opera */
   }
   .no-scrollbar {
-    -ms-overflow-style: none;  /* สำหรับ IE และ Edge */
-    scrollbar-width: none;  /* สำหรับ Firefox */
+    -ms-overflow-style: none; /* สำหรับ IE และ Edge */
+    scrollbar-width: none; /* สำหรับ Firefox */
+  }
+}
+
+/* 🌍 1. กล่องพื้นหลัง (สีเทาแบบโปรแกรม Word) */
+.editor-background {
+  background-color: #f1f5f9; /* slate-100 */
+  padding: 40px 20px;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  overflow-y: auto;
+}
+
+/* 📄 2. หน้ากระดาษ A4 (สไตล์ Tiptap) */
+.tiptap {
+  background-color: #ffffff;
+  width: 210mm;
+  /* เลือกปรับความสูงตามความต้องการ */
+  min-height: 297mm; /* บังคับหน้าแรกให้ยาวเท่า A4 เสมอ */
+
+  /* 📐 ระยะขอบหน้ากระดาษสากล (Margin 1 นิ้วรอบด้าน) */
+  padding: 25.4mm;
+
+  /* 🪄 แต่งเงาให้เหมือนกระดาษจริง */
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1);
+  border-radius: 4px;
+
+  /* บังคับคำขึ้นบรรทัดใหม่ ไม่ให้หลุดขอบขวา */
+  word-wrap: break-word;
+  outline: none;
+}
+
+/* 🖨️ 3. ตั้งค่าหน้าต่างการพิมพ์สำหรับเบราว์เซอร์ (Print & Export PDF) */
+@media print {
+  body {
+    background: none;
+  }
+  .editor-background {
+    padding: 0;
+    background: none;
+  }
+  .tiptap {
+    width: 210mm;
+    min-height: 297mm;
+    box-shadow: none;
+    padding: 0; /* ส่งสิทธิ์ให้หน้าพิมพ์ของระบบจัดการระยะขอบแทน */
   }
 }

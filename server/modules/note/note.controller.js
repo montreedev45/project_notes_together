@@ -66,3 +66,22 @@ export const saveNote = async (req, res) => {
     res.status(500).json({ message: "save note failed" });
   }
 };
+
+
+export const handleUploadResponse = (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    // เจน URL เต็มรูปแบบส่งกลับไปให้ Tiptap
+    const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+
+    return res.status(200).json({
+      message: 'Upload successfully',
+      url: imageUrl
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};

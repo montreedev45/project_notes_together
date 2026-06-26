@@ -29,8 +29,8 @@ function NotificationModal({ isOpen, onClose }) {
   if (!isOpen) return null;
   return (
     <>
-      <div className="relative right-125 top-8 z-9999 select-none">
-        <div className="absolute w-130 h-68 bg-white border border-slate-200 rounded-xl shadow-lg">
+      <div className="relative right-105 top-8 z-9999 select-none">
+        <div className="absolute w-110 h-68 bg-white border border-slate-200 rounded-xl shadow-lg">
           <div className="absolute right-6 -top-2 w-5 h-5 bg-gray-200 -rotate-45"></div>
           <div className="flex justify-between items-center px-6 py-2 text-xl font-medium border-b-2 border-gray-200 bg-gray-200 rounded-tl-lg rounded-tr-lg">
             <span>notification</span>
@@ -64,7 +64,7 @@ function NotificationModal({ isOpen, onClose }) {
                   </div>
                   <span>{n?.sender?.username}</span>
                 </div>
-                <div className="min-w-30 grow-0 text-right text-sm text-secondary font-medium">
+                <div className="flex justify-end min-w-30 grow-0 text-right text-sm text-secondary font-medium">
                   <span
                     style={{
                       color: n?.type === "JOIN" ? "#64ed4c" : "#ed4c4c",
@@ -74,7 +74,7 @@ function NotificationModal({ isOpen, onClose }) {
                   </span>{" "}
                   &nbsp; &nbsp; {n?.roomName}
                 </div>
-                <div className="min-w-45 grow-0 me-4 text-right text-md text-gray font-normal">
+                <div className="min-w-35 grow-0 me-4 text-right text-md text-gray font-normal">
                   {getRelativeTime(n.createdAt)}
                 </div>
                 <Icon
