@@ -72,10 +72,11 @@ function Editor() {
     let active = true;
 
     // เรียกฟังก์ชันสร้างการเชื่อมต่อที่เราทำไว้
-    const instance = createYjs(roomId, (readyYjs) => {
+    const instance = createYjs(roomId, ({ ydoc, provider }) => {
+      // 🟢 แกะกล่องตรงนี้!
       // ตรวจสอบว่า Component ยังไม่ได้โดนปิดหน้าหนี ค่อยอัปเดตสเตท
       if (active) {
-        setYjs(readyYjs);
+        setYjs(ydoc); // 🟢 เก็บเฉพาะ ydoc (Y.Doc) ลงในสเตทตามชื่อของมัน
       }
     });
 
@@ -111,6 +112,7 @@ function Editor() {
       room={roomData}
       onlineUsers={quantityOnlineUsers}
       activeUsersList={activeUsersList}
+      provider={providerRef.current}
     />
   );
 }
@@ -174,23 +176,128 @@ function ChatInput({ value, onChangeText, onSend, onSendSticker }) {
   );
 }
 
-function EditorInner({ yjs, user, room, onlineUsers, activeUsersList }) {
+function EditorInner({
+  yjs,
+  user,
+  room,
+  onlineUsers,
+  activeUsersList,
+  provider,
+}) {
   const comments = useCommentStore((state) => state.comments);
   const addCommentFromSocket = useCommentStore(
     (state) => state.addCommentFromSocket,
   );
   const socket = getSocket();
 
+  const { roomId } = useParams();
   const [typedMessage, setTypedMessage] = useState("");
+  //const user = useAuthStore((state) => state.user);
   const addCommentFromMe = useCommentStore((state) => state.addCommentFromMe);
   const uploadImage = useNoteStore((state) => state.uploadImage);
   const imageUrl = useNoteStore((state) => state.imageUrl);
+  const [isOpenShareModal, setIsOpenShareModal] = useState(false);
+
+  const [selectedRoles, setSelectedRoles] = useState({});
+  const roles = ["viewer", "editor", "commenter"];
+  const link = `${import.meta.env.VITE_CLIENT_URL}/notes-together/join-link/${roomId}/${selectedRoles[user?._id] || "viewer"}`;
+  const [activeTab, setActiveTab] = useState(1);
+
+  const [isCopied, setIsCopied] = useState(false);
+  const [isCopiedCode, setIsCopiedCode] = useState(false);
+
+  const [isAllowLinkSharing, setIsAllowLinkSharing] = useState(true);
+  const [isAllowCodeSharing, setIsAllowCodeSharing] = useState(true);
+
+  const [saveStatus, setSaveStatus] = useState("idle");
+  useEffect(() => {
+    console.log("saveStatus", saveStatus);
+  }, [saveStatus]);
+
+  useEffect(() => {
+    if (room) {
+      setIsAllowLinkSharing(room.isAllowLinkSharing ?? true);
+      setIsAllowCodeSharing(room.isAllowCodeSharing ?? true);
+    }
+  }, [room]);
 
   const [typingUsers, setTypingUsers] = useState({}); // เก็บรายชื่อคนที่กำลังพิมพ์อยู่ เช่น { "user_1": "Somchai" }
   const isTypingRef = useRef(false); // ใช้จำสถานะตัวเองว่าตอนนี้กำลังพิมพ์อยู่ไหม
   const timeoutRef = useRef(null); // ใช้เก็บเลเซอร์นับเวลาถอยหลังการหยุดพิมพ์
 
   const fileInputRef = useRef(null); // image upload
+
+  const timerRef = useRef(null);
+
+  // ==========================================
+  // 1. useEffect: จับจังหวะพิมพ์งาน (ขาไป)
+  // ==========================================
+  useEffect(() => {
+    if (!yjs) return;
+
+    const handleDocUpdate = (update, origin) => {
+      // เช็กสถานะ origin เพื่อให้มั่นใจว่าเป็นข้อมูลที่เราพิมพ์เอง
+      if (origin !== null) {
+        setSaveStatus("saving");
+
+        // ล้าง Timer เดิมทิ้งทันทีเมื่อมีการพิมพ์ใหม่ (เพื่อไม่ให้มันสลับไป idle กลางคัน)
+        if (timerRef.current) {
+          clearTimeout(timerRef.current);
+        }
+      }
+    };
+
+    // 🔓 เปิดสวิตช์ฟังจังหวะพิมพ์
+    yjs.on("update", handleDocUpdate);
+
+    // 🔒 ล้างข้อมูล
+    return () => {
+      yjs.off("update", handleDocUpdate);
+    };
+  }, [yjs]);
+
+  // ==========================================
+  // 2. useEffect: รับข้อความบันทึกสำเร็จ (ขากลับ)
+  // ==========================================
+  useEffect(() => {
+    // 🛡️ ถ้า socket บังเอิญเป็น null ให้ข้ามไปก่อน
+    if (!socket) return;
+
+    const handleSyncStatus = (data) => {
+      if (data.status === "saved") {
+        setSaveStatus("saved");
+        if (timerRef.current) clearTimeout(timerRef.current);
+
+        timerRef.current = setTimeout(() => {
+          setSaveStatus("idle");
+        }, 3000);
+      }
+    };
+
+    // 🔓 ใช้ socket ตัวเดิมผูกหูฟังรอรับ Event ได้เลย
+    socket.on("syncStatus", handleSyncStatus);
+
+    return () => {
+      socket.off("syncStatus", handleSyncStatus);
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [socket]);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(link);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 1000);
+  };
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(room?.code);
+    setIsCopiedCode(true);
+    setTimeout(() => setIsCopiedCode(false), 1000);
+  };
+
+  const handleRoleChange = (userId, role) => {
+    setSelectedRoles((prev) => ({ ...prev, [userId]: role }));
+  };
 
   // 🛠️ 1. สร้าง Custom Font Size Extension ขึ้นมาเองแบบง่าย ๆ
   const FontSize = Extension.create({
@@ -356,11 +463,11 @@ function EditorInner({ yjs, user, room, onlineUsers, activeUsersList }) {
         Color,
         Image,
         Collaboration.configure({
-          document: yjs.ydoc,
+          document: yjs,
           field: "content", // ปรับให้ชื่อฟิลด์โครงสร้างตรงกับโมเดลเบหลังบ้าน
         }),
         CollaborationCursor.configure({
-          provider: yjs.provider,
+          provider: provider,
           user: {
             name: user?.username || "Guest",
             color: user?.avatar || "#4893e8",
@@ -401,6 +508,17 @@ function EditorInner({ yjs, user, room, onlineUsers, activeUsersList }) {
       <div className="" ref={editorStartRef}>
         <div className="w-full flex items-center justify-between p-5 px-8 bg-third border-b-2 border-gray-200">
           <div className="text-2xl font-semibold">{room?.name || ""}</div>
+          <div className="text-lg text-gray-400 font-medium">
+            {saveStatus === "saving" && <span>saving data...</span>}
+            {saveStatus === "saved" && (
+              <span className="text-green-500">
+                changes saved
+              </span>
+            )}
+            {saveStatus === "idle" && (
+              <span className="text-gray-300">data synced</span>
+            )}
+          </div>
           <div className="flex gap-3 items-center">
             <div className="flex items-center gap-1 -space-x-4">
               {activeUsersList?.slice(0, 5).map((member) => (
@@ -422,10 +540,178 @@ function EditorInner({ yjs, user, room, onlineUsers, activeUsersList }) {
                 </div>
               )}
             </div>
-            <button className="bg-primary cursor-pointer hover:bg-blue-500 px-3 py-1.5 flex items-center gap-1.5 rounded-lg text-sm font-semibold text-white">
-              <Icon icon="mdi:share" width="20" />
-              Share
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setIsOpenShareModal(!isOpenShareModal)}
+                className="bg-primary cursor-pointer hover:bg-blue-500 px-3 py-1.5 flex items-center gap-1.5 rounded-lg text-sm font-semibold text-white"
+              >
+                <Icon icon="mdi:share" width="20" />
+                Share
+              </button>
+              {isOpenShareModal && (
+                <>
+                  <div className="absolute flex flex-col z-20 min-w-100 -right-20 mt-5 ">
+                    <div className="bg-gray-200 py-2 px-3 rounded-t-2xl">
+                      <button
+                        onClick={() => setActiveTab(1)}
+                        className={`flex-1 py-2.5 cursor-pointer px-2 text-center font-medium text-sm border-b-2 transition-colors duration-200 ${
+                          activeTab === 1
+                            ? "border-blue-600 text-blue-600"
+                            : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                        }`}
+                      >
+                        Link
+                      </button>
+
+                      <button
+                        onClick={() => setActiveTab(2)}
+                        className={`flex-1 py-2.5 cursor-pointer px-2 text-center font-medium text-sm border-b-2 transition-colors duration-200 ${
+                          activeTab === 2
+                            ? "border-blue-600 text-blue-600"
+                            : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                        }`}
+                      >
+                        Code
+                      </button>
+
+                      <button
+                        onClick={() => setActiveTab(3)}
+                        className={`flex-1 py-2.5 cursor-pointer px-2 text-center font-medium text-sm border-b-2 transition-colors duration-200 ${
+                          activeTab === 3
+                            ? "border-blue-600 text-blue-600"
+                            : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                        }`}
+                      >
+                        Invite
+                      </button>
+                    </div>
+
+                    <div className="bg-third px-5 py-5 rounded-b-2xl border-2 border-gray-200">
+                      {activeTab === 1 && (
+                        <div className="space-y-4 animate-in fade-in duration-200">
+                          <div className="flex flex-col gap-3 relative mb-1">
+                            <div className="flex justify-between items-center gap-5">
+                              <div className="flex-1 px-2 border border-gray rounded-lg">
+                                <select
+                                  value={selectedRoles[user?._id] || "viewer"}
+                                  onChange={(e) =>
+                                    handleRoleChange(user?._id, e.target.value)
+                                  }
+                                  disabled={isAllowLinkSharing === false}
+                                  className={`${isAllowLinkSharing ? "cursor-pointer" : "cursor-not-allowed"} px-2 py-1 outline-0 text-sm font-normal text-gray-500`}
+                                >
+                                  {roles.map((role) => (
+                                    <option key={role} value={role}>
+                                      {role}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="px-4 border border-gray rounded-lg">
+                                <select
+                                  name="people-with-access"
+                                  id=""
+                                  disabled={isAllowLinkSharing === false}
+                                  className={`${isAllowLinkSharing ? "cursor-pointer" : "cursor-not-allowed"} ps-1 pe-3 py-1 outline-0 rounded-lg text-sm font-normal text-gray-500`}
+                                >
+                                  <option value="anyone" defaultValue>
+                                    anyone with link
+                                  </option>
+                                  <option value="reader">
+                                    only invited people
+                                  </option>
+                                  <option value="viewer">restricted</option>
+                                </select>
+                              </div>
+                            </div>
+                            <div className="flex gap-5 items-center">
+                              <input
+                                type="text"
+                                readOnly
+                                onCopy={(e) =>
+                                  isAllowLinkSharing === false &&
+                                  e.preventDefault()
+                                }
+                                onCut={(e) =>
+                                  isAllowLinkSharing === false &&
+                                  e.preventDefault()
+                                }
+                                onPaste={(e) =>
+                                  isAllowLinkSharing === false &&
+                                  e.preventDefault()
+                                }
+                                value={link || ""}
+                                className={`${isAllowLinkSharing ? "cursor-pointer" : "cursor-not-allowed"} flex-1 py-2 outline-none px-4 text-sm rounded-lg border border-gray text-gray-500`}
+                              />
+
+                              <button
+                                disabled={!isAllowLinkSharing}
+                                onClick={handleCopy}
+                                className={`${isAllowLinkSharing ? "bg-blue-500 hover:bg-blue-600 cursor-pointer" : "bg-gray-400 cursor-not-allowed"} text-white px-6 py-2 rounded-lg font-semibold transition-colors`}
+                              >
+                                {isCopied ? "Copied" : "Copy"}
+                              </button>
+                            </div>
+                            {!isAllowLinkSharing && (
+                              <span className="text-red-600">
+                                The room owner has disabled sharing via link.
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {activeTab === 2 && (
+                        <>
+                          <div className="space-y-4 animate-in fade-in duration-200">
+                            <div className="flex gap-3 relative mb-3">
+                              <input
+                                type="text"
+                                readOnly
+                                onCopy={(e) =>
+                                  isAllowCodeSharing === false &&
+                                  e.preventDefault()
+                                }
+                                onCut={(e) =>
+                                  isAllowCodeSharing === false &&
+                                  e.preventDefault()
+                                }
+                                onPaste={(e) =>
+                                  isAllowCodeSharing === false &&
+                                  e.preventDefault()
+                                }
+                                value={room?.code || ""}
+                                className={`${isAllowCodeSharing ? "cursor-pointer" : "cursor-not-allowed"} flex-1 py-2 outline-none px-4 text-sm rounded-lg border border-gray text-gray-500`}
+                              />
+
+                              <button
+                                disabled={!isAllowCodeSharing}
+                                onClick={handleCopyCode}
+                                className={`${isAllowCodeSharing ? "bg-blue-500 hover:bg-blue-600 cursor-pointer" : "bg-gray-400 cursor-not-allowed"} text-white px-6 py-2 rounded-lg font-semibold transition-colors`}
+                              >
+                                {isCopiedCode ? "Copied" : "Copy"}
+                              </button>
+                            </div>
+                            {!isAllowCodeSharing && (
+                              <span className="text-red-600">
+                                The room owner has disabled sharing via code.
+                              </span>
+                            )}
+                          </div>
+                        </>
+                      )}
+
+                      {activeTab === 3 && (
+                        <>
+                          <div className="space-y-4 animate-in fade-in duration-200">
+                            <div className="flex gap-3 relative mb-3">test</div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
             <div className="flex items-center gap-2 bg-white px-4 py-1 rounded-lg text-secondary">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-ping"></span>
               {onlineUsers || 1} online
@@ -435,7 +721,7 @@ function EditorInner({ yjs, user, room, onlineUsers, activeUsersList }) {
         {/* toolbar */}
         <div className="flex justify-evenly">
           <div className="w-full min-w-100 max-w-260 ">
-            <div className="w-full top-0 py-5 gap-3 sticky z-1000">
+            <div className="w-full top-0 py-5 gap-3 sticky z-10">
               <div className="w-full flex py-3 px-3 rounded-md shadow-sm bg-gray-100 border border-slate-200">
                 <button
                   onClick={() => editor.chain().focus().toggleBold().run()}

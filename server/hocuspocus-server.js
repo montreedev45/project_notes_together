@@ -125,6 +125,10 @@ export const createHocuspocus = (io) => {
               { upsert: true, returnDocument: "after" },
             );
 
+            if (!document.hasUnappliedUpdates) {
+              io.to(documentName).emit("syncStatus", { status: "saved" });
+            }
+
             sendRelativeTime(io, documentName, currentUpdatedTime);
           } catch (error) {
             console.error("❌ Error saving to MongoDB:", error);

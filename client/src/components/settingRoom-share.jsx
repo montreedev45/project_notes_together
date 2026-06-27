@@ -22,8 +22,8 @@ function SettingRoomShare() {
     }
   }, [roomData]);
 
-  const roles = ["editor", "viewer", "commenter"];
-  const link = `localhost:5173/notes-together/join-link/${roomData?._id}/${selectedRoles[user?._id] || "editor"}`;
+  const roles = ["viewer", "editor", "commenter"];
+  const link = `${import.meta.env.VITE_CLIENT_URL}/notes-together/join-link/${roomData?._id}/${selectedRoles[user?._id] || "viewer"}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(link);
@@ -49,9 +49,9 @@ function SettingRoomShare() {
             <span className="text-2xl font-semibold">Share Link</span>
             <div className="px-4 border-2 border-gray rounded-lg">
               <select
-                value={selectedRoles[user?._id] || "editor"}
+                value={selectedRoles[user?._id] || "viewer"}
                 onChange={(e) => handleRoleChange(user?._id, e.target.value)}
-                className="cursor-pointer px-2 py-1 outline-0 text-sm font-medium text-secondary"
+                className={`${isAllowLinkSharing ? "cursor-pointer" : "cursor-not-allowed"} px-2 py-1 outline-0 text-sm font-medium text-secondary`}
               >
                 {roles.map((role) => (
                   <option key={role} value={role}>
@@ -64,7 +64,7 @@ function SettingRoomShare() {
               <select
                 name="people-with-access"
                 id=""
-                className="cursor-pointer ps-1 pe-3 py-1 outline-0 rounded-lg text-md font-medium text-secondary"
+                className={`${isAllowLinkSharing ? "cursor-pointer" : "cursor-not-allowed"} ps-1 pe-3 py-1 outline-0 rounded-lg text-md font-medium text-secondary`}
               >
                 <option value="anyone" defaultValue>
                   anyone with link
@@ -78,14 +78,19 @@ function SettingRoomShare() {
             <input
               type="text"
               readOnly
+              onCopy={(e) => isAllowLinkSharing === false && e.preventDefault()}
+              onCut={(e) => isAllowLinkSharing === false && e.preventDefault()}
+              onPaste={(e) =>
+                isAllowLinkSharing === false && e.preventDefault()
+              }
               value={link || ""}
-              className="flex-1 py-2 outline-none px-4 text-md rounded-lg border-2 border-gray text-black"
+              className={`${isAllowLinkSharing ? "cursor-pointer" : "cursor-not-allowed"} flex-1 py-2 outline-none px-4 text-md rounded-lg border-2 border-gray text-black`}
             />
 
             <button
               disabled={!isAllowLinkSharing}
               onClick={handleCopy}
-              className="cursor-pointer bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
+              className={`${isAllowLinkSharing ? "bg-blue-500 hover:bg-blue-600 cursor-pointer" : "bg-gray-400 cursor-not-allowed"} text-white px-6 py-2 rounded-lg font-semibold transition-colors`}
             >
               {isCopied ? "Copied" : "Copy"}
             </button>

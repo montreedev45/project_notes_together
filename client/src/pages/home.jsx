@@ -170,15 +170,6 @@ function Home() {
                   width="20"
                   height="20"
                 />
-                <span className="ps-2 font-medium">3 project</span>
-              </div>
-              <div className="flex justify-start">
-                <Icon
-                  icon="fluent-emoji-high-contrast:check-mark"
-                  className="text-primary"
-                  width="20"
-                  height="20"
-                />
                 <span className="ps-2 font-medium">3 notes per project</span>
               </div>
               <div className="flex justify-start">
@@ -204,16 +195,8 @@ function Home() {
               <Link to="/login" className="button-primary bg-primary py-2 rounded-md font-medium block text-center w-full cursor-pointer">
                 Get started
               </Link>
+              
               <div className="flex justify-start pt-5">
-                <Icon
-                  icon="fluent-emoji-high-contrast:check-mark"
-                  className="text-primary"
-                  width="20"
-                  height="20"
-                />
-                <span className="ps-2 font-medium">6 project</span>
-              </div>
-              <div className="flex justify-start">
                 <Icon
                   icon="fluent-emoji-high-contrast:check-mark"
                   className="text-primary"
@@ -245,16 +228,8 @@ function Home() {
               <Link to="/login" className="button-primary bg-primary py-2 rounded-md font-medium block text-center w-full cursor-pointer">
                 Get started
               </Link>
+              
               <div className="flex justify-start pt-5">
-                <Icon
-                  icon="fluent-emoji-high-contrast:check-mark"
-                  className="text-primary"
-                  width="20"
-                  height="20"
-                />
-                <span className="ps-2 font-medium">unlimit project</span>
-              </div>
-              <div className="flex justify-start">
                 <Icon
                   icon="fluent-emoji-high-contrast:check-mark"
                   className="text-primary"
