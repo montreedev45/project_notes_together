@@ -16,49 +16,6 @@ const setSocket = (ioConfig) => {
       console.log(`User ${userId} connected socket`);
     });
 
-    const broadcastRoomStatus = async (roomId) => {
-      // 1. ดึง Sockets ทั้งหมดที่กำลังเชื่อมต่ออยู่ในห้องนี้
-      const socketsInRoom = await io.in(roomId).fetchSockets();
-
-      const uniqueUsers = [];
-      const seenIds = new Set();
-
-      // 2. วนลูปดึงข้อมูล user ที่เราฝากไว้กับ socket
-      for (const s of socketsInRoom) {
-        if (s.user && !seenIds.has(s.user._id)) {
-          seenIds.add(s.user._id); // ดักจับไม่ให้คนเดียวกันโชว์ 2 รูป (กรณีเปิด 2 แท็บ)
-          uniqueUsers.push(s.user);
-        }
-      }
-
-      // 3. ยิงข้อมูลชุดใหม่กลับไป (มีทั้งยอดรวม และ ข้อมูลรายบุคคล)
-      io.emit("room_status", {
-        roomId,
-        onlineCount: uniqueUsers.length,
-        activeUsers: uniqueUsers, // 📦 [ { _id, username, avatar }, ... ]
-      });
-    };
-
-    // 1. จังหวะกดเข้าหน้า Editor
-    socket.on("join_room", async ({ roomId, user }) => {
-      socket.join(roomId);
-
-      // 🚩 ฝากข้อมูล user แปะติดไว้กับตัว socket นี้เลย
-      socket.roomId = roomId;
-      socket.user = user;
-
-      await broadcastRoomStatus(roomId);
-    });
-
-    // 2. เพิ่ม Event: จังหวะผู้ใช้กดถอยออกจากหน้า Editor กลับมาหน้าแรก (ท่อเน็ตยังไม่ตัด)
-    socket.on("leave_room", async ({ roomId }) => {
-      if (roomId) {
-        socket.leave(roomId);
-        // พอเดินออกจากห้อง ก็สั่งอัปเดตรายชื่อใหม่
-        await broadcastRoomStatus(roomId);
-      }
-    });
-
     socket.on("typing", () => {
       // ตรวจสอบก่อนว่าตัว socket นี้มีห้อง (roomId) และมีข้อมูลผู้ใช้ (user) สิงสถิตอยู่จริงไหม
       if (socket.roomId && socket.user) {
@@ -81,13 +38,6 @@ const setSocket = (ioConfig) => {
       }
     });
 
-    // 3. จังหวะปิดเบราว์เซอร์หนี หรือเน็ตหลุดจริงๆ (ท่อตัดขาด)
-    socket.on("disconnect", async () => {
-      if (socket.roomId) {
-        // พอสายหลุด ก็สั่งอัปเดตรายชื่อคนที่เหลืออยู่ในห้อง
-        await broadcastRoomStatus(socket.roomId);
-      }
-    });
   });
 };
 

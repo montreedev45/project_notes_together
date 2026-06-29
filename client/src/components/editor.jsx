@@ -35,10 +35,7 @@ function Editor() {
     getComment(roomId);
   }, []);
 
-  const roomOnlineData = useRoomStore((state) => state.onlineUsers[roomId]);
-
-  const quantityOnlineUsers = roomOnlineData?.count || 0;
-  const activeUsersList = roomOnlineData?.activeUsers || [];
+  const onlineUsersProvider = useRoomStore((state) => state.onlineUsersProvider);
 
   const [yjs, setYjs] = useState(null);
 
@@ -110,8 +107,7 @@ function Editor() {
       yjs={yjs}
       user={user}
       room={roomData}
-      onlineUsers={quantityOnlineUsers}
-      activeUsersList={activeUsersList}
+      activeUsersList={onlineUsersProvider}
       provider={providerRef.current}
     />
   );
@@ -180,7 +176,6 @@ function EditorInner({
   yjs,
   user,
   room,
-  onlineUsers,
   activeUsersList,
   provider,
 }) {
@@ -196,6 +191,10 @@ function EditorInner({
   const addCommentFromMe = useCommentStore((state) => state.addCommentFromMe);
   const uploadImage = useNoteStore((state) => state.uploadImage);
   const imageUrl = useNoteStore((state) => state.imageUrl);
+  const setRoomOnlineCountProvider = useRoomStore(
+    (state) => state.setRoomOnlineCountProvider,
+  );
+
   const [isOpenShareModal, setIsOpenShareModal] = useState(false);
 
   const [selectedRoles, setSelectedRoles] = useState({});
@@ -210,9 +209,6 @@ function EditorInner({
   const [isAllowCodeSharing, setIsAllowCodeSharing] = useState(true);
 
   const [saveStatus, setSaveStatus] = useState("idle");
-  useEffect(() => {
-    console.log("saveStatus", saveStatus);
-  }, [saveStatus]);
 
   useEffect(() => {
     if (room) {
@@ -228,6 +224,47 @@ function EditorInner({
   const fileInputRef = useRef(null); // image upload
 
   const timerRef = useRef(null);
+
+  const [activeUsers, setActiveUsers] = useState([]);
+
+  useEffect(() => {
+    if (!provider || !user?.username) return;
+
+    provider.awareness.setLocalStateField("user", {
+      _id: user._id,
+      username: user.username,
+      avatar: user.avatar,
+
+      name: user.username, 
+      color: user.avatar,
+    });
+  }, [provider, user.username, user.avatar]);
+
+
+  useEffect(() => {
+    if (!provider) return;
+
+    const handleAwarenessUpdate = () => {
+      const states = provider.awareness.getStates();
+
+      // 🟢 แปลง Map Object เป็น Array เพื่อเอาไปใช้งานง่ายๆ
+      const usersArray = Array.from(states.values())
+        .filter((state) => state.user) // กรองเอาเฉพาะอันที่มีข้อมูล user ผูกอยู่
+        .map((state) => state.user);
+
+      setRoomOnlineCountProvider(usersArray);
+      setActiveUsers(usersArray); 
+    };
+
+    provider.awareness.on("change", handleAwarenessUpdate);
+
+    handleAwarenessUpdate();
+
+    return () => {
+      provider.awareness.off("change", handleAwarenessUpdate);
+    };
+  }, [provider]);
+
 
   // ==========================================
   // 1. useEffect: จับจังหวะพิมพ์งาน (ขาไป)
@@ -247,7 +284,6 @@ function EditorInner({
       }
     };
 
-    // 🔓 เปิดสวิตช์ฟังจังหวะพิมพ์
     yjs.on("update", handleDocUpdate);
 
     // 🔒 ล้างข้อมูล
@@ -260,28 +296,28 @@ function EditorInner({
   // 2. useEffect: รับข้อความบันทึกสำเร็จ (ขากลับ)
   // ==========================================
   useEffect(() => {
-    // 🛡️ ถ้า socket บังเอิญเป็น null ให้ข้ามไปก่อน
-    if (!socket) return;
+  const targetRoomId = room?._id;
+  if (!socket || !targetRoomId) return; 
 
-    const handleSyncStatus = (data) => {
-      if (data.status === "saved") {
-        setSaveStatus("saved");
-        if (timerRef.current) clearTimeout(timerRef.current);
-
-        timerRef.current = setTimeout(() => {
-          setSaveStatus("idle");
-        }, 3000);
-      }
-    };
-
-    // 🔓 ใช้ socket ตัวเดิมผูกหูฟังรอรับ Event ได้เลย
-    socket.on("syncStatus", handleSyncStatus);
-
-    return () => {
-      socket.off("syncStatus", handleSyncStatus);
+  const eventName = `syncStatus:${targetRoomId}`;
+  const handleSyncStatus = (res) => {
+    if (res.status === "saved") {
+      setSaveStatus("saved");
+      
       if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [socket]);
+      timerRef.current = setTimeout(() => {
+        setSaveStatus("idle");
+      }, 3000);
+    }
+  };
+
+  socket.on(eventName, handleSyncStatus);
+
+  return () => {
+    socket.off(eventName, handleSyncStatus);
+    if (timerRef.current) clearTimeout(timerRef.current);
+  };
+}, [socket, room?._id]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(link);
@@ -511,9 +547,7 @@ function EditorInner({
           <div className="text-lg text-gray-400 font-medium">
             {saveStatus === "saving" && <span>saving data...</span>}
             {saveStatus === "saved" && (
-              <span className="text-green-500">
-                changes saved
-              </span>
+              <span className="text-green-500">changes saved</span>
             )}
             {saveStatus === "idle" && (
               <span className="text-gray-300">data synced</span>
@@ -521,9 +555,9 @@ function EditorInner({
           </div>
           <div className="flex gap-3 items-center">
             <div className="flex items-center gap-1 -space-x-4">
-              {activeUsersList?.slice(0, 5).map((member) => (
+              {activeUsersList?.slice(0, 5).map((member, index) => (
                 <div
-                  key={member._id}
+                  key={member._id || index}
                   style={{ borderColor: member?.avatar }}
                   className="flex-none bg-white border-2 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
                 >
@@ -714,7 +748,7 @@ function EditorInner({
             </div>
             <div className="flex items-center gap-2 bg-white px-4 py-1 rounded-lg text-secondary">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-ping"></span>
-              {onlineUsers || 1} online
+              {activeUsersList.length || 1} online
             </div>
           </div>
         </div>

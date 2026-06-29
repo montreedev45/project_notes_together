@@ -7,6 +7,7 @@ import useAuthStore from "../store/useAuthStore";
 import useRoomStore from "../store/useRoomStore";
 import useModalStore from "../store/useModalStore";
 import { getRelativeTimeEdit } from "../utils/getRelativeTimeEdit";
+import { getSocket } from "../socket";
 
 function RoomCard({ data = {} }) {
   const navigate = useNavigate();
@@ -19,7 +20,6 @@ function RoomCard({ data = {} }) {
   const deleteRoom = useRoomStore((state) => state.deleteRoom);
   const openDeleteModal = useModalStore((state) => state.openDeleteModal);
 
-  const onlineUsers = useRoomStore((state) => state.onlineUsers[data._id] || 0);
   const relativeTimeFromStore = useRoomStore(
     (state) => state.relativeTime[data._id] || null,
   );
@@ -41,6 +41,38 @@ function RoomCard({ data = {} }) {
   );
   const isOwner = data?.owner?._id === user?._id;
 
+  const [roomOnlineCounts, setRoomOnlineCounts] = useState({});
+
+  const socket = getSocket();
+
+  useEffect(() => {
+    if (!socket) {
+      const checkSocketTimer = setInterval(() => {
+        const currentSocket = getSocket();
+        if (currentSocket) {
+          setSocketLocal(currentSocket);
+          clearInterval(checkSocketTimer);
+        }
+      }, 200);
+      return () => clearInterval(checkSocketTimer);
+    }
+
+    const eventName = `room-online-status:${data._id}`;
+
+    const handleStatusChange = (res) => {
+      const { roomId, count, activeUsers } = res;
+      setRoomOnlineCounts((prev) => ({
+        ...prev,
+        [roomId]: activeUsers,
+      }));
+    };
+
+    socket.on(eventName, handleStatusChange);
+    return () => {
+      socket.off(eventName, handleStatusChange);
+    };
+  }, [socket, data._id]);
+
   //relative time
 
   useEffect(() => {
@@ -52,7 +84,7 @@ function RoomCard({ data = {} }) {
 
     // เคลียร์ท่อเวลาก่อนหน้า ป้องกัน Memory Leak
     return () => clearInterval(interval);
-  }, [relativeTimeFromStore]); // 🚩 ใส่ตัวแปรนี้ เพื่อให้ระเบิดเวลาตั้งใหม่ทันทีที่คนพิมพ์และเซฟลงเบส
+  }, [relativeTimeFromStore]); 
 
   useEffect(() => {
     // ฟังก์ชันตรวจจับการคลิกข้างนอก
@@ -275,22 +307,25 @@ function RoomCard({ data = {} }) {
         <div className="flex items-center gap-1 my-4 -space-x-4">
           {data.isPeopleJoinRoom && (
             <>
-              {onlineUsers?.activeUsers?.slice(0, 5).map((member) => (
-                <div
-                  key={member?._id || Math.random()}
-                  style={{ borderColor: member?.avatar }}
-                  className="flex-none bg-white border-2 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
-                >
-                  <Icon
-                    icon="mdi:account"
-                    style={{ color: member?.avatar }}
-                    width="30"
-                  />
-                </div>
-              ))}
-              {onlineUsers?.activeUsers?.length > 5 && (
-                <div className="flex-none bg-gray-200 border-2 border-white w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold text-gray-600 z-0">
-                  +{onlineUsers?.activeUsers?.length - 5}
+              {(roomOnlineCounts[data._id] || [])
+                .slice(0, 5)
+                .map((member, index) => (
+                  <div
+                    key={member?._id || member?.username || index}
+                    style={{ borderColor: member?.avatar }}
+                    className="flex-none bg-white border-2 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer relative z-10 hover:z-20 transition-all" // เพิ่ม z-index ให้ไม่บังกันมั่วซั่ว
+                  >
+                    <Icon
+                      icon="mdi:account"
+                      style={{ color: member?.avatar }}
+                      width="30"
+                    />
+                  </div>
+                ))}
+
+              {(roomOnlineCounts[data._id] || []).length > 5 && (
+                <div className="flex-none bg-gray-200 border-2 border-white w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-gray-600 relative z-0">
+                  +{(roomOnlineCounts[data._id] || []).length - 5}
                 </div>
               )}
             </>
@@ -301,7 +336,7 @@ function RoomCard({ data = {} }) {
             {data?.isOnlineStatus && (
               <>
                 <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                <span>{onlineUsers?.count || 0} online</span>
+                <span>{roomOnlineCounts[data._id]?.length || 0} online</span>
               </>
             )}
           </span>

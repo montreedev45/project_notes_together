@@ -6,7 +6,7 @@ const initialState = {
   myRooms: [],
   recentRooms: [],
   trashRooms: [],
-  onlineUsers: {},
+  onlineUsersProvider: [],
   relativeTime: {},
   loading: false,
 };
@@ -17,7 +17,7 @@ const useRoomStore = create((set, get) => ({
   myRooms: [],
   recentRooms: JSON.parse(localStorage.getItem("recent-rooms") || "[]"),
   trashRooms: [],
-  onlineUsers: {},
+  onlineUsersProvider: [],
   relativeTime: {},
   loading: false,
 
@@ -479,13 +479,8 @@ const useRoomStore = create((set, get) => ({
     }
   },
 
-  setRoomOnlineCount: (roomId, count, activeUsers) => {
-    set((state) => ({
-      onlineUsers: {
-        ...state.onlineUsers,
-        [roomId]: {count, activeUsers}, 
-      },
-    }));
+  setRoomOnlineCountProvider: (activeUsers) => {
+    set({ onlineUsersProvider: activeUsers });
   },
 
   setRelativeTime: (roomId, time) => {
@@ -496,7 +491,7 @@ const useRoomStore = create((set, get) => ({
       },
     }));
   },
-  
+
   resetRoomStore: () => set(initialState),
 }));
 

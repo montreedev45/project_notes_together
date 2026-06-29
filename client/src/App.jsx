@@ -34,7 +34,7 @@ function App() {
   const user = useAuthStore((state) => state.user);
   const checkAuth = useAuthStore((state) => state.checkAuth);
   const isInitialized = useAuthStore((state) => state.isInitialized);
-  const setRoomOnlineCount = useRoomStore((state) => state.setRoomOnlineCount);
+  //const setRoomOnlineCount = useRoomStore((state) => state.setRoomOnlineCount);
   const setRelativeTime = useRoomStore((state) => state.setRelativeTime);
   const getNotifications = useNotificationStore(
     (state) => state.getNotifications,
@@ -45,7 +45,6 @@ function App() {
 
   //socket
   useEffect(() => {
-    // 🚩 ประกาศตัวแปรไว้ด้านนอก เพื่อให้ฟังก์ชัน return ด้านล่างเรียกใช้ล้างท่อได้
     let socket;
 
     if (user && user._id) {
@@ -61,10 +60,6 @@ function App() {
         addNotification(data);
       });
 
-      socket.on("room_status", ({ roomId, onlineCount, activeUsers }) => {
-        setRoomOnlineCount(roomId, onlineCount, activeUsers);
-      });
-
       socket.on("send_relative_time", ({ roomId, time }) => {
         setRelativeTime(roomId, time);
       });
@@ -73,19 +68,17 @@ function App() {
       disconnectSocket();
     }
 
-    // รวมฟังก์ชัน Cleanup ไว้ที่ก้อนท้ายสุดก้อนเดียว สะอาด ปลอดภัย 100%
     return () => {
       if (socket) {
         //ล้าง Event Listener ทุกตัวที่เคยผูกไว้ให้เกลี้ยง ป้องกันสเตทเบิ้ล
         socket.off("connect");
         socket.off("new_notification");
-        socket.off("room_status");
         socket.off("send_relative_time");
       }
       // สั่งปิดท่อหลักป้องกันสายค้าง
       disconnectSocket();
     };
-  }, [user]); // รันใหม่ทุกครั้งที่สถานะผู้ใช้เปลี่ยน (Login / Logout)// ทำงานใหม่ทุกครั้งที่ค่า user เปลี่ยน
+  }, [user]);
 
   useEffect(() => {
     const saveRecent = JSON.parse(localStorage.getItem("recent-rooms") || "[]");

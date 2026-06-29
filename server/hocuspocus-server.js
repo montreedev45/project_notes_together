@@ -34,7 +34,6 @@ const extractImageUrls = (xmlString) => {
 // หาก .env อยู่โฟลเดอร์ข้างนอก ให้ใช้ path.join(__dirname, "../.env")
 dotenv.config({ path: path.join(__dirname, ".env") });
 
-
 connectDB();
 
 export const createHocuspocus = (io) => {
@@ -52,8 +51,6 @@ export const createHocuspocus = (io) => {
           try {
             const roomObjectId = new mongoose.Types.ObjectId(documentName);
             const note = await Note.findOne({ room: roomObjectId });
-
-            // ถ้ามีโน้ตเก่าและมี content ให้ส่ง Buffer ไป แต่ถ้าไม่มีให้ส่ง null ตรงๆ
             return note && note.content ? note.content : null;
           } catch (err) {
             console.error("❌ Fetch Error:", err);
@@ -68,20 +65,15 @@ export const createHocuspocus = (io) => {
           try {
             const roomObjectId = new mongoose.Types.ObjectId(documentName);
             const currentUpdatedTime = new Date();
-
             const oldNote = await Note.findOne({ room: roomObjectId });
 
-            // 1: ใช้กุญแจชื่อ "content" ไขเอาก้อน XML ออกมา
             const newXmlString = document.getXmlFragment("content").toString();
 
             if (oldNote && oldNote.content) {
               const oldDoc = new Y.Doc();
               Y.applyUpdate(oldDoc, new Uint8Array(oldNote.content));
 
-              // 2: ใช้กุญแจชื่อ "content" ไขก้อนเก่าออกมาด้วย
               const oldXmlString = oldDoc.getXmlFragment("content").toString();
-
-              // เทียบรูป
               const oldImages = extractImageUrls(oldXmlString);
               const newImages = extractImageUrls(newXmlString);
 
@@ -89,14 +81,13 @@ export const createHocuspocus = (io) => {
                 (url) => !newImages.includes(url),
               );
 
-              // 4. สั่งสอยไฟล์ขยะเหล่านั้นออกจากโฟลเดอร์ดิสก์บนเซิร์ฟเวอร์จริง
               deletedImages.forEach((url) => {
-                // กรองความชัวร์ เผื่อมีลิงก์เว็บอื่นปนมา จะได้ลบเฉพาะรูประบบเรา
                 if (url.includes("/uploads/")) {
                   const filename = url.split("/uploads/")[1];
                   if (filename) {
+                    // 🟢 ปรับพิกัดมาอิงที่ Root ด้วย process.cwd() ป้องกันบั๊กหาโฟลเดอร์รูปไม่เจอ
                     const filePath = path.join(
-                      __dirname,
+                      process.cwd(),
                       "public/uploads",
                       filename,
                     );
@@ -115,19 +106,14 @@ export const createHocuspocus = (io) => {
               });
             }
 
-            // 💾 บันทึกก้อน state (Buffer) ลงฐานข้อมูล
             await Note.findOneAndUpdate(
               { room: roomObjectId },
-              {
-                content: state,
-                updatedAt: currentUpdatedTime,
-              },
+              { content: state, updatedAt: currentUpdatedTime },
               { upsert: true, returnDocument: "after" },
             );
 
-            if (!document.hasUnappliedUpdates) {
-              io.to(documentName).emit("syncStatus", { status: "saved" });
-            }
+            const eventName = `syncStatus:${documentName}`;
+            io.emit(eventName, { status: "saved" });
 
             sendRelativeTime(io, documentName, currentUpdatedTime);
           } catch (error) {
@@ -136,6 +122,26 @@ export const createHocuspocus = (io) => {
         },
       }),
     ],
+
+    async onAwarenessUpdate({ documentName, awareness }) {
+      const roomId = documentName;
+      const states = awareness.getStates();
+
+      const rawUsers = Array.from(states.values())
+        .filter((state) => state.user)
+        .map((state) => state.user);
+
+      const uniqueUsers = rawUsers.filter(
+        (u, index, self) =>
+          index === self.findIndex((target) => target.username === u.username),
+      );
+
+      io.emit(`room-online-status:${roomId}`, {
+        roomId,
+        count: uniqueUsers.length,
+        activeUsers: uniqueUsers,
+      });
+    },
 
     onDisconnect({ documentName }) {
       console.log(`🔌 Client disconnected from: ${documentName}`);
