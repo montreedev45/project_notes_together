@@ -107,7 +107,6 @@ function RoomCard({ data = {} }) {
     };
   }, [isOpenMenuModal]);
 
-  //test navigate
   const handleClickRoom = (e) => {
     if (data?.isDeleted === true) {
       if (
@@ -185,10 +184,9 @@ function RoomCard({ data = {} }) {
   };
 
   const handleSettingRoom = () => {
-    const isAlreadyMember = data?.members.some(
-      (m) => m?.user?._id === user?._id,
-    );
 
+    const isAlreadyMember = data?.owner?._id === user?._id
+    
     if (!isAlreadyMember) {
       alert(`Only owner room can access setting page.`);
     } else {
@@ -201,9 +199,9 @@ function RoomCard({ data = {} }) {
       <div
         key={data._id}
         onClick={handleClickRoom}
-        className="min-w-55 max-w-55 min-h-55 max-h-55 bg-white shadow-md p-3 rounded-lg cursor-pointer hover:scale-105 transition-transform flex flex-col justify-between"
+        className="min-w-55 max-w-55 min-h-55 max-h-55 bg-white shadow-md p-3 rounded-lg cursor-pointer hover:scale-105 transition-transform flex flex-col justify-start"
       >
-        <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center justify-between">
           <Icon icon="mdi:folder" width="50" style={{ color: data.color }} />
           <div className="relative flex items-center">
             {data?.isPrivate ? (
@@ -294,17 +292,17 @@ function RoomCard({ data = {} }) {
             )}
           </div>
         </div>
-        <span className="text-2xl font-semibold flex items-center">
+        <span className="text-2xl font-semibold py2 flex items-center">
           {data.name}
           {data?.owner?._id === user._id && (
             <Icon icon="mdi:star" className="text-yellow-200 ms-2" width={25} />
           )}
         </span>
 
-        <p className="text-secondary text-sm font-medium">
+        <p className="text-secondary text-sm  max-h-10 font-medium overflow-auto">
           {data?.description}
         </p>
-        <div className="flex items-center gap-1 my-4 -space-x-4">
+        <div className="flex flex-1 items-center py-1 -space-x-4">
           {data.isPeopleJoinRoom && (
             <>
               {(roomOnlineCounts[data._id] || [])
@@ -335,7 +333,7 @@ function RoomCard({ data = {} }) {
           <span className="flex items-center gap-2 text-secondary text-sm">
             {data?.isOnlineStatus && (
               <>
-                <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                <div className="w-2 h-2 rounded-full bg-green-400"></div>
                 <span>{roomOnlineCounts[data._id]?.length || 0} online</span>
               </>
             )}

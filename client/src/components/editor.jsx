@@ -5,7 +5,7 @@ import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
 import { createYjs } from "../lib/yjs";
 import { Icon } from "@iconify/react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { connectSocket, disconnectSocket, getSocket } from "../socket";
 import { formatChatTime } from "../utils/formatTime";
 import useAuthStore from "../store/useAuthStore";
@@ -23,28 +23,74 @@ import useNoteStore from "../store/useNoteStore";
 
 function Editor() {
   const { roomId, role } = useParams();
+  const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const getMyRooms = useRoomStore((state) => state.getMyRooms);
-  const myRooms = useRoomStore((state) => state.myRooms);
-  const roomData = myRooms.find((r) => r._id === roomId);
   const getComment = useCommentStore((state) => state.getComment);
+  const myRooms = useRoomStore((state) => state.myRooms);
+  const loading = useRoomStore((state) => state.loading);
+  const roomData = myRooms.find((r) => r._id === roomId);
 
-  //initial load
+  const isMember = roomData?.members?.some((m) => m.user?._id === user?._id);
+  const isOwner =
+    roomData?.owner?._id === user?._id || roomData?.owner === user?._id;
+  const hasAccess = isMember || isOwner;
+
+  const [isReady, setIsReady] = useState(false); // เพิ่ม Local State เช็กว่า "พร้อมทำงานหรือยัง"
+  const hasFetched = useRef(false);
+
+  // 1. ดักจับการดึงข้อมูล
   useEffect(() => {
-    getMyRooms();
-    getComment(roomId);
-  }, []);
+    if (user && !hasFetched.current) {
+      hasFetched.current = true;
 
-  const onlineUsersProvider = useRoomStore((state) => state.onlineUsersProvider);
+      // เรียก API และรอจนกว่าจะเสร็จ แล้วค่อยเปิดสวิตช์ isReady
+      const fetchRooms = async () => {
+        try {
+          await getMyRooms();
+          await getComment(roomId);
+        } finally {
+          setIsReady(true);
+        }
+      };
+      fetchRooms();
+    }
+  }, [user, getMyRooms]);
+
+  // 2. Logic เช็กสิทธิ์การเข้าถึง
+  useEffect(() => {
+    // 🌟 กฎข้อที่ 1: ถ้ายังโหลดไม่เสร็จสมบูรณ์ ห้ามทำอะไรเด็ดขาด
+    if (!isReady || !user) return;
+
+    // กฎข้อที่ 2: โหลดเสร็จแล้ว แต่หาห้องไม่เจอ (ห้องโดนลบ / โดนเตะ)
+    if (!roomData) {
+      console.warn("this room was not found (it may have been removed or deleted).");
+      navigate("/notes-together/explore", { replace: true });
+      return;
+    }
+
+    // กฎข้อที่ 3: เช็กสิทธิ์ Member / Owner
+    const isMember = roomData.members?.some((m) => m.user?._id === user._id);
+    const isOwner =
+      roomData.owner?._id === user._id || roomData.owner === user._id;
+
+    if (!isMember && !isOwner) {
+      console.warn("you do not have permission to access this room.");
+      navigate("/notes-together/explore", { replace: true });
+    }
+  }, [isReady, roomData, user, navigate]);
+
+  const onlineUsersProvider = useRoomStore(
+    (state) => state.onlineUsersProvider,
+  );
 
   const [yjs, setYjs] = useState(null);
 
   const providerRef = useRef(null);
   const ydocRef = useRef(null);
+  const socket = getSocket();
 
   useEffect(() => {
-    const socket = getSocket();
-
     if (socket && roomId) {
       socket.emit("join_room", {
         roomId,
@@ -58,12 +104,10 @@ function Editor() {
 
     return () => {
       if (socket && roomId) {
-        console.log("🏃‍♂️ User leaving editor page...");
-        // ส่งสัญญาณบอกหลังบ้านเบาๆ ว่าฉันกำลังจะเดินออกจากห้องนี้แล้วนะ (แต่ไม่ต้องสั่ง socket.disconnect() ปิดท่อหลักทิ้ง)
         socket.emit("leave_room", { roomId });
       }
     };
-  }, [roomId, user._id]);
+  }, [roomId, user._id, socket]);
 
   useEffect(() => {
     let active = true;
@@ -101,6 +145,19 @@ function Editor() {
     );
   }
 
+  if (!isReady || !user) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        {/* ใส่ Spinner หรือข้อความ Loading ตามดีไซน์ของคุณ */}
+        <p>Checking access permissions...</p>
+      </div>
+    );
+  }
+
+  if (!roomData || !hasAccess) {
+    return null;
+  }
+
   return (
     <EditorInner
       key={roomId}
@@ -113,7 +170,13 @@ function Editor() {
   );
 }
 
-function ChatInput({ value, onChangeText, onSend, onSendSticker }) {
+function ChatInput({
+  value,
+  onChangeText,
+  onSend,
+  onSendSticker,
+  permissionUser,
+}) {
   const [isOpenStickerModal, setIsOpenStickerModal] = useState(false);
   const getAllSticker = useCommentStore((state) => state.getAllSticker);
   const stickers = useCommentStore((state) => state.stickers);
@@ -154,6 +217,7 @@ function ChatInput({ value, onChangeText, onSend, onSendSticker }) {
       <input
         type="text"
         value={value}
+        disabled={permissionUser === "viewer"}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
             onSend();
@@ -172,17 +236,16 @@ function ChatInput({ value, onChangeText, onSend, onSendSticker }) {
   );
 }
 
-function EditorInner({
-  yjs,
-  user,
-  room,
-  activeUsersList,
-  provider,
-}) {
+function EditorInner({ yjs, user, room, activeUsersList, provider }) {
+  const navigate = useNavigate();
   const comments = useCommentStore((state) => state.comments);
   const addCommentFromSocket = useCommentStore(
     (state) => state.addCommentFromSocket,
   );
+
+  const getMyRooms = useRoomStore((state) => state.getMyRooms);
+  const { role } = useParams();
+
   const socket = getSocket();
 
   const { roomId } = useParams();
@@ -210,6 +273,11 @@ function EditorInner({
 
   const [saveStatus, setSaveStatus] = useState("idle");
 
+  const permissionUser = room?.members?.find(
+    (m) => m.user._id === user._id,
+  )?.role;
+  const isEditable = permissionUser === "owner" || permissionUser === "editor";
+
   useEffect(() => {
     if (room) {
       setIsAllowLinkSharing(room.isAllowLinkSharing ?? true);
@@ -235,11 +303,10 @@ function EditorInner({
       username: user.username,
       avatar: user.avatar,
 
-      name: user.username, 
+      name: user.username,
       color: user.avatar,
     });
   }, [provider, user.username, user.avatar]);
-
 
   useEffect(() => {
     if (!provider) return;
@@ -253,7 +320,7 @@ function EditorInner({
         .map((state) => state.user);
 
       setRoomOnlineCountProvider(usersArray);
-      setActiveUsers(usersArray); 
+      setActiveUsers(usersArray);
     };
 
     provider.awareness.on("change", handleAwarenessUpdate);
@@ -264,7 +331,6 @@ function EditorInner({
       provider.awareness.off("change", handleAwarenessUpdate);
     };
   }, [provider]);
-
 
   // ==========================================
   // 1. useEffect: จับจังหวะพิมพ์งาน (ขาไป)
@@ -296,28 +362,28 @@ function EditorInner({
   // 2. useEffect: รับข้อความบันทึกสำเร็จ (ขากลับ)
   // ==========================================
   useEffect(() => {
-  const targetRoomId = room?._id;
-  if (!socket || !targetRoomId) return; 
+    const targetRoomId = room?._id;
+    if (!socket || !targetRoomId) return;
 
-  const eventName = `syncStatus:${targetRoomId}`;
-  const handleSyncStatus = (res) => {
-    if (res.status === "saved") {
-      setSaveStatus("saved");
-      
+    const eventName = `syncStatus:${targetRoomId}`;
+    const handleSyncStatus = (res) => {
+      if (res.status === "saved") {
+        setSaveStatus("saved");
+
+        if (timerRef.current) clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => {
+          setSaveStatus("idle");
+        }, 3000);
+      }
+    };
+
+    socket.on(eventName, handleSyncStatus);
+
+    return () => {
+      socket.off(eventName, handleSyncStatus);
       if (timerRef.current) clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => {
-        setSaveStatus("idle");
-      }, 3000);
-    }
-  };
-
-  socket.on(eventName, handleSyncStatus);
-
-  return () => {
-    socket.off(eventName, handleSyncStatus);
-    if (timerRef.current) clearTimeout(timerRef.current);
-  };
-}, [socket, room?._id]);
+    };
+  }, [socket, room?._id]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(link);
@@ -413,7 +479,7 @@ function EditorInner({
 
   // send comment
   const handleSend = () => {
-    if (!typedMessage.trim()) return;
+    if (!typedMessage.trim() || permissionUser === "viewer") return;
 
     // 🚩 จังหวะกดส่ง: สั่งหยุดพิมพ์ทันที ไม่ต้องรอครบ 2 วินาที
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -427,11 +493,13 @@ function EditorInner({
   };
 
   const handleSendSticker = (seletedSticker) => {
+    if (permissionUser === "viewer") return;
     const type = "sticker";
     addCommentFromMe(room?._id, type, seletedSticker);
   };
 
   const handleTypingChange = (e) => {
+    if (permissionUser === "viewer") return;
     setTypedMessage(e.target.value);
 
     if (!isTypingRef.current) {
@@ -452,12 +520,10 @@ function EditorInner({
     if (!socket) return;
 
     socket.on("user_typing", ({ userId, username }) => {
-      console.log(`user_typing ${userId} and ${username}`);
       setTypingUsers((prev) => ({ ...prev, [userId]: username }));
     });
 
     socket.on("user_stop_typing", ({ userId }) => {
-      console.log("user_stop_typing", { userId });
       setTypingUsers((prev) => {
         const updated = { ...prev };
         delete updated[userId];
@@ -469,10 +535,21 @@ function EditorInner({
       addCommentFromSocket(newComment);
     });
 
+    socket.on("role_updated", async ({ targetUserId, newRole }) => {
+
+      if (targetUserId === user._id) {
+        
+          navigate(`/notes-together/${roomId}/${newRole}`, { replace: true });
+      } else {
+        getMyRooms();
+      }
+    });
+
     return () => {
       socket.off("user_typing");
       socket.off("user_stop_typing");
       socket.off("received_comment");
+      socket.off("role_updated");
     };
   }, [room?._id, user?._id]);
 
@@ -533,9 +610,16 @@ function EditorInner({
         },
       },
       content: "<h1>หัวข้อรายงาน A4</h1><p>เริ่มพิมพ์ข้อความตรงนี้...</p>",
+      editable: false,
     },
     [yjs],
   );
+
+  useEffect(() => {
+    if (editor && !editor.isDestroyed && permissionUser !== undefined) {
+      editor.setEditable(isEditable);
+    }
+  }, [isEditable, editor, permissionUser]);
 
   if (!editor) return null;
 
@@ -756,229 +840,243 @@ function EditorInner({
         <div className="flex justify-evenly">
           <div className="w-full min-w-100 max-w-260 ">
             <div className="w-full top-0 py-5 gap-3 sticky z-10">
-              <div className="w-full flex py-3 px-3 rounded-md shadow-sm bg-gray-100 border border-slate-200">
-                <button
-                  onClick={() => editor.chain().focus().toggleBold().run()}
-                  disabled={!editor.can().chain().focus().toggleBold().run()}
-                  className={`p-2 rounded transition-colors ${editor.isActive("bold") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                  title="Bold (Ctrl+B)"
-                >
-                  <Icon icon="mdi:format-bold" width="20" />
-                </button>
-                <button
-                  onClick={() => editor.chain().focus().toggleItalic().run()}
-                  disabled={!editor.can().chain().focus().toggleItalic().run()}
-                  className={`p-2 rounded transition-colors ${editor.isActive("italic") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                  title="Italic (Ctrl+I)"
-                >
-                  <Icon icon="mdi:format-italic" width="20" />
-                </button>
-                <button
-                  onClick={() => editor.chain().focus().toggleUnderline().run()}
-                  className={`p-2 rounded transition-colors ${editor.isActive("underline") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                  title="Underline (Ctrl+U)"
-                >
-                  <Icon icon="mdi:format-underline" width="20" />
-                </button>
-                <button
-                  onClick={() => editor.chain().focus().toggleStrike().run()}
-                  className={`p-2 rounded transition-colors ${editor.isActive("strike") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                  title="Strikethrough"
-                >
-                  <Icon icon="mdi:format-strikethrough-variant" width="20" />
-                </button>
-                <button
-                  onClick={() => editor.chain().focus().toggleCode().run()}
-                  className={`p-2 rounded transition-colors ${editor.isActive("code") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                  title="Inline Code"
-                >
-                  <Icon icon="mdi:code-tags" width="20" />
-                </button>
-                <div className="w-px h-6 bg-slate-200 mx-1" /> {/* เส้นคั่น */}
-                {/* --- Group 2: Headings --- */}
-                <select
-                  onChange={(e) => {
-                    if (e.target.value === "none") {
-                      editor.chain().focus().setParagraph().run();
-                    } else {
-                      const levelValue = Number(e.target.value);
+              {isEditable && (
+                <div className="w-full flex py-3 px-3 rounded-md shadow-sm bg-gray-100 border border-slate-200">
+                  <button
+                    onClick={() => editor.chain().focus().toggleBold().run()}
+                    disabled={!editor.can().chain().focus().toggleBold().run()}
+                    className={`p-2 rounded transition-colors ${editor.isActive("bold") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
+                    title="Bold (Ctrl+B)"
+                  >
+                    <Icon icon="mdi:format-bold" width="20" />
+                  </button>
+                  <button
+                    onClick={() => editor.chain().focus().toggleItalic().run()}
+                    disabled={
+                      !editor.can().chain().focus().toggleItalic().run()
+                    }
+                    className={`p-2 rounded transition-colors ${editor.isActive("italic") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
+                    title="Italic (Ctrl+I)"
+                  >
+                    <Icon icon="mdi:format-italic" width="20" />
+                  </button>
+                  <button
+                    onClick={() =>
+                      editor.chain().focus().toggleUnderline().run()
+                    }
+                    className={`p-2 rounded transition-colors ${editor.isActive("underline") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
+                    title="Underline (Ctrl+U)"
+                  >
+                    <Icon icon="mdi:format-underline" width="20" />
+                  </button>
+                  <button
+                    onClick={() => editor.chain().focus().toggleStrike().run()}
+                    className={`p-2 rounded transition-colors ${editor.isActive("strike") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
+                    title="Strikethrough"
+                  >
+                    <Icon icon="mdi:format-strikethrough-variant" width="20" />
+                  </button>
+                  <button
+                    onClick={() => editor.chain().focus().toggleCode().run()}
+                    className={`p-2 rounded transition-colors ${editor.isActive("code") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
+                    title="Inline Code"
+                  >
+                    <Icon icon="mdi:code-tags" width="20" />
+                  </button>
+                  <div className="w-px h-6 bg-slate-200 mx-1" />
+                  {/* เส้นคั่น */}
+                  {/* --- Group 2: Headings --- */}
+                  <select
+                    onChange={(e) => {
+                      if (e.target.value === "none") {
+                        editor.chain().focus().setParagraph().run();
+                      } else {
+                        const levelValue = Number(e.target.value);
 
-                      editor
-                        .chain()
-                        .focus()
-                        .setHeading({ level: levelValue })
-                        .run();
+                        editor
+                          .chain()
+                          .focus()
+                          .setHeading({ level: levelValue })
+                          .run();
+                      }
+                    }}
+                    className="p-1.5 border border-slate-300 rounded text-sm text-slate-600 bg-white outline-none cursor-pointer hover:border-blue-400"
+                    title="Headings"
+                  >
+                    <option value="none">Heading</option>
+                    <option value="1">H1</option>
+                    <option value="2">H2</option>
+                    <option value="3">H3</option>
+                    <option value="4">H4</option>
+                    <option value="5">H5</option>
+                    <option value="6">H6</option>
+                  </select>
+                  <div className="w-px h-6 bg-slate-200 ms-1" />
+                  {/* เส้นคั่น */}
+                  {/* font style */}
+                  {/* 🔤 1. Dropdown เลือกฟอนต์ (Font Family) */}
+                  <select
+                    onChange={(e) => {
+                      if (e.target.value === "normal") {
+                        editor.chain().focus().unsetFontFamily().run();
+                      } else {
+                        editor
+                          .chain()
+                          .focus()
+                          .setFontFamily(e.target.value)
+                          .run();
+                      }
+                    }}
+                    className="p-1.5 border border-slate-300 rounded text-sm text-slate-600 bg-white outline-none cursor-pointer hover:border-blue-400"
+                    title="Font Family"
+                  >
+                    <option value="normal">Default Font</option>
+                    <option value="Arial">Arial</option>
+                    <option value="Courier New">Courier New</option>
+                    <option value="Georgia">Georgia</option>
+                    <option value="Times New Roman">Times New Roman</option>
+                    <option value="Comic Sans MS">Comic Sans MS</option>
+                    <option value="Bitcount Single">Bitcount Single</option>
+                    <option value="Indie Flower">Indie Flower</option>
+                    <option value="Amatic SC">Amatic SC</option>
+                  </select>
+                  {/* 📐 2. Dropdown เลือกขนาดตัวอักษร (Font Size) */}
+                  <select
+                    onChange={(e) => {
+                      if (e.target.value === "normal") {
+                        editor.chain().focus().unsetFontSize().run();
+                      } else {
+                        editor
+                          .chain()
+                          .focus()
+                          .setFontSize(e.target.value)
+                          .run();
+                      }
+                    }}
+                    className="p-1.5 border border-slate-300 rounded text-sm text-slate-600 bg-white outline-none cursor-pointer hover:border-blue-400 ml-1"
+                    title="Font Size"
+                  >
+                    <option value="normal">Size</option>
+                    <option value="12px">12px</option>
+                    <option value="14px">14px</option>
+                    <option value="16px">16px</option>
+                    <option value="18px">18px</option>
+                    <option value="24px">24px</option>
+                    <option value="32px">32px</option>
+                    <option value="64px">64px</option>
+                    <option value="128px">128px</option>
+                  </select>
+                  {/* --- Group 3: Lists & Blocks --- */}
+                  <button
+                    onClick={() =>
+                      editor.chain().focus().toggleBulletList().run()
                     }
-                  }}
-                  className="p-1.5 border border-slate-300 rounded text-sm text-slate-600 bg-white outline-none cursor-pointer hover:border-blue-400"
-                  title="Headings"
-                >
-                  <option value="none">Heading</option>
-                  <option value="1">H1</option>
-                  <option value="2">H2</option>
-                  <option value="3">H3</option>
-                  <option value="4">H4</option>
-                  <option value="5">H5</option>
-                  <option value="6">H6</option>
-                </select>
-                <div className="w-px h-6 bg-slate-200 ms-1" /> {/* เส้นคั่น */}
-                {/* font style */}
-                {/* 🔤 1. Dropdown เลือกฟอนต์ (Font Family) */}
-                <select
-                  onChange={(e) => {
-                    if (e.target.value === "normal") {
-                      editor.chain().focus().unsetFontFamily().run();
-                    } else {
-                      editor
-                        .chain()
-                        .focus()
-                        .setFontFamily(e.target.value)
-                        .run();
+                    className={`p-2 rounded ${editor.isActive("bulletList") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
+                  >
+                    <Icon icon="mdi:format-list-bulleted" width="20" />
+                  </button>
+                  <button
+                    onClick={() =>
+                      editor.chain().focus().toggleOrderedList().run()
                     }
-                  }}
-                  className="p-1.5 border border-slate-300 rounded text-sm text-slate-600 bg-white outline-none cursor-pointer hover:border-blue-400"
-                  title="Font Family"
-                >
-                  <option value="normal">Default Font</option>
-                  <option value="Arial">Arial</option>
-                  <option value="Courier New">Courier New</option>
-                  <option value="Georgia">Georgia</option>
-                  <option value="Times New Roman">Times New Roman</option>
-                  <option value="Comic Sans MS">Comic Sans MS</option>
-                  <option value="Bitcount Single">Bitcount Single</option>
-                  <option value="Indie Flower">Indie Flower</option>
-                  <option value="Amatic SC">Amatic SC</option>
-                </select>
-                {/* 📐 2. Dropdown เลือกขนาดตัวอักษร (Font Size) */}
-                <select
-                  onChange={(e) => {
-                    if (e.target.value === "normal") {
-                      editor.chain().focus().unsetFontSize().run();
-                    } else {
-                      editor.chain().focus().setFontSize(e.target.value).run();
+                    className={`p-2 rounded ${editor.isActive("orderedList") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
+                  >
+                    <Icon icon="mdi:format-list-numbered" width="20" />
+                  </button>
+                  <button
+                    onClick={() =>
+                      editor.chain().focus().toggleBlockquote().run()
                     }
-                  }}
-                  className="p-1.5 border border-slate-300 rounded text-sm text-slate-600 bg-white outline-none cursor-pointer hover:border-blue-400 ml-1"
-                  title="Font Size"
-                >
-                  <option value="normal">Size</option>
-                  <option value="12px">12px</option>
-                  <option value="14px">14px</option>
-                  <option value="16px">16px</option>
-                  <option value="18px">18px</option>
-                  <option value="24px">24px</option>
-                  <option value="32px">32px</option>
-                  <option value="64px">64px</option>
-                  <option value="128px">128px</option>
-                </select>
-                {/* --- Group 3: Lists & Blocks --- */}
-                <button
-                  onClick={() =>
-                    editor.chain().focus().toggleBulletList().run()
-                  }
-                  className={`p-2 rounded ${editor.isActive("bulletList") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                >
-                  <Icon icon="mdi:format-list-bulleted" width="20" />
-                </button>
-                <button
-                  onClick={() =>
-                    editor.chain().focus().toggleOrderedList().run()
-                  }
-                  className={`p-2 rounded ${editor.isActive("orderedList") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                >
-                  <Icon icon="mdi:format-list-numbered" width="20" />
-                </button>
-                <button
-                  onClick={() =>
-                    editor.chain().focus().toggleBlockquote().run()
-                  }
-                  className={`p-2 rounded ${editor.isActive("blockquote") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                >
-                  <Icon icon="mdi:format-quote-close" width="20" />
-                </button>
-                {/* ปุ่มอัปโหลดรูปภาพ */}
-                <button
-                  onClick={() => fileInputRef.current.click()}
-                  className={`p-2 rounded ${editor.isActive("image") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                  title="Upload Image"
-                >
-                  <Icon icon="mdi:image-outline" width="20" />
-                </button>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  className="hidden"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                />
-                <button
-                  onClick={() =>
-                    editor.chain().focus().setTextAlign("left").run()
-                  }
-                  className={`p-2 rounded ${editor.isActive({ textAlign: "left" }) ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                  title="Align Left"
-                >
-                  <Icon icon="mdi:format-align-left" width="20" />
-                </button>
-                <button
-                  onClick={() =>
-                    editor.chain().focus().setTextAlign("center").run()
-                  }
-                  className={`p-2 rounded ${editor.isActive({ textAlign: "center" }) ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                  title="Align Center"
-                >
-                  <Icon icon="mdi:format-align-center" width="20" />
-                </button>
-                <button
-                  onClick={() =>
-                    editor.chain().focus().setTextAlign("right").run()
-                  }
-                  className={`p-2 rounded ${editor.isActive({ textAlign: "right" }) ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                  title="Align Right"
-                >
-                  <Icon icon="mdi:format-align-right" width="20" />
-                </button>
-                <div
-                  className={`relative flex items-center justify-center overflow-hidden p-2 rounded ${editor.isActive("textStyle") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                  title="Text Color"
-                >
-                  <Icon icon="mdi:format-color-text" width="20" />
+                    className={`p-2 rounded ${editor.isActive("blockquote") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
+                  >
+                    <Icon icon="mdi:format-quote-close" width="20" />
+                  </button>
+                  {/* ปุ่มอัปโหลดรูปภาพ */}
+                  <button
+                    onClick={() => fileInputRef.current.click()}
+                    className={`p-2 rounded ${editor.isActive("image") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
+                    title="Upload Image"
+                  >
+                    <Icon icon="mdi:image-outline" width="20" />
+                  </button>
                   <input
-                    type="color"
-                    onChange={(e) =>
-                      editor.chain().focus().setColor(e.target.value).run()
-                    }
-                    className="absolute inset-0 w-[200%] h-[200%] -ml-[50%] -mt-[50%] opacity-0 cursor-pointer"
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleImageUpload}
                   />
+                  <button
+                    onClick={() =>
+                      editor.chain().focus().setTextAlign("left").run()
+                    }
+                    className={`p-2 rounded ${editor.isActive({ textAlign: "left" }) ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
+                    title="Align Left"
+                  >
+                    <Icon icon="mdi:format-align-left" width="20" />
+                  </button>
+                  <button
+                    onClick={() =>
+                      editor.chain().focus().setTextAlign("center").run()
+                    }
+                    className={`p-2 rounded ${editor.isActive({ textAlign: "center" }) ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
+                    title="Align Center"
+                  >
+                    <Icon icon="mdi:format-align-center" width="20" />
+                  </button>
+                  <button
+                    onClick={() =>
+                      editor.chain().focus().setTextAlign("right").run()
+                    }
+                    className={`p-2 rounded ${editor.isActive({ textAlign: "right" }) ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
+                    title="Align Right"
+                  >
+                    <Icon icon="mdi:format-align-right" width="20" />
+                  </button>
+                  <div
+                    className={`relative flex items-center justify-center overflow-hidden p-2 rounded ${editor.isActive("textStyle") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
+                    title="Text Color"
+                  >
+                    <Icon icon="mdi:format-color-text" width="20" />
+                    <input
+                      type="color"
+                      onChange={(e) =>
+                        editor.chain().focus().setColor(e.target.value).run()
+                      }
+                      className="absolute inset-0 w-[200%] h-[200%] -ml-[50%] -mt-[50%] opacity-0 cursor-pointer"
+                    />
+                  </div>
+                  <button
+                    onClick={() =>
+                      editor.chain().focus().setHorizontalRule().run()
+                    }
+                    className={`p-2 rounded ${editor.isActive("horizontalRule") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
+                    title="Divider"
+                  >
+                    <Icon icon="mdi:minus" width="20" />
+                  </button>
+                  <button
+                    onClick={() =>
+                      editor.chain().focus().toggleCodeBlock().run()
+                    }
+                    className={`p-2 rounded ${editor.isActive("codeBlock") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
+                    title="Code Block"
+                  >
+                    <Icon icon="mdi:code-braces" width="20" />
+                  </button>
+                  <div className="flex-1 " /> {/* ดันปุ่มที่เหลือไปทางขวา */}
+                  {/* --- Group 4: Clear Formatting --- */}
+                  <button
+                    onClick={() =>
+                      editor.chain().focus().unsetAllMarks().clearNodes().run()
+                    }
+                    className="p-2 rounded hover:bg-red-100 text-red-400"
+                    title="Clear Formatting"
+                  >
+                    <Icon icon="mdi:format-clear" width="20" />
+                  </button>
                 </div>
-                <button
-                  onClick={() =>
-                    editor.chain().focus().setHorizontalRule().run()
-                  }
-                  className={`p-2 rounded ${editor.isActive("horizontalRule") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                  title="Divider"
-                >
-                  <Icon icon="mdi:minus" width="20" />
-                </button>
-                <button
-                  onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-                  className={`p-2 rounded ${editor.isActive("codeBlock") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                  title="Code Block"
-                >
-                  <Icon icon="mdi:code-braces" width="20" />
-                </button>
-                <div className="flex-1 " /> {/* ดันปุ่มที่เหลือไปทางขวา */}
-                {/* --- Group 4: Clear Formatting --- */}
-                <button
-                  onClick={() =>
-                    editor.chain().focus().unsetAllMarks().clearNodes().run()
-                  }
-                  className="p-2 rounded hover:bg-red-100 text-red-400"
-                  title="Clear Formatting"
-                >
-                  <Icon icon="mdi:format-clear" width="20" />
-                </button>
-              </div>
+              )}
             </div>
             <div className="editor-background">
               <div className="w-fit overflow-auto no-scrollbar">
@@ -1078,6 +1176,7 @@ function EditorInner({
                   onSendSticker={(stickerSelect) =>
                     handleSendSticker(stickerSelect)
                   }
+                  permissionUser={permissionUser}
                 />
               </div>
             </div>

@@ -4,8 +4,8 @@ function SettingRoomPreview({ roomData }) {
   return (
     <div className="border-s-2 border-gray pt-9 ps-5 flex flex-col justify-start items-center gap-4">
       <span className="text-2xl font-semibold mb-2 rounded-lg">preview</span>
-      <div className="min-w-55 max-w-55 min-h-55 max-h-55 bg-white shadow-md p-3 rounded-lg flex flex-col justify-between">
-        <div className="flex items-center justify-between mb-1">
+      <div className="min-w-55 max-w-55 min-h-55 max-h-55 bg-white shadow-md p-3 rounded-lg cursor-pointer hover:scale-105 transition-transform flex flex-col justify-start">
+        <div className="flex items-center justify-between">
           <Icon
             icon="mdi:folder"
             width="50"
@@ -20,11 +20,11 @@ function SettingRoomPreview({ roomData }) {
             <Icon icon="mdi:menu" width="30" className="text-secondary" />
           </div>
         </div>
-        <span className="text-2xl font-semibold">{roomData?.name}</span>
-        <p className="text-secondary text-sm font-medium">
+        <span className="text-2xl  font-semibold">{roomData?.name}</span>
+        <p className="text-secondary text-sm  max-h-10 font-medium overflow-auto">
           {roomData?.description}
         </p>
-        <div className="flex items-center gap-1 my-4 -space-x-4">
+        <div className="flex flex-1 items-center py-1 -space-x-4">
           {roomData?.isPeopleJoinRoom && (
             <>
               {roomData?.members?.slice(0, 5).map((member) => (
@@ -52,7 +52,7 @@ function SettingRoomPreview({ roomData }) {
           <span className="flex items-center gap-2 text-secondary text-sm">
             {roomData?.isOnlineStatus && (
               <>
-                <div className="w-3 h-3 rounded-full bg-green-400"></div>{" "}
+                <div className="w-2 h-2 rounded-full bg-green-400"></div>
                 <span>2 online</span>
               </>
             )}

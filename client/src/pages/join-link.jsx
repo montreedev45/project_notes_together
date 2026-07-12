@@ -4,25 +4,26 @@ import useRoomStore from "../store/useRoomStore";
 
 function JoinLink() {
   const joinLink = useRoomStore((state) => state.joinLink);
-  const [status, setStatus] = useState("loading"); 
-  const { roomId, role } = useParams();
+  const [status, setStatus] = useState("loading");
+  const { shareLinkToken, role } = useParams();
   const navigate = useNavigate();
   const hasJoin = useRef(false);
 
   useEffect(() => {
     const executeJoin = async () => {
-      if (roomId && role && !hasJoin.current) {
+      if (shareLinkToken && role && !hasJoin.current) {
         hasJoin.current = true;
 
         try {
-          const res = await joinLink(roomId, role);
-          console.log(res)
-          
-          if (res?.success) {
+          const res = await joinLink(shareLinkToken, role);
+
+          if (res.success === true && res.data?._id) {
             setStatus("success");
-            navigate(`/notes-together/${roomId}/${role}`);
+            navigate(`/notes-together/${res.data._id}/${role}`, {
+              replace: true,
+            });
           } else {
-            setStatus(res?.status || "error");
+            setStatus(res?.status);
           }
         } catch (error) {
           setStatus("error");
@@ -31,21 +32,37 @@ function JoinLink() {
     };
 
     executeJoin();
-  }, [roomId, role, joinLink, navigate]);
+  }, [shareLinkToken, role, joinLink, navigate]);
 
-  if (status === 403) {
+  if (status === 403 || status === "403") {
     return (
       <div className="flex flex-col justify-center items-center h-screen gap-4">
-        <h1 className="text-lg font-semibold text-red-500">Access to the room has been denied.</h1>
-        <button onClick={() => navigate("/notes-together/explore")} className="btn btn-outline">กลับหน้าหลัก</button>
+        <h1 className="text-lg font-semibold text-red-500">
+          Access to the room has been denied.
+        </h1>
+        <button
+          onClick={() => navigate("/notes-together/explore")}
+          className="btn btn-outline cursor-pointer"
+        >
+          return home
+        </button>
       </div>
     );
   }
 
-  if (status === "error") {
+  if (status === "error" || status === 404 || status === "404") {
+    console.log("status", status);
     return (
-      <div className="flex justify-center items-center h-screen">
-        <p>เกิดข้อผิดพลาด ไม่พบห้องที่คุณกำลังมองหา</p>
+      <div className="flex flex-col justify-center items-center h-screen gap-4">
+        <p className="text-gray-600">
+          An error occurred. The room or sharing link you are looking for was not found.
+        </p>
+        <button
+          onClick={() => navigate("/notes-together/explore")}
+          className="btn btn-outline btn-sm"
+        >
+          return home
+        </button>
       </div>
     );
   }
@@ -53,8 +70,10 @@ function JoinLink() {
   return (
     <div className="flex justify-center items-center h-screen">
       <div className="text-center">
-        <span className="loading loading-spinner loading-lg mb-4"></span>
-        <p className="animate-pulse">กำลังพาท่านเข้าสู่ห้องพัก...</p>
+        <span className="loading loading-spinner loading-lg mb-4 text-blue-500"></span>
+        <p className="animate-pulse text-gray-500">
+          going to the room...
+        </p>
       </div>
     </div>
   );

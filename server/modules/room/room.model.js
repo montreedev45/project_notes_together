@@ -1,70 +1,90 @@
 import mongoose, { Types } from "mongoose";
 
 const memberSchema = new mongoose.Schema({
-    user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User"
-    },
-    role: {
-        type: String,
-        enum: ["owner", "editor", "viewer", "commenter"],
-        default: "viewer"
-    }
-})
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
+  role: {
+    type: String,
+    enum: ["owner", "editor", "viewer", "commenter"],
+    default: "viewer",
+  },
+});
 
-const roomSchema = new mongoose.Schema({
-    name:{
-        type: String,
-        required: true
+const roomSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
     },
-    owner:{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
     description: String,
     members: [memberSchema],
     isPrivate: {
-        type:Boolean,
-        default: false
+      type: Boolean,
+      default: false,
     },
-    color:{
-        type: String,
-        default: "#4b9fff"
+    color: {
+      type: String,
+      default: "#4b9fff",
     },
     code: {
+      type: String,
+      unique: true,
+      index: true,
+    },
+    shareLink: {
+      token: { type: String, default: "" },
+      access: { type: String, enum: ["anyone", "invited"], default: "anyone" },
+      expiredAt: { type: Date, default: null },
+      role: {
         type: String,
-        unique: true
+        enum: ["editor", "commenter", "viewer"],
+        default: "viewer",
+      },
     },
+    invitedUsers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
     isDeleted: {
-        type: Boolean,
-        default: false
+      type: Boolean,
+      default: false,
     },
-    deletedAt:{
-        type: Date
+    deletedAt: {
+      type: Date,
     },
     isOnlineStatus: {
-        type: Boolean,
-        default: true
+      type: Boolean,
+      default: true,
     },
-    isLastEditTime:{
-        type: Boolean,
-        default: true
+    isLastEditTime: {
+      type: Boolean,
+      default: true,
     },
-    isPeopleJoinRoom:{
-        type: Boolean,
-        default: true
+    isPeopleJoinRoom: {
+      type: Boolean,
+      default: true,
     },
     isAllowLinkSharing: {
-        type: Boolean,
-        default: false
+      type: Boolean,
+      default: false,
     },
     isAllowCodeSharing: {
-        type: Boolean,
-        default: false
-    }
-}, {timestamps: true})
+      type: Boolean,
+      default: false,
+    },
+  },
+  { timestamps: true },
+);
 
-const Room = mongoose.model("Room", roomSchema)
+const Room = mongoose.model("Room", roomSchema);
 
 export default Room;

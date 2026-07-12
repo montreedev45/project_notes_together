@@ -32,7 +32,7 @@ function SettingRoomLayout() {
         </span>
         <div className="bg-third border-2 border-gray mt-5 h-155 overflow-auto no-scrollbar rounded-2xl ps-10 pe-4 py-0 grid grid-cols-[260px_1fr_320px]">
           <SettingRoomSidebar />
-          <Outlet context={{roomData}}/>
+          <Outlet context={{roomData, myRooms}}/>
         <SettingRoomPreview roomData={roomData}/>
         </div>
       </div>

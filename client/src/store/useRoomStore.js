@@ -446,18 +446,22 @@ const useRoomStore = create((set, get) => ({
     }
   },
 
-  joinLink: async (roomId, role) => {
+  joinLink: async (shareLinkToken, role) => {
     set({ loading: true });
     try {
-      const res = await api.post(`rooms/join-link/${roomId}/${role}`);
+      const res = await api.get(`/rooms/join-link/${shareLinkToken}/${role}`);
 
       if (res?.data) {
         set((state) => ({
           ...state,
-          myRooms: state.myRooms.map((r) => (r._id === roomId ? res.data : r)),
-          rooms: state.rooms.map((r) => (r._id === roomId ? res.data : r)),
+          myRooms: state.myRooms.map((r) =>
+            r._id === shareLinkToken ? res.data : r,
+          ),
+          rooms: state.rooms.map((r) =>
+            r._id === shareLinkToken ? res.data : r,
+          ),
           recentRooms: state.recentRooms.map((r) =>
-            r._id === roomId ? { ...r, members: res.data.members } : r,
+            r._id === shareLinkToken ? { ...r, members: res.data.members } : r,
           ),
           loading: false,
         }));
@@ -465,22 +469,145 @@ const useRoomStore = create((set, get) => ({
         const latestRecent = get().recentRooms;
         localStorage.setItem("recent-rooms", JSON.stringify(latestRecent));
 
-        return { success: true };
+        return {
+          success: true,
+          data: res.data,
+        };
       }
 
       set({ loading: false });
-      return { success: false, message: "Unexpected response from server" };
-    } catch (error) {
-      set({ loading: false });
       return {
         success: false,
-        status: error.response?.status, // ส่ง 403 กลับไป
+        status: "error",
+        message: "Unexpected response from server",
+      };
+    } catch (error) {
+      set({ loading: false });
+
+      const backendStatus = error.response?.status || "error";
+      const backendMessage =
+        error.response?.data?.message || "Join link failed";
+
+      return {
+        success: false,
+        status: backendStatus, 
+        message: backendMessage,
       };
     }
   },
 
   setRoomOnlineCountProvider: (activeUsers) => {
     set({ onlineUsersProvider: activeUsers });
+  },
+
+  updateRoomCode: async (roomId) => {
+    set({ loading: true });
+
+    try {
+      const res = await api.put("/rooms/room-code", { roomId });
+      if (res.status === 200 && res.data.newCode) {
+        set((state) => ({
+          ...state,
+          rooms: state.rooms.map((r) =>
+            r._id === roomId ? { ...r, code: res?.data?.newCode } : r,
+          ),
+          myRooms: state.myRooms.map((r) =>
+            r._id === roomId ? { ...r, code: res?.data?.newCode } : r,
+          ),
+          recentRooms: state.recentRooms.map((r) =>
+            r._id === roomId ? { ...r, code: res?.data?.newCode } : r,
+          ),
+          loading: false,
+        }));
+        return {
+          success: true,
+          message: "update code room successfully",
+          code: res.data.code,
+        };
+      }
+
+      set({ loading: false });
+
+      return { success: false, message: "unexpected response from server" };
+    } catch (error) {
+      set({ loading: false });
+      return { success: false, message: "update code room failed" };
+    }
+  },
+
+  updateLinkShare: async (roomId, role, access) => {
+    set({ loading: true });
+    try {
+      const res = await api.put(`/rooms/update-link-share/${roomId}`, {
+        role,
+        access,
+      });
+      if (res.status === 200 && res.data) {
+        set((state) => ({
+          ...state,
+          rooms: state.rooms.map((r) =>
+            r._id === roomId ? { ...r, shareLink: res?.data } : r,
+          ),
+          myRooms: state.myRooms.map((r) =>
+            r._id === roomId ? { ...r, shareLink: res?.data } : r,
+          ),
+          recentRooms: state.recentRooms.map((r) =>
+            r._id === roomId ? { ...r, shareLink: res?.data } : r,
+          ),
+          loading: false,
+        }));
+        return {
+          success: true,
+          message: "update link share room successfully",
+        };
+      }
+
+      set({ loading: false });
+
+      return { success: false, message: "unexpected response from server" };
+    } catch (error) {
+      set({ loading: false });
+      return { success: false, message: "update link share room failed" };
+    }
+  },
+
+  invitedUsers: async (roomId, userId) => {
+    set({ loading: true });
+    try {
+      const res = await api.post("/rooms/invite-colleague", { roomId, userId });
+      if (res.status === 200 && res.data.invitedUsers) {
+        set((state) => ({
+          ...state,
+          rooms: state.rooms.map((r) =>
+            r._id === roomId
+              ? { ...r, invitedUsers: res.data.invitedUsers }
+              : r,
+          ),
+          myRooms: state.myRooms.map((r) =>
+            r._id === roomId
+              ? { ...r, invitedUsers: res.data.invitedUsers }
+              : r,
+          ),
+          recentRooms: state.recentRooms.map((r) =>
+            r._id === roomId
+              ? { ...r, invitedUsers: res.data.invitedUsers }
+              : r,
+          ),
+          loading: false,
+        }));
+        return {
+          success: true,
+          message: "invite colleague in room successfully",
+        };
+      }
+
+      set({ loading: false });
+
+      return { success: false, message: "unexpected response from server" };
+    } catch (error) {
+      set({ loading: false });
+      return { success: false, message: "invite colleague in room failed" };
+    }
   },
 
   setRelativeTime: (roomId, time) => {

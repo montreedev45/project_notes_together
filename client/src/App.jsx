@@ -114,7 +114,7 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="recent" element={<Recent />} />
             <Route path="trash" element={<Trash />} />
-            <Route path="join-link/:roomId/:role" element={<JoinLink />} />
+            <Route path="join-link/:shareLinkToken/:role" element={<JoinLink />} />
 
             {/* 2. Setting Account (จัดการโปรไฟล์) */}
             <Route

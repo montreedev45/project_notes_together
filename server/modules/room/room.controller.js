@@ -2,7 +2,8 @@ import Room from "./room.model.js";
 import User from "../auth/auth.model.js";
 import Notification from "../notification/notification.model.js";
 import generateCode from "../../utils/generateCode.js";
-import { sendNotification } from "../../sockets/socket.manage.js";
+import { sendNotification, roleUpdated } from "../../sockets/socket.manage.js";
+import crypto from "crypto";
 
 //create room
 export const createRoom = async (req, res) => {
@@ -20,6 +21,7 @@ export const createRoom = async (req, res) => {
     }
 
     const { name, description, isPrivate, selectedColor } = req.body;
+    const shareLinkToken = crypto.randomBytes(16).toString("hex");
 
     const room = await Room.create({
       name,
@@ -34,12 +36,17 @@ export const createRoom = async (req, res) => {
       isPrivate,
       color: selectedColor,
       code: roomCode,
+      shareLink: {
+        token: shareLinkToken,
+        access: "anyone",
+        expiredAt: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
+      },
     });
 
     //case: when create room frontend not received some data
     const populate = await Room.findById(room._id)
       .populate("owner", "username email")
-      .populate("members.user", "avatar username -_id");
+      .populate("members.user", "avatar username");
 
     res.json(populate);
   } catch (error) {
@@ -54,11 +61,13 @@ export const getMyRooms = async (req, res) => {
     const userId = req.user._id;
 
     // 1. สร้าง Query Object เบื้องต้น (เริ่มต้นด้วยการหาห้องที่เราเป็นสมาชิก)
-    let query = { "members.user": userId, isDeleted: false };
+    let query = {
+      $or: [{ "members.user": userId }, { owner: userId }],
+      isDeleted: false,
+    };
 
     // 2. ปรับเปลี่ยน Query ตาม Criteria ที่ได้รับมา
     if (criteria === "private") {
-      console.log("isPrivate");
       query.isPrivate = true;
     } else if (criteria === "public") {
       query.isPrivate = false;
@@ -109,7 +118,6 @@ export const getAllRooms = async (req, res) => {
     if (searchTerm && searchTerm.trim() !== "") {
       query.name = { $regex: searchTerm.trim(), $options: "i" };
     }
-    
 
     const rooms = await Room.find(query)
       .sort({ createdAt: -1 })
@@ -219,7 +227,7 @@ export const joinRoom = async (req, res) => {
     // 🚩 2. Populate ข้อมูล sender เพื่อส่งไปกับ Socket (ให้เห็นชื่อและรูปทันที)
     const populatedNotice = await newNotice.populate(
       "sender",
-      "username avatar",
+      "username avatar email",
     );
 
     sendNotification(room.owner.toString(), populatedNotice, {
@@ -313,6 +321,8 @@ export const updateRole = async (req, res) => {
 
     if (!updatedRole)
       return res.status(404).json({ message: "Room not found" });
+
+    roleUpdated(roomId, memberId, role);
 
     res.json(updatedRole);
   } catch (error) {
@@ -466,43 +476,168 @@ export const deleteMember = async (req, res) => {
 
 export const joinLink = async (req, res) => {
   try {
-    const { roomId, role } = req.params;
+    const { shareLinkToken, role } = req.params;
     const userId = req.user._id;
 
-    const room = await Room.findById(roomId);
-    if (!room) return res.status(404).json({ message: "Room not found" });
+    const room = await Room.findOne({
+      "shareLink.role": role,
+      "shareLink.token": shareLinkToken,
+    })
+      .populate("owner", "username email avatar")
+      .populate("members.user", "avatar email username");
 
-    if (!room.isAllowLinkSharing) {
-      return res
-        .status(403)
-        .json({ message: "The room owner has disabled sharing via link." });
-    }
+    if (!room)
+      return res.status(404).json({ message: "Room or Share link not found" });
 
-    if (role === "owner") {
-      return res
-        .status(400)
-        .json({ message: "Cannot join as owner via link." });
+    if (room.shareLink.expiredAt && new Date() > room.shareLink.expiredAt) {
+      return res.status(410).json({ message: "The share link has expired." });
     }
 
     const isMember = room.members.some(
-      (m) => m.user.toString() === userId.toString(),
+      (m) => m.user?._id.toString() === userId.toString(),
     );
 
     if (isMember) {
       return res.status(200).json(room);
-    } else {
-      const updatedRoom = await Room.findByIdAndUpdate(
-        roomId,
-        { $addToSet: { members: { user: userId, role: role } } },
-        { returnDocument: "after" },
-      )
-        .populate("owner", "username email avatar")
-        .populate("members.user", "avatar email username");
-
-      return res.status(200).json(updatedRoom);
     }
+
+    // ตรวจสอบสิทธิ์การเข้าถึงตามกรณี (anyone VS invited)
+    if (room.shareLink.access === "invited") {
+      // เช็กว่าผู้ใช้คนนี้ มีชื่ออยู่ในรายชื่อที่ถูกเชิญไว้หรือไม่
+      const isInvited = room.invitedUsers?.some(
+        (id) => id.toString() === userId.toString(),
+      );
+
+      // ถ้าไม่ได้ถูกเชิญ และไม่ใช่เจ้าของห้อง ให้ส่ง 403 บล็อกทันที
+      if (!isInvited && room.owner._id.toString() !== userId.toString()) {
+        return res.status(403).json({
+          message:
+            "Access denied. You must be invited by the owner to join this room.",
+        });
+      }
+    }
+    // ถ้า access === "anyone" โค้ดจะปล่อยไหลผ่านเงื่อนไขนี้ไปทำงานต่อด้านล่างทันทีตามสเปก
+
+    // ดึงสิทธิ์จริงบันทึกลงสมาชิกใหม่
+    const assignedRole = room.shareLink.role || "viewer";
+    room.members.push({ user: userId, role: assignedRole });
+    await room.save();
+
+    return res.status(200).json(room);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Join link failed" });
+  }
+};
+
+export const invitedUsers = async (req, res) => {
+  try {
+    const { roomId, userId } = req.body;
+    const currentUserId = req.user._id;
+
+    const roomCheck = await Room.findById(roomId);
+    if (!roomCheck) {
+      return res.status(404).json({ message: "room not found" });
+    }
+
+    if (roomCheck.owner.toString() !== currentUserId.toString()) {
+      return res.status(403).json({
+        message:
+          "you do not have the right to invite other users to this room.",
+      });
+    }
+
+    const updatedRoom = await Room.findByIdAndUpdate(
+      roomId,
+      { $addToSet: { invitedUsers: userId } },
+      { returnDocument: "after" },
+    );
+
+    return res.status(200).json({
+      message: "Invite colleague successfully",
+      invitedUsers: updatedRoom.invitedUsers,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Invite colleague failed" });
+  }
+};
+
+const generate6DigitCode = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+export const updateCodeRoom = async (req, res) => {
+  try {
+    const { roomId } = req.body;
+
+    let newCode = "";
+    let isUnique = false;
+    let safetyCount = 0;
+
+    while (!isUnique && safetyCount < 10) {
+      newCode = generate6DigitCode();
+
+      const existingRoom = await Room.findOne({ code: newCode });
+
+      if (!existingRoom) {
+        isUnique = true;
+      }
+
+      safetyCount++;
+    }
+
+    if (!isUnique) {
+      return res
+        .status(500)
+        .json({ message: "can't update code room, please try again" });
+    }
+
+    const updatedRoom = await Room.findByIdAndUpdate(
+      roomId,
+      { code: newCode },
+      { returnDocument: "after" },
+    );
+
+    if (!updatedRoom) {
+      return res.status(404).json({ message: "not found room" });
+    }
+
+    return res.status(200).json({
+      message: "updated code room successfully",
+      newCode: updatedRoom.code,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "update code room failed" });
+  }
+};
+
+export const updateLinkShareRoom = async (req, res) => {
+  try {
+    const roomId = req.params.roomId;
+    const { role, access } = req.body;
+    const userId = req.user._id;
+
+    const room = await Room.findById(roomId);
+    if (room.owner.toString() !== userId.toString()) {
+      return res
+        .status(403)
+        .json({ message: "you not have permission to edit sharing." });
+    }
+
+    const newSecureToken = crypto.randomBytes(16).toString("hex");
+
+    room.shareLink.token = newSecureToken;
+    room.shareLink.access = access || room.shareLink.access; // ถ้าไม่มีส่งมาให้ใช้ค่าเดิม
+    room.shareLink.role = role || room.shareLink.role; // ถ้าไม่มีส่งมาให้ใช้ค่าเดิม
+
+    room.shareLink.expiredAt = new Date(Date.now() + 1 * 24 * 60 * 60 * 1000);
+
+    await room.save();
+
+    return res.status(200).json(room.shareLink);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Update share settings failed" });
   }
 };

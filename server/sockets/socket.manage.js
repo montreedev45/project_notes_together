@@ -16,11 +16,23 @@ const setSocket = (ioConfig) => {
       console.log(`User ${userId} connected socket`);
     });
 
+    socket.on("join_room", async ({ roomId, user }) => {
+      socket.join(roomId);
+
+      // ฝากข้อมูล user แปะติดไว้กับตัว socket นี้เลย
+      socket.roomId = roomId;
+      socket.user = user;
+    });
+
+    socket.on("leave_room", async ({ roomId }) => {
+      if (roomId) {
+        socket.leave(roomId);
+      }
+    });
+
     socket.on("typing", () => {
       // ตรวจสอบก่อนว่าตัว socket นี้มีห้อง (roomId) และมีข้อมูลผู้ใช้ (user) สิงสถิตอยู่จริงไหม
       if (socket.roomId && socket.user) {
-        console.log("typing backend woring")
-        // 🚩 สั่ง socket.to().emit() เพื่อส่งสัญญาณหา "คนอื่นทุกคนในห้อง" ยกเว้นตัวคนพิมพ์เอง
         socket.to(socket.roomId).emit("user_typing", {
           userId: socket.user._id,
           username: socket.user.username,
@@ -55,6 +67,15 @@ export const sendNotification = (recipientId, data, newMember) => {
 export const sendComment = (roomId, newComment) => {
   if (io) {
     io.to(roomId).emit("received_comment", { newComment });
+  }
+};
+
+export const roleUpdated = (roomId, targetUserId, newRole) => {
+  if (io) {
+    io.to(roomId).emit("role_updated", {
+      targetUserId: targetUserId,
+      newRole: newRole,
+    });
   }
 };
 

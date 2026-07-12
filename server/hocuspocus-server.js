@@ -94,10 +94,10 @@ export const createHocuspocus = (io) => {
                     if (fs.existsSync(filePath)) {
                       fs.unlink(filePath, (err) => {
                         if (err)
-                          console.error(`❌ ลบไม่ได้ (${filename}):`, err);
+                          console.error(`can't delete  (${filename}):`, err);
                         else
                           console.log(
-                            `🗑️ ลบไฟล์ออกจากโฟลเดอร์สำเร็จ: ${filename}`,
+                            `delete image succesfully: ${filename}`,
                           );
                       });
                     }

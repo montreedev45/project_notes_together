@@ -11,7 +11,7 @@ function SettingRoomMember() {
   const getUser = useAuthStore((state) => state.getUser);
   const addMember = useRoomStore((state) => state.addMember);
   const updateRole = useRoomStore((state) => state.updateRole);
-  const deleteMember = useRoomStore((state)=> state.deleteMember)
+  const deleteMember = useRoomStore((state) => state.deleteMember);
   const { roomData } = useOutletContext();
   const [isCopied, setIsCopied] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -207,7 +207,7 @@ function SettingRoomMember() {
                             className="cursor-pointer px-2 py-1 outline-0 rounded-lg  text-sm font-semibold text-secondary"
                           >
                             {roles?.map((role) => (
-                              <option key={role} value={role}>
+                              <option key={role} value={role} disabled={role === m?.role}>
                                 {role}
                               </option>
                             ))}
