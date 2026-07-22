@@ -258,6 +258,7 @@ export const deleteAccount = async (req, res) => {
       {
         isDeleted: true,
         deletedAt: new Date(),
+        email: `deleted_${Date.now()}_${req.user.email}`
       },
       { returnDocument: "after" },
     );
