@@ -12,13 +12,14 @@ import {
   restoreRoom,
   permanentlyDelete,
   updateRoom,
-  addMember,
   updateRole,
   deleteMember,
   joinLink,
   updateCodeRoom,
   updateLinkShareRoom,
-  invitedUsers
+  invitedUsers,
+  transferOwnership,
+  permanentlyDeleteAll
 } from "./room.controller.js";
 
 const router = express.Router();
@@ -32,11 +33,12 @@ router.post("/all-rooms", authMiddleware, getAllRooms);
 
 router.post("/join", authMiddleware, joinRoom);
 router.post("/leave", authMiddleware, leaveRoom);
-router.put("/add-member", authMiddleware, addMember)
 router.put("/update-role", authMiddleware, updateRole)
 router.put("/delete-member", authMiddleware, deleteMember)
 router.put("/room-code", authMiddleware, updateCodeRoom)
 router.post("/invite-colleague", authMiddleware, invitedUsers)
+router.post("/transfer-ownership", authMiddleware, transferOwnership)
+router.delete("/permanent-all", authMiddleware, permanentlyDeleteAll);
 
 router.get("/:id", authMiddleware, getRoomById); 
 

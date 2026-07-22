@@ -2,12 +2,66 @@ import Room from "./room.model.js";
 import User from "../auth/auth.model.js";
 import Notification from "../notification/notification.model.js";
 import generateCode from "../../utils/generateCode.js";
-import { sendNotification, roleUpdated } from "../../sockets/socket.manage.js";
+import {
+  sendNotification,
+  roleUpdated,
+  transferOwnershipSocket,
+} from "../../sockets/socket.manage.js";
 import crypto from "crypto";
+import cron from "node-cron";
+import Plan from "../plan/plan.model.js";
+
+cron.schedule("0 0 * * *", async () => {
+  console.log("cron starting...");
+
+  try {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    // ใช้ deleteMany สั่งลบห้องทั้งหมดที่ตรงเงื่อนไขในคำสั่งเดียว!
+    // const expiredRooms = await Room.deleteMany({
+    //   isDeleted: true,
+    //   deletedAt: { $lt: thirtyDaysAgo }
+    // });
+
+    const expiredRooms = await Room.find({
+      isDeleted: true,
+      deletedAt: { $lt: thirtyDaysAgo },
+    });
+
+    if (expiredRooms.length > 0) {
+      for (const room of expiredRooms) {
+        // ตรงนี้สามารถใส่ลอจิกเสริมได้ เช่น สั่งลบไฟล์ข้อความ/ไฟล์โน้ตที่ผูกกับห้องนี้ออกให้เกลี้ยง
+        // await deleteRelatedNotes(room._id);
+        await Room.findByIdAndDelete(room._id);
+        console.log(`room ${room._id} has been deleted`);
+      }
+    } else {
+      console.log("no rooms were deleted");
+    }
+  } catch (error) {
+    console.log("error while running cron job to delete room", error);
+  }
+});
 
 //create room
 export const createRoom = async (req, res) => {
   try {
+    const userId = req.user._id;
+    const userPlan = req.user.plan;
+
+    const planDetails = await Plan.findOne({ plan: userPlan });
+    const roomLimit = planDetails.roomLimit ?? 3;
+
+    const currentOwnerRoomCount = await Room.countDocuments({ owner: userId });
+
+    if (currentOwnerRoomCount >= roomLimit) {
+      return res.status(403).json({
+        success: false,
+        message: `your package allows a maximum of ${roomLimit} rooms. please upgrade your plan.`, // แก้คำผิดเล็กน้อย (lease -> please)
+      });
+    }
+
     let roomCode = generateCode();
     let isUnique = false;
 
@@ -26,10 +80,10 @@ export const createRoom = async (req, res) => {
     const room = await Room.create({
       name,
       description,
-      owner: req.user._id,
+      owner: userId,
       members: [
         {
-          user: req.user._id,
+          user: userId,
           role: "owner",
         },
       ],
@@ -164,7 +218,10 @@ export const joinRoom = async (req, res) => {
     let room;
 
     if (code) {
-      room = await Room.findOne({ code });
+      room = await Room.findOne({ code }).populate(
+        "owner",
+        "username email avatar plan",
+      );
       if (!room)
         return res.status(404).json({ message: "Invalid invite code" });
 
@@ -173,7 +230,10 @@ export const joinRoom = async (req, res) => {
           .status(403)
           .json({ message: "The room owner has disabled sharing via code." });
     } else if (roomId) {
-      room = await Room.findById(roomId);
+      room = await Room.findById(roomId).populate(
+        "owner",
+        "username email avatar plan",
+      );
       if (!room) return res.status(404).json({ message: "Room not found" });
 
       if (room.isPrivate) {
@@ -193,50 +253,56 @@ export const joinRoom = async (req, res) => {
     );
 
     if (alreadyMember) {
-      // ถ้าเป็นสมาชิกอยู่แล้ว ให้ส่งข้อมูลห้องที่ Populate แล้วกลับไป
       const existingRoom = await Room.findById(room._id)
         .populate("owner", "username email avatar")
         .populate("members.user", "avatar username");
       return res.json(existingRoom);
     }
 
-    // 3. เพิ่มสมาชิกใหม่
+    const ownerPlan = room.owner?.plan || "free";
+
+    const planDetails = await Plan.findOne({ plan: ownerPlan });
+    const colleagueLimit = planDetails.colleagueLimit ?? 1;
+    
+    if (room.members.length - 1 >= colleagueLimit) {
+      if (room.owner._id.toString() === userId.toString()) {
+        return res.status(403).json({
+          message: `Your package allows a maximum of ${colleagueLimit} colleagues. Please upgrade your plan.`,
+        });
+      }
+
+      return res.status(403).json({
+        message: `This room allows a maximum of ${colleagueLimit} colleagues. Please contact the room owner.`,
+      });
+    }
+
     room.members.push({ user: userId, role: "viewer" });
     await room.save();
 
-    // 4. ส่งข้อมูลกลับพร้อม Populate
     const joinedRoom = await Room.findById(room._id)
       .populate("owner", "username email avatar")
       .populate("members.user", "avatar username");
 
-    const newMemberData = joinedRoom.members.find(
-      (m) => m.user._id.toString() === req.user._id.toString(),
-    );
-
-    //save
-    // 🚩 1. สร้าง Notification ลง Database
     const newNotice = await Notification.create({
-      recipient: room.owner, // ส่งถึงเจ้าของห้อง
-      sender: req.user._id, // คนที่กด Join
+      recipient: room.owner._id, // ส่งถึงเจ้าของห้อง (._id)
+      sender: req.user._id,
       type: "JOIN",
       roomId: room._id,
       roomName: room.name,
-      message: `${req.user.username} joined your room: ${room.name}`,
+      message: `joined your room: ${room.name}`,
     });
 
-    // 🚩 2. Populate ข้อมูล sender เพื่อส่งไปกับ Socket (ให้เห็นชื่อและรูปทันที)
     const populatedNotice = await newNotice.populate(
       "sender",
       "username avatar email",
     );
 
-    sendNotification(room.owner.toString(), populatedNotice, {
-      newMemberData,
-    });
+    sendNotification(room.owner._id.toString(), populatedNotice);
 
-    res.json(joinedRoom);
+    return res.json(joinedRoom);
   } catch (error) {
-    res.status(500).json({ message: "join room failed" });
+    console.error(error);
+    return res.status(500).json({ message: "Join room failed" });
   }
 };
 
@@ -264,7 +330,7 @@ export const leaveRoom = async (req, res) => {
       type: "LEAVE",
       roomId: room._id,
       roomName: room.name,
-      message: `${req.user.username} leave your room: ${room.name}`,
+      message: `room : ${room.name}`,
     });
 
     // 🚩 2. Populate ข้อมูล sender เพื่อส่งไปกับ Socket (ให้เห็นชื่อและรูปทันที)
@@ -278,27 +344,6 @@ export const leaveRoom = async (req, res) => {
     res.status(200).json({ message: "leave rooom successfully" });
   } catch (error) {
     res.status(500).json({ message: "leave room failed" });
-  }
-};
-
-export const addMember = async (req, res) => {
-  try {
-    const { roomId, memberId, role } = req.body;
-
-    const updatedRoom = await Room.findByIdAndUpdate(
-      roomId,
-      { $addToSet: { members: { user: memberId, role: role } } },
-      { returnDocument: "after" },
-    )
-      .populate("owner", "username email avatar")
-      .populate("members.user", "avatar email username");
-
-    if (!updatedRoom)
-      return res.status(404).json({ message: "Room not found" });
-
-    res.json(updatedRoom);
-  } catch (error) {
-    return res.status(500).json({ message: "Add member failed" });
   }
 };
 
@@ -419,6 +464,27 @@ export const permanentlyDelete = async (req, res) => {
   }
 };
 
+export const permanentlyDeleteAll = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const deleteRoom = await Room.deleteMany({
+      owner: userId,
+      isDeleted: true,
+    });
+
+    // ถ้าไม่เจอห้อง (อาจจะ ID ผิด หรือไม่ใช่เจ้าของ)
+    if (!deleteRoom) {
+      return res.status(404).json({ message: "Room not found" });
+    }
+
+    res.status(200).json({ message: "Delete all room succesfully" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Unexpected response from server" });
+  }
+};
+
 export const updateRoom = async (req, res) => {
   try {
     const { roomId, newData } = req.body;
@@ -483,7 +549,7 @@ export const joinLink = async (req, res) => {
       "shareLink.role": role,
       "shareLink.token": shareLinkToken,
     })
-      .populate("owner", "username email avatar")
+      .populate("owner", "username email avatar plan")
       .populate("members.user", "avatar email username");
 
     if (!room)
@@ -492,6 +558,11 @@ export const joinLink = async (req, res) => {
     if (room.shareLink.expiredAt && new Date() > room.shareLink.expiredAt) {
       return res.status(410).json({ message: "The share link has expired." });
     }
+
+    const ownerPlan = room.owner?.plan || "free";
+
+    const planDetails = await Plan.findOne({ plan: ownerPlan });
+    const colleagueLimit = planDetails.colleagueLimit ?? 1;
 
     const isMember = room.members.some(
       (m) => m.user?._id.toString() === userId.toString(),
@@ -503,12 +574,10 @@ export const joinLink = async (req, res) => {
 
     // ตรวจสอบสิทธิ์การเข้าถึงตามกรณี (anyone VS invited)
     if (room.shareLink.access === "invited") {
-      // เช็กว่าผู้ใช้คนนี้ มีชื่ออยู่ในรายชื่อที่ถูกเชิญไว้หรือไม่
       const isInvited = room.invitedUsers?.some(
         (id) => id.toString() === userId.toString(),
       );
 
-      // ถ้าไม่ได้ถูกเชิญ และไม่ใช่เจ้าของห้อง ให้ส่ง 403 บล็อกทันที
       if (!isInvited && room.owner._id.toString() !== userId.toString()) {
         return res.status(403).json({
           message:
@@ -516,14 +585,46 @@ export const joinLink = async (req, res) => {
         });
       }
     }
-    // ถ้า access === "anyone" โค้ดจะปล่อยไหลผ่านเงื่อนไขนี้ไปทำงานต่อด้านล่างทันทีตามสเปก
 
-    // ดึงสิทธิ์จริงบันทึกลงสมาชิกใหม่
+       if (room.members.length - 1 >= colleagueLimit) {
+      if (room.owner._id.toString() === userId.toString()) {
+        return res.status(403).json({
+          message: `Your package allows a maximum of ${colleagueLimit} colleagues. Please upgrade your plan.`,
+        });
+      }
+
+      return res.status(403).json({
+        message: `This room allows a maximum of ${colleagueLimit} colleagues. Please contact the room owner.`,
+      });
+    }
+
+    // บันทึกสมาชิกใหม่
     const assignedRole = room.shareLink.role || "viewer";
     room.members.push({ user: userId, role: assignedRole });
     await room.save();
 
-    return res.status(200).json(room);
+    const joinedRoom = await Room.findById(room._id)
+      .populate("owner", "username email avatar")
+      .populate("members.user", "avatar username");
+
+    // สร้าง Notification และส่ง Socket... (โค้ดส่วนล่างถูกต้องดีแล้วครับ)
+    const newNotice = await Notification.create({
+      recipient: room.owner._id.toString(),
+      sender: req.user._id,
+      type: "JOIN",
+      roomId: room._id,
+      roomName: room.name,
+      message: `room : ${room.name}`,
+    });
+
+    const populatedNotice = await newNotice.populate(
+      "sender",
+      "username avatar email",
+    );
+    const ownerId = room.owner._id.toString();
+    sendNotification(ownerId, populatedNotice);
+
+    return res.status(200).json(joinedRoom);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Join link failed" });
@@ -559,6 +660,64 @@ export const invitedUsers = async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({ message: "Invite colleague failed" });
+  }
+};
+
+export const transferOwnership = async (req, res) => {
+  try {
+    const { roomId, newOwnerId } = req.body;
+    const userId = req.user._id;
+
+    const room = await Room.findById(roomId);
+    if (!room) return res.status(404).json({ message: "room not found" });
+
+    if (room.owner.toString() !== userId.toString()) {
+      return res.status(403).json({
+        message: "you do not have the right to change the owner of the room.",
+      });
+    }
+
+    room.members = room.members.map((m) =>
+      m.user.toString() === newOwnerId.toString()
+        ? { ...m, role: "editor" }
+        : m,
+    );
+
+    room.owner = newOwnerId;
+
+    await room.save();
+
+    // const newNotice = await Notification.create({
+    //   recipient: room.owner, // ส่งถึงเจ้าของห้อง
+    //   sender: req.user._id, // คนที่กด Join
+    //   type: "JOIN",
+    //   roomId: room._id,
+    //   roomName: room.name,
+    //   message: `${req.user.username} joined your room: ${room.name}`,
+    // });
+
+    // // 🚩 2. Populate ข้อมูล sender เพื่อส่งไปกับ Socket (ให้เห็นชื่อและรูปทันที)
+    // const populatedNotice = await newNotice.populate(
+    //   "sender",
+    //   "username avatar email",
+    // );
+
+    // sendNotification(room.owner.toString(), populatedNotice);
+
+    const updatedRoom = await Room.findById(roomId)
+      .populate("owner", "username email avatar")
+      .populate("members.user", "avatar email username");
+
+    //transferOwnershipSocket(roomId, userId, newOwnerId);
+
+    return res.status(200).json({
+      success: true,
+      message: "transfer ownership successfully",
+      data: updatedRoom,
+    });
+  } catch (error) {
+    console.error("Transfer Error:", error); // console.log เผื่อดูบั๊กอื่น ๆ
+    return res.status(500).json({ message: "transfer ownership failed" });
   }
 };
 

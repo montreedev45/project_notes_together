@@ -40,7 +40,6 @@ const setSocket = (ioConfig) => {
       }
     });
 
-    // ดักฟังเมื่อหยุดพิมพ์
     socket.on("stop_typing", () => {
       if (socket.roomId && socket.user) {
         // 🚩 ส่งสัญญาณบอกคนอื่นให้เอาชื่อคนนี้ออกจากแท็บ "กำลังพิมพ์..."
@@ -49,7 +48,6 @@ const setSocket = (ioConfig) => {
         });
       }
     });
-
   });
 };
 
@@ -58,7 +56,7 @@ export const getIoInstance = () => {
   return io;
 };
 
-export const sendNotification = (recipientId, data, newMember) => {
+export const sendNotification = (recipientId, data) => {
   if (io) {
     io.to(recipientId).emit("new_notification", data);
   }
@@ -75,6 +73,16 @@ export const roleUpdated = (roomId, targetUserId, newRole) => {
     io.to(roomId).emit("role_updated", {
       targetUserId: targetUserId,
       newRole: newRole,
+    });
+  }
+};
+
+export const transferOwnershipSocket = (roomId, oldOwnerId, newOwnerId) => {
+  if (io) {
+    io.to(roomId).emit("transfer_ownership", {
+      roomId: roomId,
+      oldOwnerId: oldOwnerId,
+      newOwnerId: newOwnerId,
     });
   }
 };

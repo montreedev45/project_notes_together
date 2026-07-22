@@ -44,6 +44,8 @@ function SettingRoomGeneral() {
           <input
             type="text"
             value={roomData?.name || ""}
+            placeholder="minimum length 12 characters."
+            maxLength={12}
             name="name"
             onChange={handleChange}
             className="w-full py-2.5 outline-0 px-4 text-xl rounded-lg border-2 border-gray"
@@ -59,6 +61,8 @@ function SettingRoomGeneral() {
           <textarea
             type="text"
             value={roomData?.description || ""}
+            placeholder="maximum length 150 characters."
+            maxLength={150}
             name="description"
             onChange={handleChange}
             className="w-full py-2.5 outline-0 px-4 text-xl rounded-lg border-2 border-gray"

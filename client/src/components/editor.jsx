@@ -64,7 +64,9 @@ function Editor() {
 
     // กฎข้อที่ 2: โหลดเสร็จแล้ว แต่หาห้องไม่เจอ (ห้องโดนลบ / โดนเตะ)
     if (!roomData) {
-      console.warn("this room was not found (it may have been removed or deleted).");
+      console.warn(
+        "this room was not found (it may have been removed or deleted).",
+      );
       navigate("/notes-together/explore", { replace: true });
       return;
     }
@@ -536,10 +538,32 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
     });
 
     socket.on("role_updated", async ({ targetUserId, newRole }) => {
+      useRoomStore.setState((state) => {
+        // ฟังก์ชันช่วย Map สลับ Role ใน members ให้เป็นค่าใหม่สดๆ ร้อนๆ
+        const updateRoomObject = (room) => {
+          if (!room || room._id !== roomId) return room;
+          return {
+            ...room,
+            members: room.members.map((m) =>
+              m.user?._id === targetUserId ? { ...m, role: newRole } : m,
+            ),
+          };
+        };
+
+        return {
+          ...state,
+          myRooms: state.myRooms.map(updateRoomObject),
+          rooms: state.rooms.map(updateRoomObject),
+          recentRooms: state.recentRooms.map(updateRoomObject),
+          roomData:
+            state.roomData?._id === roomId
+              ? updateRoomObject(state.roomData)
+              : state.roomData,
+        };
+      });
 
       if (targetUserId === user._id) {
-        
-          navigate(`/notes-together/${roomId}/${newRole}`, { replace: true });
+        navigate(`/notes-together/${roomId}/${newRole}`, { replace: true });
       } else {
         getMyRooms();
       }

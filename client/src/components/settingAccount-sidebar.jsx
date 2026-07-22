@@ -10,17 +10,22 @@ function SettingAccountSidebar() {
 
   return (
     <>
-      <div className="pt-6">
+      <div className="pt-6 border-e-2 border-gray">
         <span className="text-2xl font-semibold flex items-center gap-2 ps-3">
           <Icon icon="mdi:user" className="text-black" width="60" />
           Account
         </span>
         <ul className="grow text-md text-secondary font-semibold border-t-2 border-gray me-5 mt-3 pt-3 px-2 flex flex-col">
-          <li className="hover:text-black cursor-pointer transition-all rounded-lg hover:bg-blue-200 p-3">
-            <Link to={`/notes-together/${id}/setting-account/profile`}>
+          <Link to={`/notes-together/${id}/setting-account/profile`}>
+            <li className="hover:text-black cursor-pointer transition-all rounded-lg hover:bg-blue-200 p-3">
               profile
-            </Link>
-          </li>
+            </li>
+          </Link>
+          <Link to={`/notes-together/${id}/setting-account/plan`}>
+            <li className="hover:text-black cursor-pointer transition-all rounded-lg hover:bg-blue-200 p-3">
+              plan
+            </li>
+          </Link>
           <li>
             <button
               onClick={() => setIsOpenDeleteAccountModal(true)}

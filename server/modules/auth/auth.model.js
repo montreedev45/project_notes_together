@@ -20,6 +20,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "#4b9fff",
     },
+    plan: {
+      type: String,
+      enum: ["free", "teams", "bussiness"],
+      default: "free"
+    },
     changeEmailCode: { type: String },
     changeEmailExpire: { type: Date },
     isDeleted: { type: Boolean, default: false },

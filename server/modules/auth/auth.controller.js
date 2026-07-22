@@ -3,13 +3,14 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import Room from "../room/room.model.js";
 
-const generateToken = (user) => {
+export const generateToken = (user) => {
   return jwt.sign(
     {
       id: user._id,
       email: user.email,
       username: user.username,
       avatar: user.avatar,
+      plan: user.plan
     },
     process.env.JWT_SECRET,
     {
@@ -113,6 +114,7 @@ export const updateProfile = async (req, res) => {
         username: updatedProfile.username,
         email: updatedProfile.email,
         avatar: updatedProfile.avatar,
+        plan: updatedProfile.plan,
       },
       newToken,
     });

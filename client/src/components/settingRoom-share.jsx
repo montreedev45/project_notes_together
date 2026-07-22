@@ -9,6 +9,7 @@ function SettingRoomShare() {
   const user = useAuthStore((state) => state.user);
   const users = useAuthStore((state) => state.users);
   const getUser = useAuthStore((state) => state.getUser);
+  const clearUsers = useAuthStore((state) => state.clearUsers);
   const { roomData } = useOutletContext();
   const [isCopied, setIsCopied] = useState(false);
   const [isCopiedCode, setIsCopiedCode] = useState(false);
@@ -27,19 +28,24 @@ function SettingRoomShare() {
 
   const [searchTerm, setSearchTerm] = useState("");
 
-  const handleAddMember = (user) => {
-    const roleToSend = selectedRoles[user._id] || "editor";
-    setSearchTerm("");
-    addMember(roomData?._id, user._id, roleToSend);
-  };
-
   useEffect(() => {
+    if (!searchTerm.trim()) {
+      clearUsers();
+      return;
+    }
+
     const delayDebounceFn = setTimeout(() => {
       getUser(searchTerm);
     }, 500);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [searchTerm]);
+  }, [searchTerm, getUser, clearUsers]);
+
+  useEffect(() => {
+    return () => {
+      clearUsers();
+    };
+  }, [clearUsers]);
 
   useEffect(() => {
     if (roomData) {
@@ -92,7 +98,6 @@ function SettingRoomShare() {
 
   const handleInvite = (userId) => {
     invitedUsers(roomData?._id, userId);
-    
   };
 
   return (

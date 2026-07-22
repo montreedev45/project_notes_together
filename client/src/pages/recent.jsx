@@ -154,9 +154,9 @@ function Recent() {
             </div>
           )}
           <div className="flex w-full justify-end ">
-            <button onClick={deleteRecentRooms} className="bg-red text-white font-medium hover:bg-red-400 cursor-pointer transition-all py-2 px-4 gap-2 flex justify-center items-center rounded-md">
-              <Icon icon="mdi:trash" width="24" />
-              Clear Rooms
+            <button onClick={deleteRecentRooms} className="bg-red-500 text-white transition-colors font-medium text-sm cursor-pointer py-2 px-4 gap-2 flex justify-center items-center rounded-md">
+              <Icon icon="mdi:trash" width="18" />
+              clear rooms
             </button>
           </div>
         </div>

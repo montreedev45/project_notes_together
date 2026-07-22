@@ -299,9 +299,9 @@ function RoomCard({ data = {} }) {
           )}
         </span>
 
-        <p className="text-secondary text-sm  max-h-10 font-medium overflow-auto">
-          {data?.description}
-        </p>
+        <div className="text-secondary my-1.5 text-sm wrap-break-word min-h-10 font-medium overflow-y-auto">
+          <span>{data?.description}</span>
+        </div>
         <div className="flex flex-1 items-center py-1 -space-x-4">
           {data.isPeopleJoinRoom && (
             <>

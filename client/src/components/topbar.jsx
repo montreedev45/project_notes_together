@@ -12,6 +12,12 @@ function Topbar() {
   const { notifications, getUnreadCount, markAllAsRead } =
     useNotificationStore();
 
+  const planColors = {
+    free: "bg-slate-400 text-white",
+    teams: "bg-indigo-600 text-white",
+    business: "bg-rose-500 text-white",
+  };
+
   const getNotifications = useNotificationStore(
     (state) => state.getNotifications,
   );
@@ -24,10 +30,19 @@ function Topbar() {
 
   return (
     <>
-      <div className="bg-third flex px-15 h-20 border-b-2 border-gray-200">
+      <div className="bg-third flex items-center px-15 h-20 border-b-2 border-gray-200">
         <Link to="/" className="flex items-center">
-          <img src="/logo.svg" alt="" className="w-60 cursor-pointer" />
+          <img
+            src="/logo.svg"
+            alt=""
+            className="min-w-60 max-w-60 cursor-pointer"
+          />
         </Link>
+        <span
+          className={`${planColors[user.plan]} border rounded-md  flex justify-center items-center min-w-fit h-fit py-0.5 px-4 text-sm mt-1 ms-2 font-semibold`}
+        >
+          {user.plan} plan
+        </span>
         <div className="relative flex justify-end items-center w-full">
           <div className="me-5 cursor-pointer hover:scale-105 transition-transform">
             <Link
@@ -64,7 +79,7 @@ function Topbar() {
             {unreadCount > 0 && (
               <span
                 style={{ backgroundColor: "#eb4034" }}
-                className="w-2.5 h-2.5 absolute top-7 right-1 rounded-full"
+                className="w-2.5 h-2.5 absolute top-2 right-1 rounded-full"
               ></span>
             )}
           </span>

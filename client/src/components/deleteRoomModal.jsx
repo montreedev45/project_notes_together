@@ -14,7 +14,7 @@ function DeleteRoomModal({  isOpen, roomId, onClose }) {
       if (roomId) {
         await deleteRoom(roomId);
         onClose();
-        navigate("/notes-together/dashboard");
+        navigate("/notes-together/myroom");
       }
     } catch (error) {
       console.error("Failed to delete room:", error);

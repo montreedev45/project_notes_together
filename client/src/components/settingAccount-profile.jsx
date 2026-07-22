@@ -42,7 +42,7 @@ function SettingAccountProfile() {
 
   return (
     <>
-      <div className=" border-s-2 border-gray px-15 pt-9 flex flex-col gap-4">
+      <div className=" px-15 pt-9 flex flex-col gap-4 min-w-200 max-w-200">
         <div className="flex flex-col gap-3 relative">
           <span className="text-2xl font-semibold">Username</span>
           <input
@@ -96,21 +96,12 @@ function SettingAccountProfile() {
             />
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-start gap-3 flex-1">
           <span className="text-xl font-semibold">Avatar Color :</span>
           <ColorPicker
             selectedColor={selectedColor}
             setSelectedColor={handleColorChange}
           />
-        </div>
-        <div className="grow flex flex-col justify-start  gap-3">
-          {/* <div className="flex items-center gap-3">
-            <Toggle
-              onToggle={(val) => setShowOnlineStatus(val)}
-              defaultChecked={showOnlineStatus}
-            />
-            <span className="text-lg">show online status</span>
-          </div> */}
         </div>
         <button
           onClick={handleSubmit}

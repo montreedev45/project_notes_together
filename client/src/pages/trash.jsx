@@ -13,6 +13,9 @@ function Trash() {
 
   const getTrashRooms = useRoomStore((state) => state.getTrashRooms);
   const trashRooms = useRoomStore((state) => state.trashRooms);
+  const permanentlyDeleteAll = useRoomStore(
+    (state) => state.permanentlyDeleteAll,
+  );
   const user = useAuthStore((state) => state.user);
 
   const sortedRooms = useMemo(() => {
@@ -21,6 +24,16 @@ function Trash() {
     const result = [...trashRooms];
     return isSorting ? result.reverse() : result;
   }, [trashRooms, isSorting]);
+
+  const handleDeleteAllRoom = () => {
+    if (
+      window.confirm(
+        "Are you sure delete all room? once deleted, it cannot be retore",
+      )
+    ) {
+      permanentlyDeleteAll();
+    }
+  };
 
   //initial load
   useEffect(() => {
@@ -43,8 +56,8 @@ function Trash() {
     <>
       <div className="p-12 pt-8 pb-0">
         <span className="font-bold text-3xl ">Trash</span>
-        <div className="mt-5 flex items-center gap-5">
-          <div className="bg-white flex items-center  rounded-xl relative">
+        <div className="mt-5 flex items-center justify-between">
+          <div className="bg-white flex items-center gap-5 rounded-xl relative">
             <Icon
               icon="mdi:search"
               width="25"
@@ -58,17 +71,29 @@ function Trash() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="py-2 ps-9 rounded-lg outline-0 font-medium text-secondary border-2 border-secodary w-80"
             />
+            <button
+              onClick={() => setIsSorting(!isSorting)}
+              title={isSorting ? "Sort by Newest" : "Sort by Oldest"}
+            >
+              <Icon
+                icon={isSorting ? "mdi:sort-descending" : "mdi:sort-ascending"}
+                width="30"
+                className="text-secondary hover:scale-105 transition-transform cursor-pointer"
+              />
+            </button>
           </div>
-          <button
-            onClick={() => setIsSorting(!isSorting)}
-            title={isSorting ? "Sort by Newest" : "Sort by Oldest"}
-          >
-            <Icon
-              icon={isSorting ? "mdi:sort-descending" : "mdi:sort-ascending"}
-              width="30"
-              className="text-secondary hover:scale-105 transition-transform cursor-pointer"
-            />
-          </button>
+
+          {sortedRooms.length !== 0 && (
+            <div className="flex justify-end items-center px-6 py-2 text-xl font-medium rounded-lg bg-red-500 text-white transition-colors">
+              <button
+                onClick={handleDeleteAllRoom}
+                className="flex items-center cursor-pointer "
+              >
+                <Icon icon="mdi:trash" className="" width="18" />
+                <span className="text-sm">delete all</span>
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="bg-gray-200 mt-5 h-140 overflow-auto no-scrollbar rounded-2xl p-6 grid grid-cols-5 grid-rows-auto gap-9 place-items-start">

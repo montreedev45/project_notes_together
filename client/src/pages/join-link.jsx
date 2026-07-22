@@ -5,6 +5,7 @@ import useRoomStore from "../store/useRoomStore";
 function JoinLink() {
   const joinLink = useRoomStore((state) => state.joinLink);
   const [status, setStatus] = useState("loading");
+  const [errorMsg, setErrorMsg] = useState("");
   const { shareLinkToken, role } = useParams();
   const navigate = useNavigate();
   const hasJoin = useRef(false);
@@ -16,13 +17,13 @@ function JoinLink() {
 
         try {
           const res = await joinLink(shareLinkToken, role);
-
           if (res.success === true && res.data?._id) {
             setStatus("success");
             navigate(`/notes-together/${res.data._id}/${role}`, {
               replace: true,
             });
           } else {
+            setErrorMsg(res?.message)
             setStatus(res?.status);
           }
         } catch (error) {
@@ -38,7 +39,7 @@ function JoinLink() {
     return (
       <div className="flex flex-col justify-center items-center h-screen gap-4">
         <h1 className="text-lg font-semibold text-red-500">
-          Access to the room has been denied.
+          <p>{errorMsg ?? "Access to the room has been denied."}</p>
         </h1>
         <button
           onClick={() => navigate("/notes-together/explore")}

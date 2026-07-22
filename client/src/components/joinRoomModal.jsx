@@ -10,6 +10,7 @@ function JoinRoomModal({ isOpen, onClose }) {
   const [code, setCode] = useState(new Array(6).fill(""));
 
   const [status, setStatus] = useState("loading");
+  const [errorMsg, setErrorMsg] = useState("");
 
   const joinRoom = useRoomStore((state) => state.joinRoom);
 
@@ -63,20 +64,16 @@ function JoinRoomModal({ isOpen, onClose }) {
     document.getElementById(`code-${nextIndex}`)?.focus();
 
     if (fullCode.length === 6) {
-      // 🚩 ตรวจสอบใน Store ว่า joinRoom คืนค่าอะไร
-      // ถ้าคืนค่า { success: true, data: room } ให้ใช้ res.data._id
-      // แต่จากภาพ image_f9d4aa.png ข้อมูลอยู่ที่ root เลย
-
       try {
         const res = await joinRoom(fullCode);
         if (res?.success) {
           setStatus("success");
           navigate(`/notes-together/${roomId}/${role}`);
         } else {
+          setErrorMsg(res.message);
           setStatus(res?.status || "error");
         }
 
-        // 🚩 ปรับการเช็คให้ตรงกับโครงสร้างในภาพ (res._id หรือ res.data._id)
         const roomId = res?._id || res?.data?._id;
 
         if (roomId) {
@@ -85,8 +82,10 @@ function JoinRoomModal({ isOpen, onClose }) {
           navigate(`/notes-together/${roomId}/editor`);
         } else {
           console.error("Join failed: Invalid Room ID");
+          setErrorMsg(res.message);
         }
       } catch (error) {
+        setErrorMsg(error.message);
         setStatus("error");
       }
     }
@@ -136,10 +135,10 @@ function JoinRoomModal({ isOpen, onClose }) {
               />
             ))}
           </div>
-          <div className="h-5">
+          <div className="h-auto text-center">
             {status === 403 && (
               <span className="text-red-600 flex justify-center items-center">
-                The room owner has disabled sharing via code.
+                {errorMsg || ""}
               </span>
             )}
           </div>

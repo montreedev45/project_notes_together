@@ -35,6 +35,11 @@ function SettingRoomSidebar() {
               share
             </li>
           </Link>
+          <Link to={`/notes-together/${id}/setting-room/transfer-ownership`}>
+            <li className="hover:text-yellow-600 cursor-pointer transition-all rounded-lg hover:bg-yellow p-3">
+              transfer ownership
+            </li>
+          </Link>
           <li
             onClick={() => setIsOpenDeleteRoomModal(true)}
             className="hover:text-red-700 cursor-pointer transition-all rounded-lg hover:bg-red p-3"

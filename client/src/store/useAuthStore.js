@@ -167,6 +167,12 @@ const useAuthStore = create((set) => ({
       return { success: false };
     }
   },
+
+  setUser: (userData) => {
+    set({user: userData})
+  },
+
+  clearUsers: ()=> set({ users: []}),
   
   
   logout: () => {

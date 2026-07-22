@@ -154,14 +154,14 @@ function Home() {
           <p className="font-bold text-logo text-center">Pricing</p>
           <div className=" flex justify-between items-center flex-col gap-30 lg:gap-20 lg:flex-row mt-10">
             <div className="bg-white min-w-80 p-10 lg:min-w-60 w-fit h-100 lg:h-80 rounded-lg shadow-xl lg:p-5 hover:scale-105 transition-transform">
-              <span className="py-1 px-4 rounded-lg font-medium text-white bg-secondary">
+              <span className="py-1 px-4 rounded-lg font-medium text-white bg-primary">
                 Free Plan
               </span>
               <span className="text-black block py-5 font-bold text-3xl">
                 $0 / month
               </span>
-              <Link to="/login" className="button-primary bg-secondary py-2 rounded-md font-medium block w-full text-center cursor-pointer">
-                Current plan
+              <Link to="/login" className="button-primary bg-primary py-2 rounded-md font-medium block w-full text-center cursor-pointer">
+                Get started
               </Link>
               <div className="flex justify-start pt-5">
                 <Icon
@@ -170,7 +170,7 @@ function Home() {
                   width="20"
                   height="20"
                 />
-                <span className="ps-2 font-medium">3 notes per project</span>
+                <span className="ps-2 font-medium">3 rooms per account</span>
               </div>
               <div className="flex justify-start">
                 <Icon
@@ -180,7 +180,7 @@ function Home() {
                   height="20"
                 />
                 <span className="ps-2 font-medium">
-                  1 colleague per project
+                  1 colleague per room 
                 </span>
               </div>
             </div>
@@ -203,7 +203,7 @@ function Home() {
                   width="20"
                   height="20"
                 />
-                <span className="ps-2 font-medium">9 notes per project</span>
+                <span className="ps-2 font-medium">9 rooms per account</span>
               </div>
               <div className="flex justify-start">
                 <Icon
@@ -213,7 +213,7 @@ function Home() {
                   height="20"
                 />
                 <span className="ps-2 font-medium">
-                  6 colleague per project
+                  6 colleagues per room
                 </span>
               </div>
             </div>
@@ -236,7 +236,7 @@ function Home() {
                   width="20"
                   height="20"
                 />
-                <span className="ps-2 font-medium">unlimit notes</span>
+                <span className="ps-2 font-medium">unlimited rooms</span>
               </div>
               <div className="flex justify-start">
                 <Icon
@@ -245,7 +245,7 @@ function Home() {
                   width="20"
                   height="20"
                 />
-                <span className="ps-2 font-medium">unlimit colleague</span>
+                <span className="ps-2 font-medium">unlimited colleague</span>
               </div>
             </div>
           </div>

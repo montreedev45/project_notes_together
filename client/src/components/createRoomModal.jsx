@@ -9,10 +9,11 @@ function CreateRoomModal({ isOpen, onClose }) {
   const [isPrivate, setIsPrivate] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
 
   const createRoom = useRoomStore((state) => state.createRoom);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const finalData = {
       name,
       description,
@@ -20,10 +21,12 @@ function CreateRoomModal({ isOpen, onClose }) {
       selectedColor,
     };
 
-    //console.log("finalData", finalData);
-
-    createRoom(finalData);
-    onClose();
+    const result = await createRoom(finalData);
+    if (result.success === true) {
+      onClose();
+    } else {
+      setErrorMsg(result.message);
+    }
   };
 
   const handleChangeName = (e) => {
@@ -85,6 +88,9 @@ function CreateRoomModal({ isOpen, onClose }) {
                 onToggle={(val) => setIsPrivate(val)} // รับค่าจากลูกมาเก็บที่แม่
                 defaultChecked={isPrivate}
               />
+              {errorMsg && (
+                <span className="text-red-500 bg-yellow-100 py-2 px-5">{errorMsg}</span>
+              )}
             </div>
           </div>
         </div>

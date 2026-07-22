@@ -48,23 +48,23 @@ function NotificationModal({ isOpen, onClose }) {
           <ul className="relative mt-1.5 h-53 overflow-auto no-scrollbar z-10 flex flex-col gap-1">
             {notifications.map((n) => (
               <li
-                key={n._id}
+                key={n._id} 
                 className="flex justify-between items-center p-3 px-5 pb-1"
               >
-                <div className="grow flex items-center font-medium text-md gap-2">
+                <div className="min-w-25 flex items-center font-medium text-sm gap-2">
                   <div
                     style={{ borderColor: n?.sender?.avatar }}
-                    className="flex-none bg-white border-2 w-8 h-8 rounded-full flex items-center justify-center"
+                    className="flex-none bg-white border-2 w-7 h-7 rounded-full flex items-center justify-center"
                   >
                     <Icon
                       icon="mdi:account"
                       style={{ color: n?.sender?.avatar }}
-                      width="25"
+                      width="20"
                     />
                   </div>
                   <span>{n?.sender?.username}</span>
                 </div>
-                <div className="flex justify-end min-w-30 grow-0 text-right text-sm text-secondary font-medium">
+                <div className="flex grow gap-1 justify-start text-xs text-secondary font-medium">
                   <span
                     style={{
                       color: n?.type === "JOIN" ? "#64ed4c" : "#ed4c4c",
@@ -72,9 +72,9 @@ function NotificationModal({ isOpen, onClose }) {
                   >
                     {n?.type}
                   </span>{" "}
-                  &nbsp; &nbsp; {n?.roomName}
+                  &nbsp; &nbsp; <span className="text-xs font-normal">{n?.message}</span>
                 </div>
-                <div className="min-w-35 grow-0 me-4 text-right text-md text-gray font-normal">
+                <div className="min-w-20 grow-0 px-4 text-end text-xs text-gray font-normal">
                   {getRelativeTime(n.createdAt)}
                 </div>
                 <Icon

@@ -9,15 +9,16 @@ export const getRelativeTime = (date) => {
     { name: 'month', seconds: 2592000 },
     { name: 'day', seconds: 86400 },
     { name: 'hour', seconds: 3600 },
-    { name: 'minute', seconds: 60 },
-    { name: 'second', seconds: 1 }
+    { name: 'min', seconds: 60 },
+    { name: 'sec', seconds: 1 }
   ];
 
   for (const unit of units) {
     if (diffInSeconds >= unit.seconds) {
       const value = Math.floor(diffInSeconds / unit.seconds);
       const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
-      return rtf.format(-value, unit.name);
+      //return rtf.format(-value, unit.name);
+      return `${value} ${unit.name} ago`;
     }
   }
   

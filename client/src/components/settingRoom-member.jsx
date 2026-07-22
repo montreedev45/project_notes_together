@@ -9,7 +9,6 @@ function SettingRoomMember() {
   const user = useAuthStore((state) => state.user);
   const users = useAuthStore((state) => state.users);
   const getUser = useAuthStore((state) => state.getUser);
-  const addMember = useRoomStore((state) => state.addMember);
   const updateRole = useRoomStore((state) => state.updateRole);
   const deleteMember = useRoomStore((state) => state.deleteMember);
   const { roomData } = useOutletContext();
@@ -23,12 +22,6 @@ function SettingRoomMember() {
     navigator.clipboard.writeText(link);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 1000);
-  };
-
-  const handleAddMember = (user) => {
-    const roleToSend = selectedRoles[user._id] || "editor";
-    setSearchTerm("");
-    addMember(roomData?._id, user._id, roleToSend);
   };
 
   const handleRoleChange = (userId, role) => {
@@ -61,23 +54,6 @@ function SettingRoomMember() {
     <>
       <div className=" border-s-2 border-gray px-15 pt-9 flex flex-col gap-8">
         <div className=" gap-3 relative ">
-          <span className="flex items-center justify-between text-2xl font-semibold mb-4">
-            Add Member
-            <div className="bg-white flex items-center rounded-xl relative">
-              <Icon
-                icon="mdi:search"
-                width="20"
-                height="20"
-                className="absolute left-2 text-secondary"
-              />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-53 py-1.5 rounded-lg ps-9 outline-0 font-normal text-gray-500 border-2 border-gray text-sm"
-              />
-            </div>
-          </span>
           <div className=" max-h-42 overflow-auto no-scrollbar">
             {users.map((user) => {
               const isMember = roomData?.members?.some(
@@ -109,39 +85,6 @@ function SettingRoomMember() {
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    {!isMember ? (
-                      <>
-                        <div className=" px-2 rounded-lg border-2 border-gray">
-                          <select
-                            value={selectedRoles[user._id] || "editor"}
-                            onChange={(e) =>
-                              handleRoleChange(user._id, e.target.value)
-                            }
-                            className="cursor-pointer px-2 py-1 outline-0 text-sm font-medium text-secondary"
-                          >
-                            {roles.map((role) => (
-                              <option key={role} value={role}>
-                                {role}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <button
-                          onClick={() => handleAddMember(user)}
-                          className="cursor-pointer bg-blue-500 hover:bg-blue-600 text-white  px-5 py-1 rounded-lg font-semibold transition-all"
-                        >
-                          Add
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-red-300 font-medium text-sm">
-                          Already member
-                        </span>
-                      </>
-                    )}
-                  </div>
                 </div>
               );
             })}
@@ -152,7 +95,7 @@ function SettingRoomMember() {
           <span className="flex  justify-between text-2xl font-semibold">
             Members ({roomData?.members?.length || 0})
           </span>
-          <div className="h-57 px-5 mt-1 overflow-auto no-scrollbar">
+          <div className="h-115 px-5 mt-1 overflow-auto no-scrollbar">
             {roomData?.members?.map((m) => {
               const isRoomOwner = m?.user?._id === roomData?.owner?._id;
               return (

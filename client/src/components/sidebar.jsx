@@ -28,7 +28,7 @@ function Sidebar() {
           </li>
           <li className="cursor-pointer hover:text-primary transition-colors">
             <Link
-              to="/notes-together/dashboard"
+              to="/notes-together/myroom"
               className="flex gap-4 items-center"
             >
               <Icon icon="mdi:home" width="24" />

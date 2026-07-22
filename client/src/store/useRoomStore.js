@@ -140,10 +140,10 @@ const useRoomStore = create((set, get) => ({
       }
 
       set({ loading: false });
-      return { success: false, message: "Unexpected response from server" };
+      return { success: false, message: res.data };
     } catch (error) {
       set({ loading: false });
-      return { success: false, message: "Fetch rooms failed" };
+      return { success: false, message: error.response.data.message };
     }
   },
 
@@ -174,6 +174,7 @@ const useRoomStore = create((set, get) => ({
       set({ loading: false });
       return {
         success: false,
+        message: error.response.data.message,
         status: error.response?.status, // ส่ง 403 กลับไป
       };
     }
@@ -279,6 +280,19 @@ const useRoomStore = create((set, get) => ({
     }
   },
 
+  permanentlyDeleteAll: async (roomId) => {
+    try {
+      const res = await api.delete(`/rooms/permanent-all`);
+      if (res.data) {
+        set({
+          trashRooms: [],
+        });
+      }
+    } catch (error) {
+      return { success: false, message: "restore room failed" };
+    }
+  },
+
   updateRoomLocal: (roomId, newData) => {
     set((state) => ({
       myRooms: state.myRooms.map((r) =>
@@ -323,55 +337,6 @@ const useRoomStore = create((set, get) => ({
     } catch (error) {
       set({ loading: false });
       return { success: false, message: "Updated room failed" };
-    }
-  },
-
-  addMember: async (roomId, memberId, role) => {
-    set({ loading: true });
-    try {
-      const finalData = {
-        roomId,
-        memberId,
-        role,
-      };
-
-      const res = await api.put("/rooms/add-member", finalData);
-
-      if (res?.data) {
-        set((state) => ({
-          myRooms: state.myRooms.map((r) =>
-            r._id === roomId
-              ? {
-                  ...r,
-                  members: res.data.members,
-                }
-              : r,
-          ),
-          rooms: state.rooms.map((r) =>
-            r._id === roomId
-              ? {
-                  ...r,
-                  members: res.data.members,
-                }
-              : r,
-          ),
-          recentRooms: state.recentRooms.map((r) =>
-            r._id === roomId ? { ...r, members: res.data.members } : r,
-          ),
-          loading: false,
-        }));
-
-        const latestRecent = get().recentRooms;
-        localStorage.setItem("recent-rooms", JSON.stringify(latestRecent));
-
-        return { success: true };
-      }
-
-      set({ loading: false });
-      return { success: false, message: "Unexpected response from server" };
-    } catch (error) {
-      set({ loading: false });
-      return { success: false, message: "Add member failed" };
     }
   },
 
@@ -490,7 +455,7 @@ const useRoomStore = create((set, get) => ({
 
       return {
         success: false,
-        status: backendStatus, 
+        status: backendStatus,
         message: backendMessage,
       };
     }
@@ -607,6 +572,39 @@ const useRoomStore = create((set, get) => ({
     } catch (error) {
       set({ loading: false });
       return { success: false, message: "invite colleague in room failed" };
+    }
+  },
+
+  transferOwnership: async (roomId, newOwnerId) => {
+    set({ loading: true });
+    try {
+      const res = await api.post("/rooms/transfer-ownership", {
+        roomId,
+        newOwnerId,
+      });
+
+      if (res.data?.success) {
+        const updatedRoom = res.data.data;
+
+        set((state) => ({
+          ...state,
+          myRooms: state.myRooms.map((r) =>
+            r._id === roomId ? updatedRoom : r,
+          ),
+          rooms: state.rooms.map((r) => (r._id === roomId ? updatedRoom : r)),
+          recentRooms: state.recentRooms.map((r) =>
+            r._id === roomId ? updatedRoom : r,
+          ),
+          loading: false,
+        }));
+
+        return { success: true, data: updatedRoom };
+      }
+      set({ loading: false });
+      return { success: false };
+    } catch (error) {
+      set({ loading: false });
+      return { success: false, status: error.response?.status };
     }
   },
 
