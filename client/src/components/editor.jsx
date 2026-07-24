@@ -24,119 +24,148 @@ import useNoteStore from "../store/useNoteStore";
 function Editor() {
   const { roomId, role } = useParams();
   const navigate = useNavigate();
+
+  // Stores
   const user = useAuthStore((state) => state.user);
   const getMyRooms = useRoomStore((state) => state.getMyRooms);
   const getComment = useCommentStore((state) => state.getComment);
   const myRooms = useRoomStore((state) => state.myRooms);
-  const loading = useRoomStore((state) => state.loading);
-  const roomData = myRooms.find((r) => r._id === roomId);
-
-  const isMember = roomData?.members?.some((m) => m.user?._id === user?._id);
-  const isOwner =
-    roomData?.owner?._id === user?._id || roomData?.owner === user?._id;
-  const hasAccess = isMember || isOwner;
-
-  const [isReady, setIsReady] = useState(false); // เพิ่ม Local State เช็กว่า "พร้อมทำงานหรือยัง"
-  const hasFetched = useRef(false);
-
-  // 1. ดักจับการดึงข้อมูล
-  useEffect(() => {
-    if (user && !hasFetched.current) {
-      hasFetched.current = true;
-
-      // เรียก API และรอจนกว่าจะเสร็จ แล้วค่อยเปิดสวิตช์ isReady
-      const fetchRooms = async () => {
-        try {
-          await getMyRooms();
-          await getComment(roomId);
-        } finally {
-          setIsReady(true);
-        }
-      };
-      fetchRooms();
-    }
-  }, [user, getMyRooms]);
-
-  // 2. Logic เช็กสิทธิ์การเข้าถึง
-  useEffect(() => {
-    // 🌟 กฎข้อที่ 1: ถ้ายังโหลดไม่เสร็จสมบูรณ์ ห้ามทำอะไรเด็ดขาด
-    if (!isReady || !user) return;
-
-    // กฎข้อที่ 2: โหลดเสร็จแล้ว แต่หาห้องไม่เจอ (ห้องโดนลบ / โดนเตะ)
-    if (!roomData) {
-      console.warn(
-        "this room was not found (it may have been removed or deleted).",
-      );
-      navigate("/notes-together/explore", { replace: true });
-      return;
-    }
-
-    // กฎข้อที่ 3: เช็กสิทธิ์ Member / Owner
-    const isMember = roomData.members?.some((m) => m.user?._id === user._id);
-    const isOwner =
-      roomData.owner?._id === user._id || roomData.owner === user._id;
-
-    if (!isMember && !isOwner) {
-      console.warn("you do not have permission to access this room.");
-      navigate("/notes-together/explore", { replace: true });
-    }
-  }, [isReady, roomData, user, navigate]);
-
+  const rooms = useRoomStore((state) => state.rooms);
   const onlineUsersProvider = useRoomStore(
     (state) => state.onlineUsersProvider,
   );
 
+  // States & Refs
+  const [isReady, setIsReady] = useState(false);
   const [yjs, setYjs] = useState(null);
-
   const providerRef = useRef(null);
   const ydocRef = useRef(null);
-  const socket = getSocket();
 
+  // 🎯 Find Room Data
+  const roomData =
+    rooms.find((r) => r._id === roomId) ||
+    myRooms.find((r) => r._id === roomId);
+
+  // 🎯 1. Fetch Room & Comment Data
   useEffect(() => {
-    if (socket && roomId) {
-      socket.emit("join_room", {
-        roomId,
-        user: {
-          _id: user._id,
-          username: user.username,
-          avatar: user.avatar,
-        },
-      });
-    }
+    if (!user || !roomId) return;
 
-    return () => {
-      if (socket && roomId) {
-        socket.emit("leave_room", { roomId });
+    let isMounted = true;
+
+    const fetchRoomData = async () => {
+      try {
+        setIsReady(false);
+        await Promise.all([getMyRooms(), getComment(roomId)]);
+      } catch (error) {
+        console.error("Error fetching room data:", error);
+      } finally {
+        if (isMounted) setIsReady(true);
       }
     };
-  }, [roomId, user._id, socket]);
 
+    fetchRoomData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user, roomId]); // ถอด function ออกจาก dependency เพื่อกัน infinite re-render
+
+  // 🎯 2. Permission Guard (เตะออกถ้าไม่มีสิทธิ์)
   useEffect(() => {
+    if (!isReady || !user) return;
+
+    // หาห้องไม่เจอ
+    if (!roomData) {
+      console.warn("This room was not found.");
+      navigate("/notes-together/explore", { replace: true });
+      return;
+    }
+
+    const isMember = roomData.members?.some(
+      (m) => (m.user?._id || m.user) === user._id,
+    );
+    const isOwner = (roomData.owner?._id || roomData.owner) === user._id;
+    const isPublic = !roomData.isPrivate;
+
+    // ถ้าไม่ใช่ Member, Owner และไม่ใช่ Public Room ให้เตะออก
+    if (!isMember && !isOwner && !isPublic) {
+      console.warn("You do not have permission to access this room.");
+      navigate("/notes-together/explore", { replace: true });
+    }
+  }, [isReady, roomData, user, navigate]);
+
+  // คำนวณสิทธิ์เข้าถึงที่แท้จริง (รวม Public Room เข้าไปด้วย)
+  const isMember = roomData?.members?.some(
+    (m) => (m.user?._id || m.user) === user?._id,
+  );
+  const isOwner = (roomData?.owner?._id || roomData?.owner) === user?._id;
+  const isPublic = !roomData?.isPrivate;
+
+  // 🎯 สิทธิ์เข้าถึง = เป็นสมาชิก OR เป็นเจ้าของ OR เป็นห้อง Public
+  const hasAccess = Boolean(roomData && (isMember || isOwner || isPublic));
+
+  // 🎯 3. Socket Connection (เชื่อมต่อเมื่อเช็กสิทธิ์ผ่านแล้วเท่านั้น!)
+  const socket = getSocket();
+  useEffect(() => {
+    if (!isReady || !hasAccess || !socket || !roomId) return;
+
+    socket.emit("join_room", {
+      roomId,
+      user: {
+        _id: user._id,
+        username: user.username,
+        avatar: user.avatar,
+      },
+    });
+
+    return () => {
+      socket.emit("leave_room", { roomId });
+    };
+  }, [isReady, hasAccess, roomId, user, socket]);
+
+  // 🎯 4. Yjs Provider Setup (จะสร้างเมื่อเช็กสิทธิ์ผ่านแล้วเท่านั้น!)
+  useEffect(() => {
+    if (!isReady || !hasAccess || !roomId) return;
+
     let active = true;
 
-    // เรียกฟังก์ชันสร้างการเชื่อมต่อที่เราทำไว้
     const instance = createYjs(roomId, ({ ydoc, provider }) => {
-      // 🟢 แกะกล่องตรงนี้!
-      // ตรวจสอบว่า Component ยังไม่ได้โดนปิดหน้าหนี ค่อยอัปเดตสเตท
       if (active) {
-        setYjs(ydoc); // 🟢 เก็บเฉพาะ ydoc (Y.Doc) ลงในสเตทตามชื่อของมัน
+        setYjs(ydoc);
       }
     });
 
-    // ฝากวัตถุไว้ใน ref เพื่อไม่ให้ลัดวงจรหายไปไหน
     ydocRef.current = instance.ydoc;
     providerRef.current = instance.provider;
 
     return () => {
       active = false;
-      setYjs(null); // ล้างสเตทหน้าจอรอรับห้องใหม่
+      setYjs(null);
 
-      // สั่งตัดขาดสายเชื่อมต่อเฉพาะตอนที่ผู้ใช้เปลี่ยนห้อง หรือกดปิดหน้าต่างหนีจริง ๆ เท่านั้น
       if (providerRef.current) providerRef.current.destroy();
       if (ydocRef.current) ydocRef.current.destroy();
     };
-  }, [roomId]);
+  }, [isReady, hasAccess, roomId]);
 
+  // ---------------- Render Views ----------------
+
+  // 1. กำลังเช็กสิทธิ์ และ ดึงข้อมูลห้อง
+  if (!isReady || !user) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <p className="animate-pulse text-slate-400 font-medium">
+          Checking access permissions...
+        </p>
+      </div>
+    );
+  }
+
+  // 2. ถ้าไม่มีข้อมูล หรือไม่มีสิทธิ์เข้าห้อง (จะถูก useEffect เตะออกไปแล้ว)
+  if (!roomData || !hasAccess) {
+    return null;
+  }
+
+  // 3. เช็กสิทธิ์ผ่านแล้ว กำลังเชื่อมต่อ Realtime/Yjs
   if (!yjs) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -147,19 +176,7 @@ function Editor() {
     );
   }
 
-  if (!isReady || !user) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        {/* ใส่ Spinner หรือข้อความ Loading ตามดีไซน์ของคุณ */}
-        <p>Checking access permissions...</p>
-      </div>
-    );
-  }
-
-  if (!roomData || !hasAccess) {
-    return null;
-  }
-
+  // 4. พร้อมใช้งาน Render Editor
   return (
     <EditorInner
       key={roomId}
@@ -244,6 +261,9 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
   const addCommentFromSocket = useCommentStore(
     (state) => state.addCommentFromSocket,
   );
+  const users = useAuthStore((state) => state.users);
+  const getUser = useAuthStore((state) => state.getUser);
+  const clearUsers = useAuthStore((state) => state.clearUsers);
 
   const getMyRooms = useRoomStore((state) => state.getMyRooms);
   const { role } = useParams();
@@ -259,16 +279,23 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
   const setRoomOnlineCountProvider = useRoomStore(
     (state) => state.setRoomOnlineCountProvider,
   );
+  const updateLinkShare = useRoomStore((state) => state.updateLinkShare);
+  const invitedUsers = useRoomStore((state) => state.invitedUsers);
 
   const [isOpenShareModal, setIsOpenShareModal] = useState(false);
 
   const [selectedRoles, setSelectedRoles] = useState({});
   const roles = ["viewer", "editor", "commenter"];
-  const link = `${import.meta.env.VITE_CLIENT_URL}/notes-together/join-link/${roomId}/${selectedRoles[user?._id] || "viewer"}`;
+  const access = ["anyone", "invited"];
+  const link = `${import.meta.env.VITE_CLIENT_URL}/notes-together/join-link/${room?.shareLink?.token}/${room?.shareLink?.role || "viewer"}`;
   const [activeTab, setActiveTab] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [isCopied, setIsCopied] = useState(false);
   const [isCopiedCode, setIsCopiedCode] = useState(false);
+  const [isChangeCode, setIsChangeCode] = useState(false);
+  const [selectedRole, setSelectedRole] = useState(room?.shareLink?.role);
+  const [selectedAccess, setSelectedAccess] = useState(room?.shareLink?.access);
 
   const [isAllowLinkSharing, setIsAllowLinkSharing] = useState(true);
   const [isAllowCodeSharing, setIsAllowCodeSharing] = useState(true);
@@ -279,6 +306,19 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
     (m) => m.user._id === user._id,
   )?.role;
   const isEditable = permissionUser === "owner" || permissionUser === "editor";
+
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      clearUsers();
+      return;
+    }
+
+    const delayDebounceFn = setTimeout(() => {
+      getUser(searchTerm);
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm, getUser, clearUsers]);
 
   useEffect(() => {
     if (room) {
@@ -399,8 +439,18 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
     setTimeout(() => setIsCopiedCode(false), 1000);
   };
 
-  const handleRoleChange = (userId, role) => {
-    setSelectedRoles((prev) => ({ ...prev, [userId]: role }));
+  const handleRoleChange = (role) => {
+    setSelectedRole(role);
+    updateLinkShare(room._id, role, selectedAccess);
+  };
+
+  const handleAccessChange = (access) => {
+    setSelectedAccess(access);
+    updateLinkShare(room._id, selectedRole, access);
+  };
+
+  const handleInvite = (userId) => {
+    invitedUsers(room?._id, userId);
   };
 
   // 🛠️ 1. สร้าง Custom Font Size Extension ขึ้นมาเองแบบง่าย ๆ
@@ -735,12 +785,12 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                             <div className="flex justify-between items-center gap-5">
                               <div className="flex-1 px-2 border border-gray rounded-lg">
                                 <select
-                                  value={selectedRoles[user?._id] || "viewer"}
+                                  value={room?.shareLink?.role}
                                   onChange={(e) =>
-                                    handleRoleChange(user?._id, e.target.value)
+                                    handleRoleChange(e.target.value)
                                   }
-                                  disabled={isAllowLinkSharing === false}
-                                  className={`${isAllowLinkSharing ? "cursor-pointer" : "cursor-not-allowed"} px-2 py-1 outline-0 text-sm font-normal text-gray-500`}
+                                  className={`${isAllowLinkSharing ? "cursor-pointer" : "cursor-not-allowed"} px-2 py-1 outline-0 text-sm font-medium text-secondary`}
+                                  disabled={!isAllowLinkSharing}
                                 >
                                   {roles.map((role) => (
                                     <option key={role} value={role}>
@@ -751,18 +801,22 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                               </div>
                               <div className="px-4 border border-gray rounded-lg">
                                 <select
+                                  value={room?.shareLink?.access || "anyone"}
+                                  onChange={(e) =>
+                                    handleAccessChange(e.target.value)
+                                  }
                                   name="people-with-access"
                                   id=""
-                                  disabled={isAllowLinkSharing === false}
-                                  className={`${isAllowLinkSharing ? "cursor-pointer" : "cursor-not-allowed"} ps-1 pe-3 py-1 outline-0 rounded-lg text-sm font-normal text-gray-500`}
+                                  className={`${isAllowLinkSharing ? "cursor-pointer" : "cursor-not-allowed"} ps-1 pe-3 py-1 outline-0 rounded-lg text-sm font-medium text-secondary`}
+                                  disabled={!isAllowLinkSharing}
                                 >
-                                  <option value="anyone" defaultValue>
-                                    anyone with link
-                                  </option>
-                                  <option value="reader">
-                                    only invited people
-                                  </option>
-                                  <option value="viewer">restricted</option>
+                                  {access.map((ac) => (
+                                    <option key={ac} value={ac}>
+                                      {ac === "anyone"
+                                        ? "anyone with link"
+                                        : "only invited people"}
+                                    </option>
+                                  ))}
                                 </select>
                               </div>
                             </div>
@@ -783,7 +837,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                                   e.preventDefault()
                                 }
                                 value={link || ""}
-                                className={`${isAllowLinkSharing ? "cursor-pointer" : "cursor-not-allowed"} flex-1 py-2 outline-none px-4 text-sm rounded-lg border border-gray text-gray-500`}
+                                className={`${isAllowLinkSharing ? "cursor-pointer" : "cursor-not-allowed"} flex-1 py-2 outline-none px-4 text-md rounded-lg border-2 border-gray text-black`}
                               />
 
                               <button
@@ -845,7 +899,79 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                       {activeTab === 3 && (
                         <>
                           <div className="space-y-4 animate-in fade-in duration-200">
-                            <div className="flex gap-3 relative mb-3">test</div>
+                            <div className="flex flex-col gap-3 relative mb-3">
+                              <div className="bg-white flex items-center rounded-xl relative">
+                                <Icon
+                                  icon="mdi:search"
+                                  width="20"
+                                  height="20"
+                                  className="absolute left-2 text-secondary"
+                                />
+                                <input
+                                  type="text"
+                                  value={searchTerm}
+                                  onChange={(e) =>
+                                    setSearchTerm(e.target.value)
+                                  }
+                                  className="w-full py-1.5 rounded-lg ps-9 outline-0 font-normal text-gray-500 border-2 border-gray text-sm"
+                                />
+                              </div>
+                              <div className=" max-h-42 overflow-auto no-scrollbar">
+                                {users.map((user) => {
+                                  const isMember = room?.members?.some(
+                                    (member) => member?.user?._id === user?._id,
+                                  );
+
+                                  const isInvited = room?.invitedUsers?.some(
+                                    (m) => {
+                                      // กรณีที่ 1: m เป็น Object ให้เช็ก m?._id
+                                      // กรณีที่ 2: m เป็น String ID โล่งๆ ให้เอา m มาเทียบตรงๆ ได้เลย
+                                      return (m?._id || m) === user?._id;
+                                    },
+                                  );
+
+                                  return (
+                                    <div
+                                      key={user?._id}
+                                      className="flex items-center justify-between py-2 px-5"
+                                    >
+                                      <div className=" flex items-center gap-3">
+                                        <div
+                                          style={{ borderColor: user?.avatar }}
+                                          className="flex-none bg-white border-2 w-10 h-10 rounded-full flex items-center justify-center"
+                                        >
+                                          <Icon
+                                            icon="mdi:account"
+                                            style={{ color: user?.avatar }}
+                                            width="30"
+                                          />
+                                        </div>
+                                        <div className="flex flex-col ">
+                                          <span className="font-bold text-sm truncate text-slate-800">
+                                            {user?.username}
+                                          </span>
+                                          <span className="font-normal text-xs text-secondary truncate">
+                                            {user?.email}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <button
+                                          onClick={() =>
+                                            handleInvite(user?._id)
+                                          }
+                                          disabled={isInvited}
+                                          className={`${isInvited ? "bg-gray-300 cursor-not-allowed" : "bg-blue-400 cursor-pointer hover:bg-blue-500"} flex text-white items-center gap-2 px-5 text-sm py-1 font-semibold rounded-md `}
+                                        >
+                                          <Icon icon="mdi:invite" width={20} />
+                                          Invite
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
                           </div>
                         </>
                       )}

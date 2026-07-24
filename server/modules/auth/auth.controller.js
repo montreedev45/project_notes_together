@@ -2,6 +2,7 @@ import User from "./auth.model.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import Room from "../room/room.model.js";
+import mongoose from "mongoose";
 
 export const generateToken = (user) => {
   return jwt.sign(
@@ -157,8 +158,10 @@ export const checkDuplicateEmail = async (req, res) => {
 
     const checkEmail = await User.findOne({ email: newEmail });
     if (checkEmail) {
-      if(checkEmail.isDeleted){
-        return res.status(400).json({ message: "This account has been deactivated. Please contact support." })
+      if (checkEmail.isDeleted) {
+        return res.status(400).json({
+          message: "This account has been deactivated. Please contact support.",
+        });
       }
       return res.status(400).json({ message: "Email already in use" });
     }
@@ -253,29 +256,82 @@ export const deleteAccount = async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "Invalid credentials" });
 
-    const softDeleteUser = await User.findByIdAndUpdate(
+    // 1. Soft Delete ตัว User ก่อน
+    await User.findByIdAndUpdate(
       userId,
       {
         isDeleted: true,
         deletedAt: new Date(),
-        email: `deleted_${Date.now()}_${req.user.email}`
+        email: `deleted_${Date.now()}_${req.user.email}`,
       },
       { returnDocument: "after" },
     );
 
+    // 2. ดึงห้องทั้งหมดที่ User คนนี้เป็น "เจ้าของ (Owner)"
+    const ownedRooms = await Room.find({ owner: userId, isDeleted: false });
+
+    for (const room of ownedRooms) {
+      // 1. กรองหาคนที่ไม่ใช่ Owner เดิม (คนที่กำลังกดลบบัญชี)
+      const remainingMembers = room.members.filter(
+        (m) => (m.user._id || m.user).toString() !== userId.toString(),
+      );
+
+      if (remainingMembers.length > 0) {
+        const targetMember = remainingMembers[0];
+        const newOwnerId = new mongoose.Types.ObjectId(
+          (targetMember.user._id || targetMember.user).toString(),
+        );
+
+        // 🎯 Step A: โอน Owner และเปลี่ยน Role ของ Owner ใหม่เป็น editor
+        await Room.updateOne(
+          { _id: room._id },
+          {
+            $set: {
+              owner: newOwnerId,
+              "members.$[elem].role": "owner", // หรือ role อื่นตามต้องการ
+            },
+          },
+          {
+            arrayFilters: [{ "elem.user": newOwnerId }],
+          },
+        );
+
+        // 🎯 Step B: ถอด Owner เก่า (คนที่ลบบัญชี) ออกจาก array members
+        await Room.updateOne(
+          { _id: room._id },
+          {
+            $pull: {
+              members: { user: userId },
+            },
+          },
+        );
+
+        console.log(`Transferred room ${room._id} to new owner successfully`);
+      } else {
+        // ถ้าไม่มีสมาชิกคนอื่นเหลือเลย -> Soft Delete
+        await Room.updateOne(
+          { _id: room._id },
+          { $set: { isDeleted: true, deletedAt: new Date() } },
+        );
+      }
+    }
+
+    // 3. ถอด userId นี้ออกจากทุกห้องที่เขาไปเป็น "สมาชิก" (Member)
     await Room.updateMany(
-      { owner: userId },
+      { "members.user": userId },
       {
-        $set: {
-          isDeleted: true,
-          deletedAt: new Date(),
+        $pull: {
+          members: {
+            user: userId,
+            role: { $ne: "owner" }, // $ne = Not Equal (ลบเฉพาะตัวที่ role != "owner")
+          },
         },
       },
     );
 
-    res.status(200).json({ message: "Delete account successfully" });
+    return res.status(200).json({ message: "Delete account successfully" });
   } catch (error) {
     console.error("Delete account error:", error);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 };

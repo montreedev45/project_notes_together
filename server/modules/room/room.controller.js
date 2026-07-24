@@ -187,26 +187,32 @@ export const getAllRooms = async (req, res) => {
 //get room by id
 export const getRoomById = async (req, res) => {
   try {
-    const room = await Room.findById(req.params.id).populate(
-      "members.user",
-      "username email",
-    );
+    const { roomId } = req.params;
+    const userId = req.user._id;
+
+    // 1. หาห้องก่อน (ดูว่ามีห้องนี้อยู่จริงและไม่โดน Soft Delete)
+    const room = await Room.findOne({ _id: roomId, isDeleted: false });
 
     if (!room) {
-      res.status(404).json({ message: "room not found" });
+      return res.status(404).json({ message: "Room not found" });
     }
 
-    //check member
+    // 2. เช็กสิทธิ์การเข้าถึง (Permission Check)
     const isMember = room.members.some(
-      (m) => m.user._id.toString() === req.user._id.toString(),
+      (m) => m.user.toString() === userId.toString()
     );
-    if (!isMember) {
-      return res.status(403).json({ message: "access denied" });
+    const isOwner = room.owner.toString() === userId.toString();
+
+    // 🔒 ถ้าเป็น Private Room แล้วผู้ใช้ไม่ใช่ทั้ง Owner และ Member -> ปฏิเสธ access
+    if (room.isPrivate && !isOwner && !isMember) {
+      return res.status(403).json({ message: "Access denied to this private room" });
     }
 
-    res.json(room);
+    // 🔓 ถ้าเป็น Public Room หรือ เป็นคนในห้อง Private -> ส่งข้อมูลห้องกลับไปให้ Editor
+    return res.status(200).json(room);
   } catch (error) {
-    res.status(500).json({ message: "fetch room failed" });
+    console.error("Get room error:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -235,13 +241,14 @@ export const joinRoom = async (req, res) => {
         "username email avatar plan",
       );
       if (!room) return res.status(404).json({ message: "Room not found" });
-
+      
       if (room.isPrivate) {
         return res.status(403).json({
           message: "This room is private. Please use an invite code.",
         });
       }
     }
+    console.log("##################")
 
     if (!room)
       return res
@@ -289,7 +296,7 @@ export const joinRoom = async (req, res) => {
       type: "JOIN",
       roomId: room._id,
       roomName: room.name,
-      message: `joined your room: ${room.name}`,
+      message: `room: ${room.name}`,
     });
 
     const populatedNotice = await newNotice.populate(
