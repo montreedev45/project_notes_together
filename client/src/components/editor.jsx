@@ -20,6 +20,8 @@ import { Color } from "@tiptap/extension-color";
 import Image from "@tiptap/extension-image";
 import FontFamily from "@tiptap/extension-font-family";
 import useNoteStore from "../store/useNoteStore";
+import { exportToPDF } from "../utils/exportToPdf";
+import { LimitPageHeight } from "../utils/limitPageHeight";
 
 function Editor() {
   const { roomId, role } = useParams();
@@ -453,6 +455,11 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
     invitedUsers(room?._id, userId);
   };
 
+  const handleExport = () => {
+    const fileName = `${room.name ?? "note"}.pdf`;
+    exportToPDF("note-content-container", fileName);
+  };
+
   // 🛠️ 1. สร้าง Custom Font Size Extension ขึ้นมาเองแบบง่าย ๆ
   const FontSize = Extension.create({
     name: "fontSize",
@@ -677,10 +684,11 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
             return cursor;
           },
         }),
+        LimitPageHeight
       ],
       editorProps: {
         attributes: {
-          class: "prose max-w-none focus:outline-none",
+          class: "tiptap focus:outline-none",
         },
       },
       content: "<h1>หัวข้อรายงาน A4</h1><p>เริ่มพิมพ์ข้อความตรงนี้...</p>",
@@ -711,7 +719,11 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
               <span className="text-gray-300">data synced</span>
             )}
           </div>
-          <div className="flex gap-3 items-center">
+          <div className="flex gap-5 items-center">
+            <div className="flex items-center gap-2 py-1 rounded-lg text-secondary">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-ping"></span>
+              {activeUsersList.length || 1} online
+            </div>
             <div className="flex items-center gap-1 -space-x-4">
               {activeUsersList?.slice(0, 5).map((member, index) => (
                 <div
@@ -732,14 +744,23 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                 </div>
               )}
             </div>
-            <div className="relative">
-              <button
-                onClick={() => setIsOpenShareModal(!isOpenShareModal)}
-                className="bg-primary cursor-pointer hover:bg-blue-500 px-3 py-1.5 flex items-center gap-1.5 rounded-lg text-sm font-semibold text-white"
-              >
-                <Icon icon="mdi:share" width="20" />
-                Share
-              </button>
+            <div className="relative ms-3">
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setIsOpenShareModal(!isOpenShareModal)}
+                  className="bg-primary cursor-pointer hover:bg-blue-500 px-3 py-1.5 flex items-center gap-1.5 rounded-lg text-sm font-semibold text-white transition-all"
+                >
+                  <Icon icon="mdi:share" width="20" />
+                  Share
+                </button>
+                <button
+                  onClick={handleExport}
+                  className="bg-red-400 cursor-pointer hover:bg-red-500 px-3 py-1.5 flex items-center gap-1.5 rounded-lg text-sm font-semibold text-white transition-all"
+                >
+                  <Icon icon="mdi:file" width="20" />
+                  Export
+                </button>
+              </div>
               {isOpenShareModal && (
                 <>
                   <div className="absolute flex flex-col z-20 min-w-100 -right-20 mt-5 ">
@@ -980,18 +1001,14 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                 </>
               )}
             </div>
-            <div className="flex items-center gap-2 bg-white px-4 py-1 rounded-lg text-secondary">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-ping"></span>
-              {activeUsersList.length || 1} online
-            </div>
           </div>
         </div>
         {/* toolbar */}
         <div className="flex justify-evenly">
           <div className="w-full min-w-100 max-w-260 ">
-            <div className="w-full top-0 py-5 gap-3 sticky z-10">
+            <div className="w-full top-0 pt-5 pb-10 gap-3 sticky z-10 bg-white">
               {isEditable && (
-                <div className="w-full flex py-3 px-3 rounded-md shadow-sm bg-gray-100 border border-slate-200">
+                <div className="w-full flex py-5 px-3 rounded-md shadow-sm bg-gray-100 border border-slate-200">
                   <button
                     onClick={() => editor.chain().focus().toggleBold().run()}
                     disabled={!editor.can().chain().focus().toggleBold().run()}
@@ -1229,11 +1246,8 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
               )}
             </div>
             <div className="editor-background">
-              <div className="w-fit overflow-auto no-scrollbar">
-                <EditorContent
-                  editor={editor}
-                  className="border border-slate-300 "
-                />
+              <div id="note-content-container">
+                <EditorContent editor={editor} />
               </div>
             </div>
           </div>

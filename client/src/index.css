@@ -154,51 +154,76 @@
     scrollbar-width: none; /* สำหรับ Firefox */
   }
 }
-
 /* 🌍 1. กล่องพื้นหลัง (สีเทาแบบโปรแกรม Word) */
 .editor-background {
   background-color: #f1f5f9; /* slate-100 */
-  padding: 40px 20px;
+  padding: 40px 0;
   min-height: 100vh;
   display: flex;
   justify-content: center;
   overflow-y: auto;
 }
 
-/* 📄 2. หน้ากระดาษ A4 (สไตล์ Tiptap) */
-.tiptap {
+/* 📄 2. แผ่นกระดาษ A4 (Fixed ขนาดแป๊ะๆ 210mm x 297mm) */
+#note-content-container {
   background-color: #ffffff;
   width: 210mm;
-  /* เลือกปรับความสูงตามความต้องการ */
-  min-height: 297mm; /* บังคับหน้าแรกให้ยาวเท่า A4 เสมอ */
+  height: 297mm; /* ล็อคความสูงคงที่เท่ากับ A4 */
+  max-height: 297mm;
+  padding: 15mm 25.4mm 25.4mm 25.4mm; /* Padding ขอบกระดาษ */
+  box-sizing: border-box;
+  overflow: hidden; /* บล็อกเนื้อหาไม่ให้ทะลุขอบล่าง */
+  position: relative;
 
-  /* 📐 ระยะขอบหน้ากระดาษสากล (Margin 1 นิ้วรอบด้าน) */
-  padding: 25.4mm;
-
-  /* 🪄 แต่งเงาให้เหมือนกระดาษจริง */
+  /* เงากระดาษ */
   box-shadow:
     0 4px 6px -1px rgb(0 0 0 / 0.1),
     0 2px 4px -2px rgb(0 0 0 / 0.1);
   border-radius: 4px;
-
-  /* บังคับคำขึ้นบรรทัดใหม่ ไม่ให้หลุดขอบขวา */
-  word-wrap: break-word;
-  outline: none;
 }
 
-/* 🖨️ 3. ตั้งค่าหน้าต่างการพิมพ์สำหรับเบราว์เซอร์ (Print & Export PDF) */
+/* ✍️ 3. ตัว Tiptap Editor ข้างในกระดาษ */
+.tiptap {
+  outline: none;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden; /* ซ่อนบรรทัดที่เกินความสูง */
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* ล้าง Margin บรรทัดแรกสุด เพื่อไม่ให้ดันเนื้อหาลงลึกเกินไป */
+.tiptap > *:first-child {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+.tiptap p {
+  margin-block-start: 0.25em;
+}
+
+/* 🖨️ 4. สำหรับสั่งพิมพ์ผ่าน Browser Direct (Ctrl + P) */
 @media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
   body {
-    background: none;
+    background: white !important;
   }
+
   .editor-background {
-    padding: 0;
-    background: none;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
   }
-  .tiptap {
-    width: 210mm;
-    min-height: 297mm;
-    box-shadow: none;
-    padding: 0; /* ส่งสิทธิ์ให้หน้าพิมพ์ของระบบจัดการระยะขอบแทน */
+
+  #note-content-container {
+    width: 100% !important;
+    height: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 20mm !important;
   }
 }
