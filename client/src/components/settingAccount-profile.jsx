@@ -9,7 +9,7 @@ import useAuthStore from "../store/useAuthStore";
 
 function SettingAccountProfile() {
   const user = useAuthStore((state) => state.user);
-  const updateProfile = useAuthStore((state) => state.updateProfile);
+  const updateUserProfile = useAuthStore((state) => state.updateUserProfile);
   const [selectedColor, setSelectedColor] = useState(user?.avatar);
   const [showOnlineStatus, setShowOnlineStatus] = useState(true);
   const [isOpenChangePasswordModal, setIsOpenChangePasswordModal] =
@@ -37,16 +37,24 @@ function SettingAccountProfile() {
 
   const handleSubmit = async (e) => {
     e.stopPropagation();
-    const result = await updateProfile(formData);
+    const result = await updateUserProfile(formData);
   };
 
   return (
     <>
       <div className=" px-15 pt-9 flex flex-col gap-4 min-w-200 max-w-200">
         <div className="flex flex-col gap-3 relative">
-          <span className="text-2xl font-semibold">Username</span>
+          <span className="text-2xl font-semibold flex items-center gap-3">Username
+            {user?.googleId && (
+              <span className="text-xs text-red-500 mt-1">
+                ( Email is managed by Google Sign-In and cannot be modified )
+              </span>
+            )}
+          </span>
+          
           <input
             type="text"
+            disabled={user?.googleId} 
             value={formData.username}
             name="username"
             onChange={handleChange}
@@ -59,10 +67,17 @@ function SettingAccountProfile() {
           />
         </div>
         <div className="flex flex-col gap-3 relative">
-          <span className="text-2xl font-semibold">Email</span>
+          <span className="text-2xl font-semibold flex items-center gap-3">Email
+            {user?.googleId && (
+              <span className="text-xs text-red-500 mt-1">
+                ( Email is managed by Google Sign-In and cannot be modified )
+              </span>
+            )}
+          </span>
+          
           <div className="flex gap-5 items-center ">
             <input
-              type="text"
+              type="email"
               readOnly
               value={formData.email}
               className="flex-1 py-2 outline-none px-4 text-lg rounded-lg border-2 border-gray text-secondary"
@@ -70,22 +85,24 @@ function SettingAccountProfile() {
 
             <button
               onClick={() => setIsOpenChangeEmailModal(true)}
-              className="cursor-pointer bg-gray-400 hover:bg-gray-500 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors"
-            >
+              disabled={user?.googleId} 
+              className={`${user?.googleId ? "bg-gray-300 cursor-not-allowed" : "bg-gray-400 hover:bg-gray-500 cursor-pointer"} text-white px-6 py-2.5 rounded-lg font-semibold transition-colors`}
+              >
               Change
             </button>
             <ChangeEmailModal
               key={isOpenChangeEmailModal}
               isOpen={isOpenChangeEmailModal}
               onClose={() => setIsOpenChangeEmailModal(false)}
-            />
+              />
           </div>
         </div>
         <div className="flex flex-col gap-3 relative">
           <div className="flex gap-5 items-center ">
             <button
+              disabled={user?.googleId} 
               onClick={() => setIsOpenChangePasswordModal(true)}
-              className="cursor-pointer bg-red hover:bg-red-400 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors"
+              className={`${user?.googleId ? "bg-gray-300 cursor-not-allowed" : "bg-red hover:bg-red-400 cursor-pointer"} text-white px-6 py-2.5 rounded-lg font-semibold transition-colors`}
             >
               Change Password
             </button>

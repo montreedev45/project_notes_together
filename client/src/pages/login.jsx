@@ -1,18 +1,29 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import image_hero from "../assets/image_hero.png";
 import ForgotPasswordModal from "../components/forgotPasswordModal.jsx";
+import ResetPasswordModal from "../components/resetPasswordModal.jsx";
 import useAuthStore from "../store/useAuthStore.js";
+import GoogleAuthButton from "../components/GoogleAuthButton.jsx";
 
 function Login() {
   const navigate = useNavigate();
+  const { token, email } = useParams();
   const [isOpenForgotPasswordModal, setIsOpenForgotPasswordModal] =
+    useState(false);
+  const [isOpenResetPasswordModal, setIsOpenResetPasswordModal] =
     useState(false);
   const login = useAuthStore((state) => state.login);
   const [showPassword, setShowPassword] = useState(false);
 
   const [formData, setFormData] = useState({ email: "", password: "" });
+
+  useEffect(() => {
+    if (token && email) {
+      setIsOpenResetPasswordModal(true);
+    }
+  }, [token, email]);
 
   const handleChange = (e) => {
     setFormData({
@@ -85,7 +96,7 @@ function Login() {
               className="text-gray absolute left-3"
             />
             <Icon
-              icon="mdi:eye"
+              icon={showPassword ? "mdi:eye-off" : "mdi:eye"}
               onClick={handleShowPassword}
               width="20"
               className="text-gray absolute right-3 cursor-pointer"
@@ -101,24 +112,14 @@ function Login() {
             isOpen={isOpenForgotPasswordModal}
             onClose={() => setIsOpenForgotPasswordModal(false)}
           />
-          <button
-            onClick={(e) => {
-              handleSubmit(e);
-            }}
-            className="button-primary w-full py-2 rounded-lg font-medium hover:scale-105 transition-transform cursor-pointer"
-          >
-            Login
-          </button>
-          <span className="py-4 font-semibold text-secondary">or</span>
-          <span className="text-gray font-semibold border-2 rounded-lg border-gray w-full text-center py-2 flex justify-center hover:scale-105 transition-transform cursor-pointer">
-            <Icon
-              icon="flat-color-icons:google"
-              className="me-1"
-              width="22"
-              height="22"
-            />
-            Continue with Google
-          </span>
+          <ResetPasswordModal
+            isOpen={isOpenResetPasswordModal}
+            onClose={() => setIsOpenResetPasswordModal(false)}
+            token={token}
+            email={email}
+          />
+
+          <GoogleAuthButton />
 
           <span className="mt-8 text-gray font-semibold">
             Don't have an account?{" "}

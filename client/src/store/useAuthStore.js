@@ -3,6 +3,7 @@ import api from "../services/api";
 const useAuthStore = create((set) => ({
   users: [],
   user: null,
+  token: null,
   isAuthenticated: false,
   loading: false,
   isInitialized: false, //use when check that Have finished process yet?
@@ -64,25 +65,22 @@ const useAuthStore = create((set) => ({
     }
   },
 
-  updateProfile: async (data) => {
-    set({ loading: true });
-
+  updateUserProfile: async (updatedData) => {
     try {
-      const res = await api.put(`/auth/profile`, data);
+      console.log("formdata", updatedData)
+      const response = await api.put('auth/profile', updatedData);
+      console.log("response", response)
 
-      if (res?.data) {
-        if (res?.data?.user && res?.data?.newToken) {
-          localStorage.setItem("token", res.data.newToken);
-          set({ user: res.data.user, loading: false });
-          return { success: true };
-        }
-      }
+      const { user, token } = response.data;
 
-      set({ loading: false });
-      return { success: false, message: "Unexpected response from server" };
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('token', token);
+
+      set({ user, token });
+
+      return { success: true };
     } catch (error) {
-      set({ loading: false });
-      return { success: false, message: "Update profile failed" };
+      throw error.response?.data?.message || 'Update failed';
     }
   },
 
@@ -104,6 +102,41 @@ const useAuthStore = create((set) => ({
     }
   },
 
+  forgotPassword: async(currentEmail) =>{
+    set({loading: true})
+    try {
+      const res = await api.post("/auth/forgot-password", {currentEmail})
+
+      if(res.data.success === true){
+        set({loading: false})
+        return {success: res.data.success, message: res.data.message}
+      }
+
+      set({loading: false})
+      return {success: false, message: res.data.message}
+    } catch (error) {
+      set({loading: false})
+      return {success: false, message: error.response.data.message}
+    }
+  },
+
+  resetPassword: async(formData) => {
+    set({loading: true})
+    try {
+      const res = await api.post("/auth/reset-password", formData) 
+
+      if(res?.status === 200){
+        return {success: true}
+      }
+      
+      return { success: false, message: res.data.message }
+    } catch (error) {
+      return {success: false, message: error.response.data.message}
+    } finally{
+      set({loading: false})
+    }
+  },
+
   checkDuplicateEmail: async (formData) => {
     try {
       const res = await api.post("/auth/check-duplicate-email", formData);
@@ -122,7 +155,7 @@ const useAuthStore = create((set) => ({
     try {
       const res = await api.post("/auth/change-email", formData);
 
-      if (res?.data) {
+      if (res?.status === 200) {
         localStorage.setItem("token", res.data.token);
         set({ user: res.data.user, loading: false });
         return { success: true };
@@ -168,6 +201,33 @@ const useAuthStore = create((set) => ({
     }
   },
 
+  googleLogin: async (credential) => {
+    try {
+      // ส่ง credential ที่ได้จาก Google ไปให้ Backend
+      const res = await api.post('/auth/google', { credential });
+
+      // บันทึก Token / User Info เข้า Zustand Store
+      if (res?.data?.user && res?.data?.token) {
+        localStorage.setItem("token", res.data.token);
+        console.log("res.data.user", res.data.user)
+
+        set({
+          user: res.data.user,
+          isAuthenticated: true,
+        });
+
+        return { success: true };
+      }
+
+      return { success: false, message: "Login failed" };
+    } catch (error) {
+      console.error('Google Login Error:', error.response?.data || error.message);
+      throw error;
+    } finally {
+      loading: false;
+    }
+  },
+
   setUser: (userData) => {
     set({user: userData})
   },
@@ -196,6 +256,8 @@ const useAuthStore = create((set) => ({
       const res = await api.get("/auth/verify", {
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      console.log("##", res.data)
       set({
         user: res.data.user,
         isAuthenticated: true,

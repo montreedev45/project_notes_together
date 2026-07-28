@@ -5,9 +5,10 @@ import Footer from "../components/footer";
 function Layout() {
   const location = useLocation();
 
-  const pathNoFooter = ['/login', '/sign-up']
+  const isResetPasswordPath = location.pathname.startsWith("/reset-password");
+  const isAuthPage = ["/login", "/sign-up"].includes(location.pathname);
 
-  const showFooter = !pathNoFooter.includes(location.pathname)
+  const showFooter = !(isAuthPage || isResetPasswordPath);
 
   return (
     <div className="layout-container">

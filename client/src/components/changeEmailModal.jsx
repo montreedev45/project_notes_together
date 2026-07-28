@@ -58,7 +58,7 @@ function ChangeEmailModal({ isOpen, onClose }) {
     try {
       const res = await checkDuplicateEmail(formData);
 
-      if (res.success) {
+      if (res.success === true) {
         setStep(2);
       }
     } catch (error) {
@@ -158,7 +158,7 @@ function ChangeEmailModal({ isOpen, onClose }) {
                 className="p-6 mx-6 my-6  bg-yellow "
                 style={{ userSelect: "none" }}
               >
-                Didn’t receive code? Resend in 30sA verification code will be
+                A verification code will be
                 sent to your new email address. Please enter the verification
                 code in the field below.
               </div>

@@ -12,10 +12,11 @@ const userSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    password: {
-      type: String,
-      required: true,
+    password: { 
+      type: String, 
+      required: function() { return !this.googleId; } // จะ required เฉพาะเมื่อไม่ได้ใช้ Google Login
     },
+    googleId: { type: String },
     avatar: {
       type: String,
       default: "#4b9fff",
@@ -27,6 +28,8 @@ const userSchema = new mongoose.Schema(
     },
     changeEmailCode: { type: String },
     changeEmailExpire: { type: Date },
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date },
     isDeleted: { type: Boolean, default: false },
     deletedAt: { type: Date },
   },
@@ -36,4 +39,3 @@ const userSchema = new mongoose.Schema(
 const User = mongoose.model("User", userSchema);
 
 export default User;
-

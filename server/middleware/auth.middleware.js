@@ -8,31 +8,22 @@ const authMiddleware = async (req, res, next) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    //pull token
     const token = authHeader.split(" ")[1];
-    
-    //verify
     const decode = jwt.verify(token, process.env.JWT_SECRET);
-    //console.log("decode test", decode)
+
+    // 🟢 ดึงข้อมูลสดจาก DB (ตัด password ออก)
+    const user = await User.findById(decode.id || decode._id).select("-password");
+
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    // 🟢 แนบ Object user ทั้งหมด (ซึ่งจะมี googleId ติดไปด้วยถ้ามีใน DB)
+    req.user = user;
     
-    //const user = await User.findById(decode.id).select("-password");
-
-    // if (!user) {
-    //   return res.status(401).json({ message: "user not found" });
-    // }
-
-    //attact user data
-    req.user = {
-      _id: decode.id,
-      username: decode.username,
-      email: decode.email,
-      avatar: decode.avatar,
-      plan: decode.plan
-    };
     next();
-    
   } catch (error) {
-    res.status(401).json({ message: "Invalid token" });
+    return res.status(401).json({ message: "Invalid or expired token" });
   }
 };
 

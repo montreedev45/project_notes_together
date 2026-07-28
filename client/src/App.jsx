@@ -149,6 +149,10 @@ function App() {
 
           <Route path="/login" element={<Login />} />
           <Route path="/sign-up" element={<Register />} />
+          <Route
+              path="/reset-password/:token/:email"
+              element={<Login />}
+            />
         </Route>
 
         {/* private */}
@@ -164,6 +168,7 @@ function App() {
               path="join-link/:shareLinkToken/:role"
               element={<JoinLink />}
             />
+            
 
             {/* 2. Setting Account (จัดการโปรไฟล์) */}
             <Route

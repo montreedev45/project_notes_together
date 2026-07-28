@@ -4,6 +4,7 @@ import { Icon } from "@iconify/react";
 import api from "../services/api.js";
 import image_hero from "../assets/image_hero.png";
 import useAuthStore from "../store/useAuthStore.js";
+import GoogleAuthButton from "../components/GoogleAuthButton.jsx";
 
 function Register() {
   const navigate = useNavigate();
@@ -112,7 +113,7 @@ function Register() {
               />
               <Icon
                 onClick={handleShowPassword}
-                icon="mdi:eye"
+                icon={showPassword ? "mdi:eye-off" : "mdi:eye"}
                 width="20"
                 className="text-gray absolute right-3 cursor-pointer"
               />
@@ -134,7 +135,7 @@ function Register() {
               />
               <Icon
                 onClick={handleShowConfirmPassword}
-                icon="mdi:eye"
+                icon={showConfirmPassword ? "mdi:eye-off" : "mdi:eye"}
                 width="20"
                 className="text-gray absolute right-3 cursor-pointer"
               />
@@ -147,15 +148,7 @@ function Register() {
               Sign up
             </button>
             <span className="py-3 font-semibold text-secondary">or</span>
-            <span className="text-gray font-semibold border-2 rounded-lg border-gray w-full text-center py-2 flex justify-center  hover:scale-105 transition-transform cursor-pointer">
-              <Icon
-                icon="flat-color-icons:google"
-                className="me-1"
-                width="22"
-                height="22"
-              />
-              Continue with Google
-            </span>
+            <GoogleAuthButton />
 
             <span className="mt-8 text-gray font-semibold">
               Already have an account?{" "}
