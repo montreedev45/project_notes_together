@@ -45,7 +45,7 @@ function SettingAccountProfile() {
       <div className=" px-15 pt-9 flex flex-col gap-4 min-w-200 max-w-200">
         <div className="flex flex-col gap-3 relative">
           <span className="text-2xl font-semibold flex items-center gap-3">Username
-            {user?.googleId && (
+            {user?.googleId === "google" && (
               <span className="text-xs text-red-500 mt-1">
                 ( Email is managed by Google Sign-In and cannot be modified )
               </span>
@@ -54,7 +54,7 @@ function SettingAccountProfile() {
           
           <input
             type="text"
-            disabled={user?.googleId} 
+            disabled={user?.googleId === "google"} 
             value={formData.username}
             name="username"
             onChange={handleChange}
@@ -68,7 +68,7 @@ function SettingAccountProfile() {
         </div>
         <div className="flex flex-col gap-3 relative">
           <span className="text-2xl font-semibold flex items-center gap-3">Email
-            {user?.googleId && (
+            {user?.googleId === "google" && (
               <span className="text-xs text-red-500 mt-1">
                 ( Email is managed by Google Sign-In and cannot be modified )
               </span>
@@ -85,8 +85,8 @@ function SettingAccountProfile() {
 
             <button
               onClick={() => setIsOpenChangeEmailModal(true)}
-              disabled={user?.googleId} 
-              className={`${user?.googleId ? "bg-gray-300 cursor-not-allowed" : "bg-gray-400 hover:bg-gray-500 cursor-pointer"} text-white px-6 py-2.5 rounded-lg font-semibold transition-colors`}
+              disabled={user?.googleId === "google"} 
+              className={`${user?.googleId === "google" ? "bg-gray-300 cursor-not-allowed" : "bg-gray-400 hover:bg-gray-500 cursor-pointer"} text-white px-6 py-2.5 rounded-lg font-semibold transition-colors`}
               >
               Change
             </button>
@@ -98,14 +98,14 @@ function SettingAccountProfile() {
           </div>
         </div>
         <div className="flex flex-col gap-3 relative">
-          <div className="flex gap-5 items-center ">
+          <div className="flex flex-col gap-5 items-start ">
             <button
-              disabled={user?.googleId} 
               onClick={() => setIsOpenChangePasswordModal(true)}
-              className={`${user?.googleId ? "bg-gray-300 cursor-not-allowed" : "bg-red hover:bg-red-400 cursor-pointer"} text-white px-6 py-2.5 rounded-lg font-semibold transition-colors`}
+              className="bg-red hover:bg-red-400 cursor-pointer text-white px-6 py-2.5 rounded-lg font-semibold transition-colors"
             >
               Change Password
             </button>
+            <span className="text-red-500 w-full text-xs p-3 bg-yellow-100">This password change is only for logging in via email on this website. It will not affect your Google account password.</span>
             <ChangePasswordModal
               key={isOpenChangePasswordModal}
               isOpen={isOpenChangePasswordModal}

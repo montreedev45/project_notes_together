@@ -30,12 +30,9 @@ const usePlanStore = create((set, get) => ({
   upgradePlan: async (planId) => {
     set({ loading: true });
     try {
-      const res = await api.post("/plans/upgrade-plan", { planId });
+      const res = await api.post("/auth/upgrade-plan", { planId });
 
-      if (res.data?.success) {
-        if (res.data.newToken) {
-          localStorage.setItem("token", res.data.newToken);
-        }
+      if (res.data?.success && res.status === 200) {
 
         if (res.data.user) {
           useAuthStore.getState().setUser(res.data.user);
@@ -55,7 +52,6 @@ const usePlanStore = create((set, get) => ({
       const errorMsg = error.response?.data?.message || "Upgrade plan failed";
       return { success: false, message: errorMsg };
     } finally {
-      // รันบรรทัดนี้เสมอ ไม่ว่าจะสำเร็จหรือพัง ทำให้ไม่ต้องเขียน set({ loading: false }) ซ้ำหลายจุด
       set({ loading: false });
     }
   },

@@ -6,6 +6,7 @@ let socket;
 export const connectSocket = (userId) => {
   if (!socket) {
     socket = io(import.meta.env.VITE_SERVER_URL, {
+      withCredentials: true,
       query: { userId } 
     });
     console.log("🔌 Socket initialized!");

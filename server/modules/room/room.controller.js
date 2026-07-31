@@ -205,7 +205,9 @@ export const getRoomById = async (req, res) => {
 
     // 🔒 ถ้าเป็น Private Room แล้วผู้ใช้ไม่ใช่ทั้ง Owner และ Member -> ปฏิเสธ access
     if (room.isPrivate && !isOwner && !isMember) {
-      return res.status(403).json({ message: "Access denied to this private room" });
+      return res
+        .status(403)
+        .json({ message: "Access denied to this private room" });
     }
 
     // 🔓 ถ้าเป็น Public Room หรือ เป็นคนในห้อง Private -> ส่งข้อมูลห้องกลับไปให้ Editor
@@ -241,14 +243,13 @@ export const joinRoom = async (req, res) => {
         "username email avatar plan",
       );
       if (!room) return res.status(404).json({ message: "Room not found" });
-      
+
       if (room.isPrivate) {
         return res.status(403).json({
           message: "This room is private. Please use an invite code.",
         });
       }
     }
-    console.log("##################")
 
     if (!room)
       return res
@@ -270,7 +271,7 @@ export const joinRoom = async (req, res) => {
 
     const planDetails = await Plan.findOne({ plan: ownerPlan });
     const colleagueLimit = planDetails.colleagueLimit ?? 1;
-    
+
     if (room.members.length - 1 >= colleagueLimit) {
       if (room.owner._id.toString() === userId.toString()) {
         return res.status(403).json({
@@ -593,7 +594,7 @@ export const joinLink = async (req, res) => {
       }
     }
 
-       if (room.members.length - 1 >= colleagueLimit) {
+    if (room.members.length - 1 >= colleagueLimit) {
       if (room.owner._id.toString() === userId.toString()) {
         return res.status(403).json({
           message: `Your package allows a maximum of ${colleagueLimit} colleagues. Please upgrade your plan.`,

@@ -18,8 +18,7 @@ const useAuthStore = create((set) => ({
 
       const res = await api.post("/auth/login", formData);
 
-      if (res?.data?.user && res?.data?.token) {
-        localStorage.setItem("token", res.data.token);
+      if (res?.data?.user && res.status === 200) {
 
         set({
           user: res.data.user,
@@ -47,8 +46,7 @@ const useAuthStore = create((set) => ({
     try {
       const res = await api.post("/auth/register", formData)
 
-      if (res?.data?.user && res?.data?.token) {
-        localStorage.setItem("token", res.data.token);
+      if (res?.data?.user && res.status === 200) {
         set({ user: res.data.user, isAuthenticated: true, loading: false });
 
         return { success: true };
@@ -67,16 +65,12 @@ const useAuthStore = create((set) => ({
 
   updateUserProfile: async (updatedData) => {
     try {
-      console.log("formdata", updatedData)
       const response = await api.put('auth/profile', updatedData);
-      console.log("response", response)
-
-      const { user, token } = response.data;
+      const { user } = response.data;
 
       localStorage.setItem('user', JSON.stringify(user));
-      localStorage.setItem('token', token);
 
-      set({ user, token });
+      set({ user: user  });
 
       return { success: true };
     } catch (error) {
@@ -155,8 +149,7 @@ const useAuthStore = create((set) => ({
     try {
       const res = await api.post("/auth/change-email", formData);
 
-      if (res?.status === 200) {
-        localStorage.setItem("token", res.data.token);
+      if (res?.data?.user && res?.status === 200) {
         set({ user: res.data.user, loading: false });
         return { success: true };
       }
@@ -207,9 +200,7 @@ const useAuthStore = create((set) => ({
       const res = await api.post('/auth/google', { credential });
 
       // บันทึก Token / User Info เข้า Zustand Store
-      if (res?.data?.user && res?.data?.token) {
-        localStorage.setItem("token", res.data.token);
-        console.log("res.data.user", res.data.user)
+      if (res?.data?.user && res?.status === 200) {
 
         set({
           user: res.data.user,
@@ -235,29 +226,28 @@ const useAuthStore = create((set) => ({
   clearUsers: ()=> set({ users: []}),
   
   
-  logout: () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("newEmail");
-    localStorage.removeItem("recent-rooms");
-    localStorage.removeItem("temporalyToken");
-    localStorage.removeItem("verificationCode");
-    set({ user: null, isAuthenticated: false, loading: false });
+  logout: async() => {
+    try {
+      const res = await api.post("/auth/logout")
+      if(res.status === 200){
+
+        localStorage.removeItem("newEmail");
+        localStorage.removeItem("recent-rooms");
+        localStorage.removeItem("temporalyToken");
+        localStorage.removeItem("verificationCode");
+        set({ user: null, isAuthenticated: false, loading: false });
+        return {success: true}
+      }
+    } catch (error) {
+      console.log("error", error)
+    }
+    
   },
 
   checkAuth: async () => {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      set({ isAuthenticated: false, loading: false, isInitialized: true });
-      return;
-    }
-
     try {
-      const res = await api.get("/auth/verify", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.get("/auth/verify");
 
-      console.log("##", res.data)
       set({
         user: res.data.user,
         isAuthenticated: true,
@@ -265,7 +255,6 @@ const useAuthStore = create((set) => ({
         isInitialized: true,
       });
     } catch (error) {
-      localStorage.removeItem("token");
       set({
         user: null,
         isAuthenticated: false,

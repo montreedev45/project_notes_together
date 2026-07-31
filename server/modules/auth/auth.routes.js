@@ -10,15 +10,19 @@ import {
   getUser,
   forgotPassword,
   resetPassword,
-  googleLoginController
+  googleLoginController,
+  logout,
+  upgradePlan
 } from "./auth.controller.js";
 import authMiddleware from "../../middleware/auth.middleware.js";
 import { validateGoogleTokenInput } from '../../middleware/validateGoogleToken.js';
+import rateLimit from "express-rate-limit";
 
 const router = express.Router();
 
-router.post("/register", register);
-router.post("/login", login);
+router.post("/register", rateLimit, register);
+router.post("/login", rateLimit, login);
+router.post("/logout", logout);
 router.get("/verify", authMiddleware, (req, res) => {
   res.status(200).json({
     message: "Authenticated",
@@ -31,8 +35,9 @@ router.post("/check-duplicate-email", authMiddleware, checkDuplicateEmail);
 router.post("/change-email", authMiddleware, changeEmail);
 router.delete("/delete-account", authMiddleware, deleteAccount);
 router.post("/users", authMiddleware, getUser)
-router.post("/forgot-password", forgotPassword)
-router.post("/reset-password", resetPassword)
-router.post('/google', validateGoogleTokenInput, googleLoginController);
+router.post("/forgot-password", rateLimit ,forgotPassword)
+router.post("/reset-password", rateLimit, resetPassword)
+router.post("/upgrade-plan", authMiddleware, upgradePlan)
+router.post('/google', rateLimit, validateGoogleTokenInput, googleLoginController);
 
 export default router;

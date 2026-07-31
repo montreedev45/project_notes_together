@@ -72,7 +72,7 @@ function ChangePasswordModal({ isOpen, onClose }) {
                 className="w-full px-4 py-2.5 bg-gray-100 border-2 border-secondary rounded-lg outline-none "
               />
               <Icon
-                icon="mdi:eye"
+                icon={showCurrentPassword ? "mdi:eye-off" : "mdi:eye"}
                 onClick={handleShowCurrentPassword}
                 width="20"
                 className="text-gray absolute right-3 cursor-pointer"
@@ -88,7 +88,7 @@ function ChangePasswordModal({ isOpen, onClose }) {
                 className="w-full px-4 py-2.5 bg-gray-100 border-2 border-secondary rounded-lg outline-none "
               />
               <Icon
-                icon="mdi:eye"
+                icon={showNewPassword ? "mdi:eye-off" : "mdi:eye"}
                 onClick={handleShowNewPassword}
                 width="20"
                 className="text-gray absolute right-3 cursor-pointer"
@@ -104,7 +104,7 @@ function ChangePasswordModal({ isOpen, onClose }) {
                 className="w-full px-4 py-2.5 bg-gray-100 border-2 border-secondary rounded-lg outline-none "
               />
               <Icon
-                icon="mdi:eye"
+                icon={showConfirmPassword ? "mdi:eye-off" : "mdi:eye"}
                 onClick={handleShowConfirmPassword}
                 width="20"
                 className="text-gray absolute right-3 cursor-pointer"

@@ -2,6 +2,7 @@ import User from "./auth.model.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import Room from "../room/room.model.js";
+import Plan from "../plan/plan.model.js";
 import mongoose from "mongoose";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
@@ -28,7 +29,7 @@ export const generateToken = (user) => {
       avatar: user.avatar,
       plan: user.plan,
       // 💡 ถ้าเป็นสมัครธรรมดา user.googleId จะไม่มี ค่าใน JWT จะกลายเป็น null
-      googleId: user.googleId || null, 
+      googleId: user.googleId || null,
     },
     process.env.JWT_SECRET,
     { expiresIn: "7d" }
@@ -60,13 +61,20 @@ export const register = async (req, res) => {
 
     const token = generateToken(user);
 
-    res.json({
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      maxAge: 7 * 24 * 60 *1000,
+    })
+
+    res.status(200).json({
       user: {
         id: user._id,
         username: user.username,
         email: user.email,
       },
-      token,
     });
   } catch (error) {
     res.status(500).json({ message: "server error" });
@@ -76,8 +84,8 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    const user = await User.findOne({ email });
+    
+    const user = await User.findOne({ email }).select("+password");
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
@@ -92,16 +100,23 @@ export const login = async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
-
+    
     const token = generateToken(user);
-
-    res.json({
+    
+    //attach token in cookie
+    res.cookie("token", token, {
+      httpOnly: true, // ป้องกัน JavaScript ฝั่ง Frontend อ่านค่า (กัน XSS)
+      secure: process.env.NODE_ENV === 'production', // ส่งเฉพาะ HTTPS เท่านั้น (ใน dev ใช้ false ได้)
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      maxAge: 7 * 24 * 60 * 1000,
+    });
+    
+    res.status(200).json({
       user: {
         id: user._id,
         username: user.username,
         email: user.email,
       },
-      token,
     });
   } catch (error) {
     res.status(500).json({ message: "server error" });
@@ -113,7 +128,7 @@ export const updateProfile = async (req, res) => {
     const userId = req.user._id;
     const { username, avatar, email, currentPassword } = req.body;
 
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).select("+password");
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const updateData = {};
@@ -122,18 +137,19 @@ export const updateProfile = async (req, res) => {
 
     // กรณีมีการขอเปลี่ยน Email
     if (email && email !== user.email) {
-      
       // 1. ถ้าสมัครผ่าน Google Auth -> ปฏิเสธการเปลี่ยน Email ทันที
       if (user.googleId) {
         return res.status(400).json({
-          message: "Accounts logged in via Google cannot change their email address.",
+          message:
+            "Accounts logged in via Google cannot change their email address.",
         });
       }
 
       // 2. ถ้าสมัครแบบปกติ (Password Auth) -> บังคับเช็ก Password เดิม
       if (!currentPassword) {
         return res.status(400).json({
-          message: "Please enter your current password to confirm email change.",
+          message:
+            "Please enter your current password to confirm email change.",
         });
       }
 
@@ -145,7 +161,9 @@ export const updateProfile = async (req, res) => {
       // 3. ตรวจสอบว่า Email ใหม่ซ้ำกับคนอื่นไหม
       const emailExists = await User.findOne({ email });
       if (emailExists) {
-        return res.status(400).json({ message: "This email is already in use." });
+        return res
+          .status(400)
+          .json({ message: "This email is already in use." });
       }
 
       updateData.email = email;
@@ -160,6 +178,13 @@ export const updateProfile = async (req, res) => {
 
     const newToken = generateToken(updatedUser);
 
+    res.cookie("token", newToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      maxAge: 7 * 24 * 60 * 1000
+    })
+
     res.status(200).json({
       message: "Profile updated successfully",
       user: {
@@ -170,7 +195,6 @@ export const updateProfile = async (req, res) => {
         plan: updatedUser.plan,
         googleId: updatedUser.googleId ? "google" : "local",
       },
-      token : newToken
     });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
@@ -180,16 +204,40 @@ export const updateProfile = async (req, res) => {
 export const changePassword = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { currentPassword, newPassword } = req.body;
+    const { currentPassword, newPassword, confirmPassword } = req.body;
 
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).select("+password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // เช็กว่าเป็น Google-Only User หรือไม่
+    if (!user.password && user.googleId) {
+      return res.status(400).json({
+        message:
+          "Google authenticated accounts cannot change password directly. Please set up a password first.",
+      });
+    }
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res
+        .status(400)
+        .json({ message: "Please provide all required fields" });
+    }
+
+    // 🟢 Condition 3: เช็กว่า newPassword กับ confirmNewPassword ตรงกันหรือไม่
+    if (newPassword !== confirmPassword) {
+      return res
+        .status(400)
+        .json({ message: "New password and confirm password do not match" });
+    }
 
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch)
       return res.status(400).json({ message: "current password is incorrect" });
 
-    const hashed = await bcrypt.hash(newPassword, 10);
-    user.password = hashed;
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
     await user.save();
 
     res.status(200).json({ message: "Password updated successfully" });
@@ -211,7 +259,8 @@ export const forgotPassword = async (req, res) => {
 
     if (user.googleId) {
       return res.status(400).json({
-        message: "This account was created with Google Sign-In and does not have a password. Please sign in using Google or reset your password on Google.",
+        message:
+          "This account was created with Google Sign-In and does not have a password. Please sign in using Google or reset your password on Google.",
       });
     }
 
@@ -269,7 +318,7 @@ export const resetPassword = async (req, res) => {
     const user = await User.findOne({
       resetPasswordToken: hashedToken,
       resetPasswordExpires: { $gt: Date.now() },
-    });
+    }).select("+password");
 
     if (!user) {
       return res
@@ -296,7 +345,7 @@ export const checkDuplicateEmail = async (req, res) => {
     const userId = req.user._id;
     const { newEmail, currentPassword } = req.body;
 
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).select("+password");
     if (!user) return res.status(400).json({ message: "User not found" });
 
     const isMatch = await bcrypt.compare(currentPassword, user.password);
@@ -388,10 +437,17 @@ export const changeEmail = async (req, res) => {
     await user.save();
 
     const newToken = generateToken(user);
+
+    res.cookie("token", newToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      maxAge: 7 * 24 * 60 * 1000
+    })
+
     res.status(200).json({
       message: "Change email successfully",
       user: user,
-      token: newToken,
     });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
@@ -521,7 +577,6 @@ export const googleLoginController = async (req, res) => {
     });
 
     const payload = ticket.getPayload();
-    console.log("payload", payload)
     const { email, name, picture, sub: googleId } = payload;
 
     // 2. เช็กว่าผู้ใช้เคยมี Account ใน DB หรือยัง
@@ -544,16 +599,18 @@ export const googleLoginController = async (req, res) => {
     }
 
     // 3. สร้าง JWT Token ของระบบเราเองส่งกลับไปให้ Frontend
-    const appToken = jwt.sign(
-      { id: user._id, username: user.username, email: user.email, avatar: user.avatar, plan: user.plan },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" },
-    );
+    const appToken = generateToken(user)
+
+    res.cookie("token", appToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      maxAge: 7 * 24 * 60 * 1000
+    })
 
     // 4. ส่งข้อมูล User และ Token กลับไป
     res.status(200).json({
       success: true,
-      token: appToken,
       user: {
         id: user._id,
         username: user.username,
@@ -566,4 +623,52 @@ export const googleLoginController = async (req, res) => {
     console.error("Google Auth Error:", error);
     res.status(500).json({ message: "Google authentication failed" });
   }
+};
+
+export const upgradePlan = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { planId } = req.body;
+
+    //when use findById, it's return object { _id: "...", plan: "teams" }
+    const selectedPlan = await Plan.findById(planId).select("plan");
+    if (!selectedPlan) {
+      return res.status(404).json({ success: false, message: "Plan not found" });
+    }
+
+    const upgradedPlan = await User.findByIdAndUpdate(
+      userId,
+      { plan: selectedPlan.plan },
+      { returnDocument: "after", select: "-password" } 
+    );
+
+    const newToken = generateToken(upgradedPlan);
+
+    res.cookie("token", newToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      maxAge: 7 * 24 * 60 * 1000
+    })
+
+    return res.status(200).json({ 
+      success: true, 
+      message: "Plan upgraded successfully", 
+      user: upgradedPlan
+    });
+
+  } catch (error) {
+    console.error("Upgrade plan error:", error);
+    return res.status(500).json({ success: false, message: "Upgrade plan failed" });
+  }
+};
+
+export const logout = (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+  });
+
+  res.status(200).json({ message: "Logged out successfully" });
 };

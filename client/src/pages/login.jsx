@@ -118,7 +118,15 @@ function Login() {
             token={token}
             email={email}
           />
-
+          <button
+            onClick={(e) => {
+              handleSubmit(e);
+            }}
+            className="button-primary w-full py-2 rounded-lg font-medium hover:scale-105 transition-transform cursor-pointer"
+          >
+            Login
+          </button>
+          <span className="py-4 font-semibold text-secondary">or</span>
           <GoogleAuthButton />
 
           <span className="mt-8 text-gray font-semibold">

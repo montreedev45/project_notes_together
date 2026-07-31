@@ -14,7 +14,8 @@ const userSchema = new mongoose.Schema(
     },
     password: { 
       type: String, 
-      required: function() { return !this.googleId; } // จะ required เฉพาะเมื่อไม่ได้ใช้ Google Login
+      required: function() { return !this.googleId; }, // จะ required เฉพาะเมื่อไม่ได้ใช้ Google Login
+      select: false
     },
     googleId: { type: String },
     avatar: {
