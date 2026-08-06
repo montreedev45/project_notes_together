@@ -47,84 +47,47 @@ function App() {
 
   //socket
   useEffect(() => {
-    let socket;
-
-    if (user && user._id) {
-      socket = connectSocket(user._id);
-
-      socket.on("connect", () => {
-        socket.emit("setup", user._id);
-      });
-
-      socket.on("new_notification", (data) => {
-        // แสดง toast ตรงนี้
-        addNotification(data);
-      });
-
-      // socket.on("transfer_ownership", ({ roomId, oldOwnerId, newOwnerId }) => {
-      //   // แสดง toast ตรงนี้
-      //   //addNotification(data);
-
-      //   useRoomStore.setState((state) => {
-      //     // 1. ค้นหาห้องปัจจุบันที่กำลังเปิดดูอยู่
-      //     const currentRoom = state.myRooms.find((r) => r._id === roomId);
-      //     if (!currentRoom) return state;
-
-      //     // 2. จำลองหาข้อมูล User ของ Owner คนใหม่จากในระบบ (เพื่อคงความเป็น Object ของเจ้าของห้องไว้)
-      //     // โดยการจิ้มหาข้อมูลคนนั้นจากในอาเรย์ members ที่เรามีอยู่แล้ว
-      //     const newOwnerUserObj = currentRoom.members.find(
-      //       (m) => m.user?._id === newOwnerId,
-      //     )?.user || { _id: newOwnerId, username: "Ownerคนใหม่" }; // fallback ป้องกันพัง
-
-      //     // 3. ปรับสิทธิ์ใน members: เปลี่ยนบทบาทของ Owner คนใหม่ให้เป็น editor (ตามลอจิกหลังบ้าน)
-      //     const updatedMembers = currentRoom.members.map((m) =>
-      //       m.user?._id === newOwnerId ? { ...m, role: "editor" } : m,
-      //     );
-
-      //     // 4. ประกอบร่างห้องชุดใหม่
-      //     const newRoomData = {
-      //       ...currentRoom,
-      //       owner: newOwnerUserObj, // สลับก้อนข้อมูลเจ้าของห้องตัวจริง
-      //       members: updatedMembers,
-      //     };
-
-      //     // 5. อัปเดตลงสโตร์หลักเพื่อสั่ง Re-render ยกแผง
-      //     return {
-      //       ...state,
-      //       myRooms: state.myRooms.map((r) =>
-      //         r._id === roomId ? newRoomData : r,
-      //       ),
-      //       rooms: state.rooms.map((r) => (r._id === roomId ? newRoomData : r)),
-      //       recentRooms: state.recentRooms.map((r) =>
-      //         r._id === roomId ? newRoomData : r,
-      //       ),
-      //       // ถ้ากำลังเปิดห้องนี้ค้างหน้าจออยู่ ให้เปลี่ยนทันตาเห็น
-      //       roomData:
-      //         state.roomData?._id === roomId ? newRoomData : state.roomData,
-      //     };
-      //   });
-      // });
-
-      socket.on("send_relative_time", ({ roomId, time }) => {
-        setRelativeTime(roomId, time);
-      });
-    } else {
-      //user (กด Logout) ให้ปิดท่อทันที
+    // 1. ถ้าไม่มี user หรือลบ account ออกไปแล้ว ให้ตัดสายทันที
+    if (!user?._id) {
       disconnectSocket();
+      return;
     }
 
-    return () => {
-      if (socket) {
-        //ล้าง Event Listener ทุกตัวที่เคยผูกไว้ให้เกลี้ยง ป้องกันสเตทเบิ้ล
-        socket.off("connect");
-        socket.off("new_notification");
-        //socket.off("transfer_ownership");
-        socket.off("send_relative_time");
-      }
-      // สั่งปิดท่อหลักป้องกันสายค้าง
-      disconnectSocket();
+    // 2. ถ้ามี user ให้ดึง/สร้าง socket instance
+    const socket = connectSocket(user._id);
+
+    // --- Handlers ---
+    const handleConnect = () => {
+      console.log("⚡ Socket connected:", socket.id);
+      socket.emit("setup", user._id);
     };
-  }, [user]);
+
+    const handleNewNotification = (data) => {
+      addNotification(data);
+    };
+
+    const handleRelativeTime = ({ roomId, time }) => {
+      setRelativeTime(roomId, time);
+    };
+
+    // --- Bind Event Listeners ---
+    socket.on("connect", handleConnect);
+    socket.on("new_notification", handleNewNotification);
+    socket.on("send_relative_time", handleRelativeTime);
+
+    // Trigger หาก Socket เชื่อมต่ออยู่แล้วก่อนที่ Listener จะผูกเสร็จ
+    if (socket.connected) {
+      handleConnect();
+    }
+
+    // --- Cleanup Function ---
+    // จะทำงานเมื่อ Component Unmount หรือ user._id เปลี่ยนแปลง
+    return () => {
+      socket.off("connect", handleConnect);
+      socket.off("new_notification", handleNewNotification);
+      socket.off("send_relative_time", handleRelativeTime);
+    };
+  }, [user?._id]); // 👈 แนะนำให้ใส่ dependency เป็น user?._id เพื่อป้องกัน re-run ถ้านาฬิกา/state อื่นใน object user เปลี่ยน
 
   useEffect(() => {
     const saveRecent = JSON.parse(localStorage.getItem("recent-rooms") || "[]");
@@ -149,10 +112,7 @@ function App() {
 
           <Route path="/login" element={<Login />} />
           <Route path="/sign-up" element={<Register />} />
-          <Route
-              path="/reset-password/:token/:email"
-              element={<Login />}
-            />
+          <Route path="/reset-password/:token/:email" element={<Login />} />
         </Route>
 
         {/* private */}
@@ -168,7 +128,6 @@ function App() {
               path="join-link/:shareLinkToken/:role"
               element={<JoinLink />}
             />
-            
 
             {/* 2. Setting Account (จัดการโปรไฟล์) */}
             <Route

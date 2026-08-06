@@ -44,13 +44,18 @@ function SettingAccountProfile() {
     <>
       <div className=" px-15 pt-9 flex flex-col gap-4 min-w-200 max-w-200">
         <div className="flex flex-col gap-3 relative">
-          <span className="text-2xl font-semibold flex items-center gap-3">Username
+          <div className="flex items-end">
+            <span className="text-2xl font-semibold flex items-center gap-3">Username
             {user?.googleId === "google" && (
               <span className="text-xs text-red-500 mt-1">
                 ( Email is managed by Google Sign-In and cannot be modified )
               </span>
             )}
           </span>
+          <span className="ps-4 text-red-600 text-sm">
+            ( can only contain letters, numbers, and underscores )
+          </span>
+          </div>
           
           <input
             type="text"

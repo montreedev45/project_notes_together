@@ -28,7 +28,6 @@ export const generateToken = (user) => {
       email: user.email,
       avatar: user.avatar,
       plan: user.plan,
-      // 💡 ถ้าเป็นสมัครธรรมดา user.googleId จะไม่มี ค่าใน JWT จะกลายเป็น null
       googleId: user.googleId || null,
     },
     process.env.JWT_SECRET,
@@ -40,8 +39,8 @@ export const register = async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
+    // check exist email and Is delete?
     const existing = await User.findOne({ email });
-
     if (existing) {
       if (existing.isDeleted) {
         return res.status(400).json({
@@ -51,17 +50,16 @@ export const register = async (req, res) => {
       return res.status(400).json({ message: "Email already used" });
     }
 
+    // hash password and create user
     const hashed = await bcrypt.hash(password, 10);
-
     const user = await User.create({
       username,
       email,
       password: hashed,
     });
 
+    // attach token in cookie
     const token = generateToken(user);
-
-
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -69,7 +67,7 @@ export const register = async (req, res) => {
       maxAge: 7 * 24 * 60 *1000,
     })
 
-    res.status(200).json({
+    return res.status(201).json({
       user: {
         id: user._id,
         username: user.username,
@@ -77,40 +75,40 @@ export const register = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ message: "server error" });
+    return res.status(500).json({ message: "server error" });
   }
 };
 
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    
+
+    // find user and Is delete?
     const user = await User.findOne({ email }).select("+password");
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
-
     if (user.isDeleted) {
       return res.status(400).json({
         message: "This account has been deactivated. Please contact support.",
       });
     }
 
+    // check password is match?
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
-    
+
+    // attach token in cookie
     const token = generateToken(user);
-    
-    //attach token in cookie
     res.cookie("token", token, {
       httpOnly: true, // ป้องกัน JavaScript ฝั่ง Frontend อ่านค่า (กัน XSS)
       secure: process.env.NODE_ENV === 'production', // ส่งเฉพาะ HTTPS เท่านั้น (ใน dev ใช้ false ได้)
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-      maxAge: 7 * 24 * 60 * 1000,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
-    
+
     res.status(200).json({
       user: {
         id: user._id,
@@ -126,18 +124,20 @@ export const login = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { username, avatar, email, currentPassword } = req.body;
+    const { username, avatar, email } = req.body;
 
+    // find user by id
     const user = await User.findById(userId).select("+password");
     if (!user) return res.status(404).json({ message: "User not found" });
 
+    // create updateData object
     const updateData = {};
     if (username) updateData.username = username;
     if (avatar) updateData.avatar = avatar;
 
-    // กรณีมีการขอเปลี่ยน Email
+    // if request change email
     if (email && email !== user.email) {
-      // 1. ถ้าสมัครผ่าน Google Auth -> ปฏิเสธการเปลี่ยน Email ทันที
+      // if signup with Google Auth -> reject Email 
       if (user.googleId) {
         return res.status(400).json({
           message:
@@ -145,44 +145,30 @@ export const updateProfile = async (req, res) => {
         });
       }
 
-      // 2. ถ้าสมัครแบบปกติ (Password Auth) -> บังคับเช็ก Password เดิม
-      if (!currentPassword) {
-        return res.status(400).json({
-          message:
-            "Please enter your current password to confirm email change.",
-        });
-      }
-
-      const isMatch = await bcrypt.compare(currentPassword, user.password);
-      if (!isMatch) {
-        return res.status(400).json({ message: "Incorrect password." });
-      }
-
-      // 3. ตรวจสอบว่า Email ใหม่ซ้ำกับคนอื่นไหม
+      // check new email is duplicate other user?
       const emailExists = await User.findOne({ email });
       if (emailExists) {
         return res
           .status(400)
           .json({ message: "This email is already in use." });
       }
-
       updateData.email = email;
     }
 
-    // อัปเดตข้อมูล
+    // update data
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { $set: updateData },
       { returnDocument: "after" }
     );
 
+    // attach token in cookie
     const newToken = generateToken(updatedUser);
-
     res.cookie("token", newToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-      maxAge: 7 * 24 * 60 * 1000
+      maxAge: 7 * 24 * 60 * 60 * 1000
     })
 
     res.status(200).json({
@@ -206,12 +192,20 @@ export const changePassword = async (req, res) => {
     const userId = req.user._id;
     const { currentPassword, newPassword, confirmPassword } = req.body;
 
+    // find user
     const user = await User.findById(userId).select("+password");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+    
+    // check payload?
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res
+        .status(400)
+        .json({ message: "Please provide all required fields" });
+    }
 
-    // เช็กว่าเป็น Google-Only User หรือไม่
+    // check it's google account?
     if (!user.password && user.googleId) {
       return res.status(400).json({
         message:
@@ -219,23 +213,17 @@ export const changePassword = async (req, res) => {
       });
     }
 
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      return res
-        .status(400)
-        .json({ message: "Please provide all required fields" });
-    }
-
-    // 🟢 Condition 3: เช็กว่า newPassword กับ confirmNewPassword ตรงกันหรือไม่
+    // check newPassword and confirmNewPassword is match?
     if (newPassword !== confirmPassword) {
       return res
         .status(400)
         .json({ message: "New password and confirm password do not match" });
     }
-
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch)
       return res.status(400).json({ message: "current password is incorrect" });
-
+    
+    // hash password
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(newPassword, salt);
     await user.save();
@@ -250,6 +238,7 @@ export const forgotPassword = async (req, res) => {
   try {
     const { currentEmail } = req.body;
 
+    // find user from email
     const user = await User.findOne({ email: currentEmail });
     if (!user) {
       return res.status(200).json({
@@ -257,6 +246,7 @@ export const forgotPassword = async (req, res) => {
       });
     }
 
+    // check it google account?
     if (user.googleId) {
       return res.status(400).json({
         message:
@@ -264,20 +254,21 @@ export const forgotPassword = async (req, res) => {
       });
     }
 
+    // create token for reset password
     const resetToken = crypto.randomBytes(32).toString("hex");
     const hashPasswordToken = crypto
       .createHash("sha256")
       .update(resetToken)
       .digest("hex");
 
+    // save token and expire in db
     user.resetPasswordToken = hashPasswordToken;
     user.resetPasswordExpires = Date.now() + 10 * 60 * 1000;
     await user.save();
 
+    // send reset url to mail
     const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}/${currentEmail}`;
-
     const transporter = getTransporter();
-
     transporter
       .sendMail({
         from: `"Notes Together" <${process.env.EMAIL_USER}>`,
@@ -313,19 +304,21 @@ export const resetPassword = async (req, res) => {
   try {
     const { token, email, newPassword } = req.body;
 
+    // hash token
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
+    // find user from reset password and not expire
     const user = await User.findOne({
       resetPasswordToken: hashedToken,
       resetPasswordExpires: { $gt: Date.now() },
     }).select("+password");
-
     if (!user) {
       return res
         .status(400)
         .json({ message: "the link has expired or the token is invalid." });
     }
 
+    // hash token and set reset password token, reset password expire
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(newPassword, salt);
 
@@ -442,7 +435,7 @@ export const changeEmail = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-      maxAge: 7 * 24 * 60 * 1000
+      maxAge: 7 * 24 * 60 * 60 * 1000
     })
 
     res.status(200).json({
@@ -605,7 +598,7 @@ export const googleLoginController = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-      maxAge: 7 * 24 * 60 * 1000
+      maxAge: 7 * 24 * 60 * 60 * 1000
     })
 
     // 4. ส่งข้อมูล User และ Token กลับไป
@@ -648,7 +641,7 @@ export const upgradePlan = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-      maxAge: 7 * 24 * 60 * 1000
+      maxAge: 7 * 24 * 60 * 60 * 1000
     })
 
     return res.status(200).json({ 

@@ -1,25 +1,27 @@
 import { io } from "socket.io-client";
 
-let socket;
+let socket = null;
 
-// 1. ฟังก์ชันสั่งเชื่อมต่อครั้งแรก (รันที่ App.jsx)
+// 1. ฟังก์ชันสั่งเชื่อมต่อครั้งแรก
 export const connectSocket = (userId) => {
+  // หากมี socket อยู่แล้วแต่หลุดสายไป ให้สั่ง connect ใหม่ หรือคืนค่าเดิม
   if (!socket) {
     socket = io(import.meta.env.VITE_SERVER_URL, {
+      transports: ["websocket"], // สำคัญที่สุด! บังคับใช้ WebSocket ข้าม Long-Polling ไปเลย
       withCredentials: true,
-      query: { userId } 
+      query: { userId },
     });
     console.log("🔌 Socket initialized!");
   }
   return socket;
 };
 
-// 🚩 2. เพิ่มฟังก์ชันนี้: สำหรับให้หน้า Editor หรือหน้าอื่นๆ มาดึงท่อเดิมไปใช้งาน
+// 2. ดึงท่อเดิมไปใช้งาน
 export const getSocket = () => {
-  return socket; // ส่งคืนอินสแตนซ์ปัจจุบันกลับไป (ถ้ายังไม่ได้เชื่อมต่อ จะได้ undefined/null)
+  return socket;
 };
 
-// 3. ฟังก์ชันสั่งตัดสาย (ตอน Logout)
+// 3. สั่งตัดสาย (ตอน Logout)
 export const disconnectSocket = () => {
   if (socket) {
     socket.disconnect();
