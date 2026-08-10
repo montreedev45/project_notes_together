@@ -39,7 +39,12 @@ router.post("/users", authMiddleware, apiLimiter, validate(getUserSchema), getUs
 
 // Standard Authenticated Routes (ไม่ต้องใส่ Limiter แยก ยิงผ่าน Global Limiter ใน app.js ได้เลย)
 router.post("/logout", logout);
-router.get("/verify", authMiddleware, verifyController);
+router.get("/verify", authMiddleware, (req, res) => {
+  res.status(200).json({
+    message: "Authenticated",
+    user: req.user,
+  });
+});
 router.put("/profile", authMiddleware, validate(updateProfileSchema), updateProfile);
 router.delete("/delete-account", authMiddleware, deleteAccount);
 export default router;

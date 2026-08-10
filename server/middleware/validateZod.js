@@ -8,9 +8,21 @@ export const validate = (schema) => (req, res, next) => {
       params: req.params,
     });
 
+    // 1. req.body ปลอดภัยสำหรับการ Re-assign
     if (parsed.body) req.body = parsed.body;
-    if (parsed.query) req.query = parsed.query;
-    if (parsed.params) req.params = parsed.params;
+
+    // 2. req.query แก้ด้วยการคัดลอก Properties เข้าไปใน Object เดิม
+    if (parsed.query) {
+      // ลบ Query Parameters เดิมออกเพื่อล้างค่าขยะ
+      Object.keys(req.query).forEach((key) => delete req.query[key]);
+      // ใส่ค่าที่ผ่านการ Validate/Trim จาก Zod เข้าไปแทนที่
+      Object.assign(req.query, parsed.query);
+    }
+
+    // 3. req.params แก้ด้วยการใช้ Object.assign เช่นเดียวกัน
+    if (parsed.params) {
+      Object.assign(req.params, parsed.params);
+    }
 
     return next();
   } catch (error) {

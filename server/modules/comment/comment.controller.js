@@ -67,7 +67,6 @@ export const addComment = async (req, res) => {
 };
 
 export const getAllSticker = (req, res) => {
-  const { nameImg } = req.query;
   const stickerPath = path.join(__dirname, "../../public", "stickers");
 
   fs.readdir(stickerPath, (err, files) => {
@@ -85,7 +84,6 @@ export const getAllSticker = (req, res) => {
         file.endsWith(".webp"),
     );
 
-    // ส่งอาร์เรย์รายชื่อไฟล์กลับไปให้หน้าบ้าน (เช่น ["sticker01.png", "sticker02.png"])
     return res.status(200).json({ stickers: imageFiles });
   });
 };
@@ -100,9 +98,10 @@ export const getSticker = (req, res) => {
   );
 
   if (fs.existsSync(imagePath)) {
-    res.sendFile(imagePath);
+    // ปลดล็อกการบล็อก NotSameOrigin สำหรับรูปภาพนี้
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    return res.sendFile(imagePath);
   } else {
-    // ถ้าหาไม่เจอ ส่งรูป Default ไปแทน หรือตอบกลับ 404
     return res.status(404).json({ message: "Sticker not found" });
   }
 };
