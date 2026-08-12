@@ -43,12 +43,12 @@ function Editor() {
   const providerRef = useRef(null);
   const ydocRef = useRef(null);
 
-  // 🎯 Find Room Data
+  // Find Room Data
   const roomData =
     rooms.find((r) => r._id === roomId) ||
     myRooms.find((r) => r._id === roomId);
 
-  // 🎯 1. Fetch Room & Comment Data
+  // 1. Fetch Room & Comment Data
   useEffect(() => {
     if (!user || !roomId) return;
 
@@ -72,7 +72,7 @@ function Editor() {
     };
   }, [user, roomId]); // ถอด function ออกจาก dependency เพื่อกัน infinite re-render
 
-  // 🎯 2. Permission Guard (เตะออกถ้าไม่มีสิทธิ์)
+  // 2. Permission Guard (เตะออกถ้าไม่มีสิทธิ์)
   useEffect(() => {
     if (!isReady || !user) return;
 
@@ -103,10 +103,10 @@ function Editor() {
   const isOwner = (roomData?.owner?._id || roomData?.owner) === user?._id;
   const isPublic = !roomData?.isPrivate;
 
-  // 🎯 สิทธิ์เข้าถึง = เป็นสมาชิก OR เป็นเจ้าของ OR เป็นห้อง Public
+  // สิทธิ์เข้าถึง = เป็นสมาชิก OR เป็นเจ้าของ OR เป็นห้อง Public
   const hasAccess = Boolean(roomData && (isMember || isOwner || isPublic));
 
-  // 🎯 3. Socket Connection (เชื่อมต่อเมื่อเช็กสิทธิ์ผ่านแล้วเท่านั้น!)
+  // 3. Socket Connection (เชื่อมต่อเมื่อเช็กสิทธิ์ผ่านแล้วเท่านั้น!)
   const socket = getSocket();
   useEffect(() => {
     if (!isReady || !hasAccess || !socket || !roomId) return;
@@ -125,7 +125,7 @@ function Editor() {
     };
   }, [isReady, hasAccess, roomId, user, socket]);
 
-  // 🎯 4. Yjs Provider Setup (จะสร้างเมื่อเช็กสิทธิ์ผ่านแล้วเท่านั้น!)
+  // 4. Yjs Provider Setup (จะสร้างเมื่อเช็กสิทธิ์ผ่านแล้วเท่านั้น!)
   useEffect(() => {
     if (!isReady || !hasAccess || !roomId) return;
 
@@ -358,7 +358,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
     const handleAwarenessUpdate = () => {
       const states = provider.awareness.getStates();
 
-      // 🟢 แปลง Map Object เป็น Array เพื่อเอาไปใช้งานง่ายๆ
+      // แปลง Map Object เป็น Array เพื่อเอาไปใช้งานง่ายๆ
       const usersArray = Array.from(states.values())
         .filter((state) => state.user) // กรองเอาเฉพาะอันที่มีข้อมูล user ผูกอยู่
         .map((state) => state.user);
@@ -512,6 +512,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
     if (!file) return;
 
     const formData = new FormData();
+    formData.append("roomId", roomId);
     formData.append("image", file);
     const uploadedUrl = await uploadImage(formData);
 
@@ -540,7 +541,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
   const handleSend = () => {
     if (!typedMessage.trim() || permissionUser === "viewer") return;
 
-    // 🚩 จังหวะกดส่ง: สั่งหยุดพิมพ์ทันที ไม่ต้องรอครบ 2 วินาที
+    // จังหวะกดส่ง: สั่งหยุดพิมพ์ทันที ไม่ต้องรอครบ 2 วินาที
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     isTypingRef.current = false;
     socket?.emit("stop_typing");

@@ -6,6 +6,7 @@ export const validate = (schema) => (req, res, next) => {
       body: req.body,
       query: req.query,
       params: req.params,
+      file: req.file
     });
 
     // 1. req.body ปลอดภัยสำหรับการ Re-assign

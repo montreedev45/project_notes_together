@@ -23,7 +23,13 @@ const __dirname = path.dirname(__filename);
 // ==========================================
 // 1. Core & Security Middlewares
 // ==========================================
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
+
 app.use(cookieParser());
 app.use(express.json({ limit: "10kb" }));
 
@@ -51,7 +57,14 @@ app.use((req, res, next) => {
 // ==========================================
 // 2. Static Files Services
 // ==========================================
-app.use("/uploads", express.static(path.join(process.cwd(), "public/uploads")));
+app.use(
+  "/uploads",
+  express.static(path.join(process.cwd(), "public/uploads"), {
+    setHeaders: (res, path, stat) => {
+      res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    },
+  }),
+);
 
 // ==========================================
 // 3. API Routes Configuration

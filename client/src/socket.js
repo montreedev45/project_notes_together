@@ -11,7 +11,7 @@ export const connectSocket = (userId) => {
       withCredentials: true,
       query: { userId },
     });
-    console.log("🔌 Socket initialized!");
+    //console.log("🔌 Socket initialized!");
   }
   return socket;
 };
@@ -26,6 +26,6 @@ export const disconnectSocket = () => {
   if (socket) {
     socket.disconnect();
     socket = null;
-    console.log("🔌 Socket disconnected and cleared.");
+    //console.log("🔌 Socket disconnected and cleared.");
   }
 };

@@ -28,7 +28,7 @@ function GoogleAuthButton() {
       <GoogleLogin
         onSuccess={handleSuccess}
         onError={handleError}
-        useOneTap
+        useOneTap={false}
       />
     </div>
   );

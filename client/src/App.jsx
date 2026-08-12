@@ -58,7 +58,7 @@ function App() {
 
     // --- Handlers ---
     const handleConnect = () => {
-      console.log("⚡ Socket connected:", socket.id);
+      //console.log("⚡ Socket connected:", socket.id);
       socket.emit("setup", user._id);
     };
 
