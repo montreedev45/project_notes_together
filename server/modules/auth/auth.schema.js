@@ -150,7 +150,7 @@ export const changeEmailSchema = z.object({
       .string({ required_error: "Verify code is required" })
       .trim()
       .min(6, "Verify code must be at least 6 characters"),
-  }),
+  }).strict(),
 });
 
 export const getUserSchema = z.object({
@@ -171,8 +171,7 @@ export const googleLoginControllerSchema = z.object({
         .string({ required_error: "Credential is required" })
         .trim()
         .min(10, "Credential must be at least 10 characters"),
-    })
-    .strict(),
+    }),
 });
 
 export const upgradePlanSchema = z.object({
@@ -181,5 +180,5 @@ export const upgradePlanSchema = z.object({
       .string({ required_error: "Plan id is required" })
       .trim()
       .min(5, "Plan is must be at least 5 characters"),
-  }),
+  }).strict(),
 });

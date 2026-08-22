@@ -52,5 +52,5 @@ export const getStickerSchema = z.object({
         .min(1, "Name img must be at least 1 character")
         .max(20, "Name img is too long"),
     })
-    .strict(), // 👈 ตัด Query ปลอมอื่นๆ ทิ้งเพื่อความปลอดภัย
+    .strict(),
 });

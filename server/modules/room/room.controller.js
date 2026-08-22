@@ -359,8 +359,14 @@ export const updateRole = async (req, res) => {
   try {
     const { roomId, memberId, role } = req.body;
 
-    const updatedRole = await Room.findByIdAndUpdate(
-      roomId,
+    const currentUserId = req.user.id;
+
+    const updatedRoom = await Room.findOneAndUpdate(
+      {
+        _id: roomId,
+        owner: currentUserId, // บังคับว่าคนแก้ต้องเป็น Owner ของห้องเท่านั้น
+        "members.user": memberId, // บังคับว่าเป้าหมายที่ถูกเปลี่ยนสิทธิ์ ต้องอยู่ในห้องนี้จริงๆ
+      },
       {
         $set: { "members.$[elem].role": role },
       },
@@ -372,13 +378,18 @@ export const updateRole = async (req, res) => {
       .populate("owner", "username email avatar")
       .populate("members.user", "avatar email username");
 
-    if (!updatedRole)
-      return res.status(404).json({ message: "Room not found" });
+    if (!updatedRoom) {
+      return res.status(403).json({
+        message:
+          "Update failed: Room not found, unauthorized, or member does not exist.",
+      });
+    }
 
     roleUpdated(roomId, memberId, role);
 
-    res.json(updatedRole);
+    res.json(updatedRoom);
   } catch (error) {
+    console.error("Update Role Error:", error);
     return res.status(500).json({ message: "Update role failed" });
   }
 };
@@ -434,14 +445,26 @@ export const restoreRoom = async (req, res) => {
     const roomId = req.params.roomId;
     const userId = req.user._id;
 
-    const restoreRoom = await Room.findByIdAndUpdate(roomId, {
-      isDeleted: false,
-    })
-      .sort({ createdAt: -1 })
+    const restoredRoom = await Room.findOneAndUpdate(
+      {
+        _id: roomId,
+        owner: userId, // บังคับว่าต้องเป็นเจ้าของห้องเท่านั้นถึงจะกู้คืนได้
+      },
+      { isDeleted: false },
+      { returnDocument: "after" },
+    )
       .populate("owner", "username email")
       .populate("members.user", "avatar username _id");
-    return res.json(restoreRoom);
+
+    if (!restoredRoom) {
+      return res
+        .status(404)
+        .json({ message: "Room not found or unauthorized to restore" });
+    }
+
+    return res.json(restoredRoom);
   } catch (error) {
+    console.error("Restore room error:", error); // ควร log error ไว้ดูเสมอ
     return res.status(500).json({ message: "Restore room failed" });
   }
 };
@@ -455,9 +478,9 @@ export const permanentlyDelete = async (req, res) => {
     const room = await Room.findOneAndDelete({
       _id: roomId,
       owner: userId,
+      isDeleted: true,
     });
 
-    // ถ้าไม่เจอห้อง (อาจจะ ID ผิด หรือไม่ใช่เจ้าของ)
     if (!room) {
       return res
         .status(404)
@@ -496,27 +519,55 @@ export const permanentlyDeleteAll = async (req, res) => {
 export const updateRoom = async (req, res) => {
   try {
     const { roomId, newData } = req.body;
+    const userId = req.user._id;
 
-    if (!roomId || !newData) {
+    if (!roomId || !newData || Object.keys(newData).length === 0) {
       return res
         .status(400)
-        .json({ message: "roomId and newData are required" });
+        .json({ message: "roomId and valid newData are required" });
     }
 
-    const updatedRoom = await Room.findByIdAndUpdate(
-      roomId,
-      { $set: newData },
+    // กำหนดรายชื่อ Field ที่อนุญาตให้อัปเดตได้
+    const allowedKeys = [
+      "name",
+      "description",
+      "color",
+      "isPrivate",
+      "isOnlineStatus",
+      "isLastEditTime",
+      "isPeopleJoinRoom",
+      "isAllowLinkSharing",
+      "isAllowCodeSharing",
+    ];
+
+    // วนลูปและคัดเลือกเฉพาะข้อมูลที่มีการส่งเข้ามา (รวมถึงค่า false หรือ "")
+    const allowedUpdates = allowedKeys.reduce((acc, key) => {
+      if (newData[key] !== undefined) {
+        acc[key] = newData[key];
+      }
+      return acc;
+    }, {});
+    
+    const updatedRoom = await Room.findOneAndUpdate(
+      {
+        _id: roomId,
+        owner: userId,
+      },
+      { $set: allowedUpdates },
       { returnDocument: "after" },
     )
       .populate("owner", "username email")
       .populate("members.user", "avatar username _id");
 
-    if (!updateRoom) {
-      return res.status(404).json({ message: "Room not found" });
+    if (!updatedRoom) {
+      return res
+        .status(404)
+        .json({ message: "Room not found or unauthorized to update" });
     }
 
     return res.status(200).json(updatedRoom);
   } catch (error) {
+    console.error("Update room error:", error);
     return res.status(500).json({ message: "Update room failed" });
   }
 };
@@ -524,26 +575,32 @@ export const updateRoom = async (req, res) => {
 export const deleteMember = async (req, res) => {
   try {
     const { roomId, memberId } = req.body;
+    const userId = req.user._id;
 
-    if (memberId === req.user._id) {
-      return res.status(400).json({ message: "Can not delete owner of room" });
+    if (String(memberId) === String(userId)) {
+      return res.status(400).json({ message: "Owner cannot be removed from the room" });
     }
 
-    //ใช้ $pull เพื่อลบ Object ใน members ที่มี user ตรงกับ memberId
-    const updatedRoom = await Room.findByIdAndUpdate(
-      roomId,
-      { $pull: { members: { user: memberId } } },
-      { returnDocument: "after" },
+    const updatedRoom = await Room.findOneAndUpdate(
+      { 
+        _id: roomId, 
+        owner: userId
+      },
+      { 
+        $pull: { members: { user: memberId } } 
+      },
+      { returnDocument: 'after' }
     )
       .populate("owner", "username email avatar")
       .populate("members.user", "avatar email username");
 
-    if (!updatedRoom)
-      return res.status(404).json({ message: "Room not found" });
+    if (!updatedRoom) {
+      return res.status(404).json({ message: "Room not found or you are not authorized to manage members" });
+    }
 
     return res.json(updatedRoom);
   } catch (error) {
-    console.error(error);
+    console.error("Delete member error:", error);
     return res.status(500).json({ message: "Delete member failed" });
   }
 };
@@ -644,22 +701,34 @@ export const invitedUsers = async (req, res) => {
     const { roomId, userId } = req.body;
     const currentUserId = req.user._id;
 
-    const roomCheck = await Room.findById(roomId);
-    if (!roomCheck) {
-      return res.status(404).json({ message: "room not found" });
+    if (String(userId) === String(currentUserId)) {
+      return res.status(400).json({ message: "You cannot invite yourself" });
     }
 
-    if (roomCheck.owner.toString() !== currentUserId.toString()) {
+    const roomCheck = await Room.findById(roomId);
+    if (!roomCheck) {
+      return res.status(404).json({ message: "Room not found" });
+    }
+
+    if (String(roomCheck.owner) !== String(currentUserId)) {
       return res.status(403).json({
-        message:
-          "you do not have the right to invite other users to this room.",
+        message: "You do not have the right to invite other users to this room.",
       });
+    }
+
+    // ตรวจสอบว่าผู้ถูกเชิญ เป็นสมาชิกในห้องไปแล้วหรือยัง
+    // (สมมติว่า schema ของคุณคือ members: [{ user: ObjectId, role: String }])
+    const isAlreadyMember = roomCheck.members.some(
+      (member) => String(member.user) === String(userId)
+    );
+    if (isAlreadyMember) {
+      return res.status(400).json({ message: "User is already a member of this room" });
     }
 
     const updatedRoom = await Room.findByIdAndUpdate(
       roomId,
       { $addToSet: { invitedUsers: userId } },
-      { returnDocument: "after" },
+      { returnDocument: 'after' }
     );
 
     return res.status(200).json({
@@ -667,6 +736,7 @@ export const invitedUsers = async (req, res) => {
       invitedUsers: updatedRoom.invitedUsers,
     });
   } catch (error) {
+    console.error("Invite User Error:", error);
     return res.status(500).json({ message: "Invite colleague failed" });
   }
 };
@@ -676,23 +746,33 @@ export const transferOwnership = async (req, res) => {
     const { roomId, newOwnerId } = req.body;
     const userId = req.user._id;
 
+    if (String(userId) === String(newOwnerId)) {
+      return res.status(400).json({ message: "You are already the owner of this room." });
+    }
+
     const room = await Room.findById(roomId);
     if (!room) return res.status(404).json({ message: "room not found" });
 
-    if (room.owner.toString() !== userId.toString()) {
+    if (String(room.owner) !== String(userId)) {
       return res.status(403).json({
         message: "you do not have the right to change the owner of the room.",
       });
     }
 
-    room.members = room.members.map((m) =>
-      m.user.toString() === newOwnerId.toString()
-        ? { ...m, role: "editor" }
-        : m,
-    );
+    // ตรวจสอบว่าเจ้าของใหม่เป็นสมาชิกในห้องหรือไม่
+    const isMember = room.members.some(m => String(m.user) === String(newOwnerId));
+    if (!isMember) {
+      return res.status(400).json({ message: "New owner must be a member of the room." });
+    }
+
+    // อัปเดตสิทธิ์ (สมมติให้เจ้าของใหม่มี role: "owner" และเจ้าของเดิมมี role: "editor")
+    room.members = room.members.map((m) => {
+      if (String(m.user) === String(newOwnerId)) return { ...m, role: "owner" };
+      if (String(m.user) === String(userId)) return { ...m, role: "editor" };
+      return m;
+    });
 
     room.owner = newOwnerId;
-
     await room.save();
 
     // const newNotice = await Notification.create({
@@ -712,19 +792,19 @@ export const transferOwnership = async (req, res) => {
 
     // sendNotification(room.owner.toString(), populatedNotice);
 
-    const updatedRoom = await Room.findById(roomId)
-      .populate("owner", "username email avatar")
-      .populate("members.user", "avatar email username");
-
-    //transferOwnershipSocket(roomId, userId, newOwnerId);
+    // ประหยัด Query โดยการ Populate Document เดิมที่มีอยู่แล้ว
+    await room.populate([
+      { path: "owner", select: "username email avatar" },
+      { path: "members.user", select: "avatar email username" }
+    ]);
 
     return res.status(200).json({
       success: true,
       message: "transfer ownership successfully",
-      data: updatedRoom,
+      data: room,
     });
   } catch (error) {
-    console.error("Transfer Error:", error); // console.log เผื่อดูบั๊กอื่น ๆ
+    console.error("Transfer Error:", error);
     return res.status(500).json({ message: "transfer ownership failed" });
   }
 };
@@ -736,6 +816,7 @@ const generate6DigitCode = () => {
 export const updateCodeRoom = async (req, res) => {
   try {
     const { roomId } = req.body;
+    const userId = req.user._id;
 
     let newCode = "";
     let isUnique = false;
@@ -743,39 +824,38 @@ export const updateCodeRoom = async (req, res) => {
 
     while (!isUnique && safetyCount < 10) {
       newCode = generate6DigitCode();
-
       const existingRoom = await Room.findOne({ code: newCode });
-
       if (!existingRoom) {
         isUnique = true;
       }
-
       safetyCount++;
     }
 
     if (!isUnique) {
-      return res
-        .status(500)
-        .json({ message: "can't update code room, please try again" });
+      return res.status(500).json({ message: "Can't generate a unique room code. Please try again." });
     }
 
-    const updatedRoom = await Room.findByIdAndUpdate(
-      roomId,
+    // เปลี่ยนมาใช้ findOneAndUpdate ให้ถูกต้องตาม Syntax
+    const updatedRoom = await Room.findOneAndUpdate(
+      { 
+        _id: roomId, 
+        owner: userId
+      },
       { code: newCode },
-      { returnDocument: "after" },
+      { returnDocument: 'after' }
     );
 
     if (!updatedRoom) {
-      return res.status(404).json({ message: "not found room" });
+      return res.status(404).json({ message: "Room not found or unauthorized to update code" });
     }
 
     return res.status(200).json({
-      message: "updated code room successfully",
+      message: "Updated room code successfully",
       newCode: updatedRoom.code,
     });
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "update code room failed" });
+    console.error("Update Code Error:", error);
+    return res.status(500).json({ message: "Update room code failed" });
   }
 };
 

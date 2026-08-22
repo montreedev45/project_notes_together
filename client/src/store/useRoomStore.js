@@ -11,6 +11,18 @@ const initialState = {
   loading: false,
 };
 
+const ALLOWED_KEYS = [
+  "name",
+  "description",
+  "color",
+  "isPrivate",
+  "isOnlineStatus",
+  "isLastEditTime",
+  "isPeopleJoinRoom",
+  "isAllowLinkSharing",
+  "isAllowCodeSharing",
+];
+
 const useRoomStore = create((set, get) => ({
   ...initialState,
   rooms: [],
@@ -304,9 +316,19 @@ const useRoomStore = create((set, get) => ({
   updateRoom: async (roomId, newData) => {
     set({ loading: true });
     try {
+      const targetRoom = newData.find((r) => r._id === roomId) || {};
+
+      // กรองเฉพาะคีย์ที่ตรงกับ ALLOWED_KEYS
+      const sanitizedData = Object.keys(targetRoom)
+        .filter((key) => ALLOWED_KEYS.includes(key))
+        .reduce((obj, key) => {
+          obj[key] = targetRoom[key];
+          return obj;
+        }, {});
+
       const finalData = {
         roomId: roomId,
-        newData: newData.find((r) => r._id === roomId) || {},
+        newData: sanitizedData,
       };
 
       const res = await api.put("/rooms", finalData);
@@ -469,7 +491,7 @@ const useRoomStore = create((set, get) => ({
     set({ loading: true });
 
     try {
-      const res = await api.put("/rooms/room-code", { roomId });
+      const res = await api.put("/rooms/update-code", { roomId });
       if (res.status === 200 && res.data.newCode) {
         set((state) => ({
           ...state,

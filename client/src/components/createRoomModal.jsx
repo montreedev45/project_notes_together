@@ -72,6 +72,7 @@ function CreateRoomModal({ isOpen, onClose }) {
               value={description}
               onChange={handleChangeDes}
               placeholder="Description"
+              maxLength={50}
               className="w-full px-4 py-2.5 bg-gray-100 border-2 border-secondary rounded-xl outline-none"
             ></textarea>
           </div>

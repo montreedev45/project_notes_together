@@ -1,13 +1,26 @@
-import  express from "express"
+import express from "express";
 import authMiddleware from "../../middleware/auth.middleware.js";
-import { getNotification, deleteNotification, deleteAllNotifications, markAsRead } from "./notification.controller.js"
+import {
+  getNotification,
+  deleteNotification,
+  deleteAllNotifications,
+  markAsRead,
+} from "./notification.controller.js";
+import { validate } from "../../middleware/validateZod.js";
+import { apiLimiter } from "../../middleware/rateLimiter.js";
+import { deleteNotificationSchema } from "./notification.schema.js";
 
+const router = express.Router();
 
-const router = express.Router()
+router.get("/", authMiddleware, apiLimiter, getNotification);
+router.delete("/all", authMiddleware, apiLimiter, deleteAllNotifications);
+router.put("/mark-as-read", authMiddleware, apiLimiter, markAsRead);
+router.delete(
+  "/:noticId",
+  authMiddleware,
+  apiLimiter,
+  validate(deleteNotificationSchema),
+  deleteNotification,
+);
 
-router.get("/", authMiddleware, getNotification)
-router.delete("/all", authMiddleware, deleteAllNotifications)
-router.put("/mark-as-read", authMiddleware, markAsRead)
-router.delete("/:noticId", authMiddleware, deleteNotification)
-
-export default router
+export default router;
