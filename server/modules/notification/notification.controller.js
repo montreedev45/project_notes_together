@@ -6,11 +6,12 @@ export const getNotification = async (req, res) => {
 
     const allNotic = await Notification.find({ recipient: userId })
       .populate("sender", "username email avatar")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .limit(50);
 
     res.status(200).json(allNotic);
   } catch (error) {
-    console.log(error);
+    console.error("❌ Fetch notification error:", error);
     res.status(500).json({ message: "fetch notification failed" });
   }
 };
@@ -19,13 +20,14 @@ export const markAsRead = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    const result = await Notification.updateMany(
+    await Notification.updateMany(
       { recipient: userId, isRead: false },
       { $set: { isRead: true } },
     );
 
     res.status(200).json({ message: "Mark as read successfully" });
   } catch (error) {
+    console.error("❌ Mark as read error:", error);
     res.status(500).json({ message: "Unexpected response from server" });
   }
 };
@@ -45,8 +47,10 @@ export const deleteNotification = async (req, res) => {
         .status(404)
         .json({ message: "Notification not found or unauthorized" });
     }
+
     res.status(200).json({ message: "Delete notification successfully" });
   } catch (error) {
+    console.error("❌ Delete notification error:", error);
     res.status(500).json({ message: "Unexpected response from server" });
   }
 };
@@ -55,16 +59,13 @@ export const deleteAllNotifications = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    const deleteAllNotic = await Notification.deleteMany({
+    await Notification.deleteMany({
       recipient: userId,
     });
-    if (!deleteAllNotic) {
-      return res.status(404).json({ message: "Notification not found" });
-    }
 
-    res.status(200).json({message: "Delete all notifications succesfully"})
+    res.status(200).json({ message: "Clear all notifications successfully" });
   } catch (error) {
-    console.log(error)
-    res.status(500).json({message:"Unexpected response from server"})
+    console.error("❌ Delete all notifications error:", error);
+    res.status(500).json({ message: "Unexpected response from server" });
   }
 };

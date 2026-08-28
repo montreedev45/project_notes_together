@@ -44,7 +44,7 @@ cron.schedule("0 0 * * *", async () => {
   }
 });
 
-//create room
+// create room
 export const createRoom = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -102,13 +102,13 @@ export const createRoom = async (req, res) => {
       .populate("owner", "username email")
       .populate("members.user", "avatar username");
 
-    res.json(populate);
+    res.status(201).json(populate);
   } catch (error) {
     res.status(500).json({ message: "create room failed" });
   }
 };
 
-//get my room
+// get my room
 export const getMyRooms = async (req, res) => {
   try {
     const { criteria, searchTerm } = req.body;
@@ -139,12 +139,13 @@ export const getMyRooms = async (req, res) => {
       .populate("owner", "username email")
       .populate("members.user", "avatar username _id email");
 
-    res.json(rooms);
+    res.status(200).json(rooms);
   } catch (error) {
     res.status(500).json({ message: "Fetch rooms failed" });
   }
 };
 
+// get all rooms
 export const getAllRooms = async (req, res) => {
   try {
     const { criteria, searchTerm } = req.body;
@@ -158,7 +159,7 @@ export const getAllRooms = async (req, res) => {
       query.owner = userId;
     } else if (criteria === "private") {
       query.isPrivate = true;
-      // 🔐 ถ้าเป็นห้อง Private ปกติเราควรจะเห็นเฉพาะที่เราเป็นสมาชิกเท่านั้น
+      // ถ้าเป็นห้อง Private ปกติเราควรจะเห็นเฉพาะที่เราเป็นสมาชิกเท่านั้น
       query["members.user"] = userId;
     } else if (criteria === "public") {
       query.isPrivate = false;
@@ -178,13 +179,13 @@ export const getAllRooms = async (req, res) => {
       .populate("owner", "username email")
       .populate("members.user", "avatar username _id");
 
-    res.json(rooms);
+    res.status(200).json(rooms);
   } catch (error) {
     res.status(500).json({ message: "Fetch rooms failed" });
   }
 };
 
-//get room by id
+// get room by id
 export const getRoomById = async (req, res) => {
   try {
     const { roomId } = req.params;
@@ -218,7 +219,7 @@ export const getRoomById = async (req, res) => {
   }
 };
 
-//join room
+// join room
 export const joinRoom = async (req, res) => {
   try {
     const { roomId, code } = req.body;
@@ -307,13 +308,14 @@ export const joinRoom = async (req, res) => {
 
     sendNotification(room.owner._id.toString(), populatedNotice);
 
-    return res.json(joinedRoom);
+    return res.status(200).json(joinedRoom);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Join room failed" });
   }
 };
 
+// leave room
 export const leaveRoom = async (req, res) => {
   try {
     const { roomId } = req.body;
@@ -341,7 +343,6 @@ export const leaveRoom = async (req, res) => {
       message: `room : ${room.name}`,
     });
 
-    // 🚩 2. Populate ข้อมูล sender เพื่อส่งไปกับ Socket (ให้เห็นชื่อและรูปทันที)
     const populatedNotice = await newNotice.populate(
       "sender",
       "username avatar",
@@ -355,6 +356,7 @@ export const leaveRoom = async (req, res) => {
   }
 };
 
+// update role
 export const updateRole = async (req, res) => {
   try {
     const { roomId, memberId, role } = req.body;
@@ -364,7 +366,7 @@ export const updateRole = async (req, res) => {
     const updatedRoom = await Room.findOneAndUpdate(
       {
         _id: roomId,
-        owner: currentUserId, // บังคับว่าคนแก้ต้องเป็น Owner ของห้องเท่านั้น
+        owner: currentUserId,
         "members.user": memberId, // บังคับว่าเป้าหมายที่ถูกเปลี่ยนสิทธิ์ ต้องอยู่ในห้องนี้จริงๆ
       },
       {
@@ -394,6 +396,7 @@ export const updateRole = async (req, res) => {
   }
 };
 
+// soft delete
 export const softDelete = async (req, res) => {
   try {
     const roomId = req.params.roomId;
@@ -418,6 +421,7 @@ export const softDelete = async (req, res) => {
   }
 };
 
+// get trash room
 export const getTrashRooms = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -433,13 +437,14 @@ export const getTrashRooms = async (req, res) => {
       .populate("owner", "username email")
       .populate("members.user", "avatar username _id");
 
-    res.json(trashRooms);
+    res.status(200).json(trashRooms);
   } catch (error) {
     console.error("Backend Error Detail:", error);
     return res.status(500).json({ message: "Fetch room failed" });
   }
 };
 
+// restore room
 export const restoreRoom = async (req, res) => {
   try {
     const roomId = req.params.roomId;
@@ -462,13 +467,14 @@ export const restoreRoom = async (req, res) => {
         .json({ message: "Room not found or unauthorized to restore" });
     }
 
-    return res.json(restoredRoom);
+    return res.status(200).json(restoredRoom);
   } catch (error) {
     console.error("Restore room error:", error); // ควร log error ไว้ดูเสมอ
     return res.status(500).json({ message: "Restore room failed" });
   }
 };
 
+// permanently delete
 export const permanentlyDelete = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -495,6 +501,7 @@ export const permanentlyDelete = async (req, res) => {
   }
 };
 
+// permanently delete all
 export const permanentlyDeleteAll = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -516,6 +523,7 @@ export const permanentlyDeleteAll = async (req, res) => {
   }
 };
 
+// update room
 export const updateRoom = async (req, res) => {
   try {
     const { roomId, newData } = req.body;
@@ -572,6 +580,7 @@ export const updateRoom = async (req, res) => {
   }
 };
 
+// delete member
 export const deleteMember = async (req, res) => {
   try {
     const { roomId, memberId } = req.body;
@@ -598,13 +607,14 @@ export const deleteMember = async (req, res) => {
       return res.status(404).json({ message: "Room not found or you are not authorized to manage members" });
     }
 
-    return res.json(updatedRoom);
+    return res.status(200).json(updatedRoom);
   } catch (error) {
     console.error("Delete member error:", error);
     return res.status(500).json({ message: "Delete member failed" });
   }
 };
 
+// join link
 export const joinLink = async (req, res) => {
   try {
     const { shareLinkToken, role } = req.params;
@@ -696,6 +706,7 @@ export const joinLink = async (req, res) => {
   }
 };
 
+// invite colleague
 export const invitedUsers = async (req, res) => {
   try {
     const { roomId, userId } = req.body;
@@ -741,6 +752,7 @@ export const invitedUsers = async (req, res) => {
   }
 };
 
+// transfer ownership
 export const transferOwnership = async (req, res) => {
   try {
     const { roomId, newOwnerId } = req.body;
@@ -813,6 +825,7 @@ const generate6DigitCode = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
+// update code room
 export const updateCodeRoom = async (req, res) => {
   try {
     const { roomId } = req.body;
@@ -859,6 +872,7 @@ export const updateCodeRoom = async (req, res) => {
   }
 };
 
+// update link share room
 export const updateLinkShareRoom = async (req, res) => {
   try {
     const roomId = req.params.roomId;

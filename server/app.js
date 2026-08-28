@@ -14,6 +14,8 @@ import noteRoutes from "./modules/note/note.routes.js";
 import notificationRoutes from "./modules/notification/notification.routes.js";
 import commentRoutes from "./modules/comment/comment.routes.js";
 import planRoutes from "./modules/plan/plan.routes.js";
+import swaggerUi from "swagger-ui-express";
+import { generateOpenApiDocs } from "./swagger.js";
 
 const app = express();
 
@@ -27,6 +29,14 @@ app.use(
   helmet({
     crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
     crossOriginResourcePolicy: { policy: "cross-origin" },
+    // อนุญาตให้เข้าถึงภาพได้
+    contentSecurityPolicy: {
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        // เพิ่ม "blob:" เข้าไปใน img-src
+        "img-src": ["'self'", "data:", "blob:"], 
+      },
+    },
   })
 );
 
@@ -77,6 +87,10 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/plans", planRoutes);
 
+if (process.env.NODE_ENV !== 'production') {
+  const openApiDocument = generateOpenApiDocs();
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiDocument));
+}
 // ==========================================
 // 4. Error Handling & 404 Handlers
 // ==========================================

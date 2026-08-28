@@ -1,5 +1,6 @@
 import { sendComment } from "../../sockets/socket.manage.js";
 import Comment from "./comment.model.js";
+import Room from "../room/room.model.js";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
@@ -9,12 +10,27 @@ const __dirname = path.dirname(__filename);
 
 export const getComment = async (req, res) => {
   const { roomId } = req.query;
-
-  if (!roomId) {
-    return res.status(400).json({ message: "Missing roomId parameter" });
-  }
+  const userId = req.user._id;
 
   try {
+    const room = await Room.findById(roomId).select("isPrivate members");
+
+    if (!room) {
+      return res.status(404).json({ message: "Room not found" });
+    }
+
+    if (room.isPrivate) {
+      const isMember = room.members.some(
+        (member) => member.user.toString() === userId.toString(),
+      );
+
+      if (!isMember) {
+        return res.status(403).json({
+          message: "Forbidden: You are not a member of this private room",
+        });
+      }
+    }
+
     const comments = await Comment.find({ room: roomId }).populate(
       "sender",
       "username avatar",
@@ -32,6 +48,7 @@ export const getComment = async (req, res) => {
 
 export const addComment = async (req, res) => {
   const { roomId, type, content } = req.body;
+  const userId = req.user._id;
 
   let text = "";
   let stickerUrl = "";
@@ -43,9 +60,26 @@ export const addComment = async (req, res) => {
   }
 
   try {
+    const room = await Room.findById(roomId).select("isPrivate members");
+
+    if (!room) {
+      return res.status(404).json({ message: "Room not found" });
+    }
+
+    const isMember = room.members.some(
+      (member) => member.user.toString() === userId.toString(),
+    );
+
+    if (!isMember) {
+      return res.status(403).json({
+        message:
+          "Forbidden: You must be a member to add a comment in this room",
+      });
+    }
+
     const newComment = await Comment.create({
       room: roomId,
-      sender: req.user._id,
+      sender: userId,
       text: text,
       type: type,
       stickerUrl: stickerUrl,
@@ -62,6 +96,7 @@ export const addComment = async (req, res) => {
       .status(201)
       .json({ message: "add new comment successfully", populatedComment });
   } catch (error) {
+    console.error("❌ Add comment error:", error); // 🟢 ควร Log error เสมอเพื่อให้ตามหาบั๊กได้ง่าย
     return res.status(500).json({ message: "add comment failed" });
   }
 };

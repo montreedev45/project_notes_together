@@ -31,7 +31,7 @@ export const generateToken = (user) => {
       googleId: user.googleId || null,
     },
     process.env.JWT_SECRET,
-    { expiresIn: "7d" }
+    { expiresIn: "7d" },
   );
 };
 
@@ -64,8 +64,8 @@ export const register = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-      maxAge: 7 * 24 * 60 *1000,
-    })
+      maxAge: 7 * 24 * 60 * 1000,
+    });
 
     return res.status(201).json({
       user: {
@@ -104,7 +104,7 @@ export const login = async (req, res) => {
     const token = generateToken(user);
     res.cookie("token", token, {
       httpOnly: true, // ป้องกัน JavaScript ฝั่ง Frontend อ่านค่า (กัน XSS)
-      secure: process.env.NODE_ENV === 'production', // ส่งเฉพาะ HTTPS เท่านั้น (ใน dev ใช้ false ได้)
+      secure: process.env.NODE_ENV === "production", // ส่งเฉพาะ HTTPS เท่านั้น (ใน dev ใช้ false ได้)
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
@@ -137,7 +137,7 @@ export const updateProfile = async (req, res) => {
 
     // if request change email
     if (email && email !== user.email) {
-      // if signup with Google Auth -> reject Email 
+      // if signup with Google Auth -> reject Email
       if (user.googleId) {
         return res.status(400).json({
           message:
@@ -159,7 +159,7 @@ export const updateProfile = async (req, res) => {
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { $set: updateData },
-      { returnDocument: "after" }
+      { returnDocument: "after" },
     );
 
     // attach token in cookie
@@ -168,8 +168,8 @@ export const updateProfile = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    })
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
     res.status(200).json({
       message: "Profile updated successfully",
@@ -197,7 +197,7 @@ export const changePassword = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    
+
     // check payload?
     if (!currentPassword || !newPassword || !confirmPassword) {
       return res
@@ -222,7 +222,7 @@ export const changePassword = async (req, res) => {
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch)
       return res.status(400).json({ message: "current password is incorrect" });
-    
+
     // hash password
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(newPassword, salt);
@@ -435,8 +435,8 @@ export const changeEmail = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    })
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
     res.status(200).json({
       message: "Change email successfully",
@@ -592,14 +592,14 @@ export const googleLoginController = async (req, res) => {
     }
 
     // 3. สร้าง JWT Token ของระบบเราเองส่งกลับไปให้ Frontend
-    const appToken = generateToken(user)
+    const appToken = generateToken(user);
 
     res.cookie("token", appToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    })
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
     // 4. ส่งข้อมูล User และ Token กลับไป
     res.status(200).json({
@@ -609,7 +609,7 @@ export const googleLoginController = async (req, res) => {
         username: user.username,
         email: user.email,
         avatar: user.avatar,
-        googleId: user.googleId
+        googleId: user.googleId,
       },
     });
   } catch (error) {
@@ -626,13 +626,15 @@ export const upgradePlan = async (req, res) => {
     //when use findById, it's return object { _id: "...", plan: "teams" }
     const selectedPlan = await Plan.findById(planId).select("plan");
     if (!selectedPlan) {
-      return res.status(404).json({ success: false, message: "Plan not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Plan not found" });
     }
 
     const upgradedPlan = await User.findByIdAndUpdate(
       userId,
       { plan: selectedPlan.plan },
-      { returnDocument: "after", select: "-password" } 
+      { returnDocument: "after", select: "-password" },
     );
 
     const newToken = generateToken(upgradedPlan);
@@ -641,18 +643,19 @@ export const upgradePlan = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    })
-
-    return res.status(200).json({ 
-      success: true, 
-      message: "Plan upgraded successfully", 
-      user: upgradedPlan
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
+    return res.status(200).json({
+      success: true,
+      message: "Plan upgraded successfully",
+      user: upgradedPlan,
+    });
   } catch (error) {
     console.error("Upgrade plan error:", error);
-    return res.status(500).json({ success: false, message: "Upgrade plan failed" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Upgrade plan failed" });
   }
 };
 

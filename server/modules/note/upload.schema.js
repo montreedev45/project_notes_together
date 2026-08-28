@@ -16,8 +16,19 @@ const imageFileSchema = z
 
 export const uploadNoteImageSchema = z.object({
   file: imageFileSchema,
-  body: z.object({
-    roomId: z.string().trim().min(1, "Room ID is required"),
-    description: z.string().trim().max(200).optional(),
-  }).optional(),
+  body: z
+    .object({
+      roomId: z
+        .string()
+        .trim()
+        .min(1, "Room ID is required")
+        .openapi({ example: "6a5e20ee4c..." }),
+      description: z
+        .string()
+        .trim()
+        .max(200)
+        .optional()
+        .openapi({ example: "Ex. description" }),
+    })
+    .optional(),
 });
