@@ -9,6 +9,25 @@ export const createYjs = (roomId, onReady) => {
     url: "ws://localhost:1234",
     name: roomId,
     document: ydoc,
+
+    onAuthenticationFailed: () => {
+      console.error(
+        "Token หมดอายุ หรือไม่มีสิทธิ์เข้าถึง บังคับเตะไปหน้า Login!",
+      );
+      provider.disconnect();
+      // ล้างข้อมูล User / Token ใน State Management ของคุณ (เช่น Zustand, Redux, หรือ LocalStorage)
+      localStorage.removeItem("user");
+
+      // เด้งไปหน้า Login ทันที
+      window.location.href = "/login";
+    },
+
+    onDisconnect: () => {
+      console.log(
+        "ขาดการเชื่อมต่อกับเซิร์ฟเวอร์ กำลังพยายามเชื่อมต่อใหม่...",
+      );
+      // ตรงนี้คุณอาจจะสั่งโชว์ Toast Notification หรือ Banner เตือนผู้ใช้ว่า "ออฟไลน์" ได้
+    },
   });
 
   provider.on("status", (e) => console.log("Hocuspocus status:", e.status));

@@ -1,6 +1,3 @@
-import Note from "./note.model.js";
-import Room from "../room/room.model.js";
-
 export const handleUploadResponse = (req, res) => {
   try {
     if (!req.file) {
@@ -9,8 +6,8 @@ export const handleUploadResponse = (req, res) => {
 
     const roomId = req.body.roomId || "general";
 
-    // เจน URL เต็มรูปแบบส่งกลับไปให้ Tiptap
-    const imageUrl = `${req.protocol}://${req.get("host")}/uploads/${roomId}/${req.file.filename}`;
+    // (ปรับ /api/notes ให้ตรงกับที่คุณประกาศ app.use() ใน app.js)
+    const imageUrl = `${req.protocol}://${req.get("host")}/api/notes/image/${roomId}/${req.file.filename}`;
 
     return res.status(200).json({
       message: "Upload successfully",

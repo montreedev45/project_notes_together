@@ -1,6 +1,9 @@
 import express from "express";
 import cors from "cors";
 import path from "path";
+import fs from "fs";
+import jwt from "jsonwebtoken";
+import Room from "./modules/room/room.model.js";
 import { fileURLToPath } from "url";
 import helmet from "helmet";
 import mongoSanitize from "express-mongo-sanitize";
@@ -16,8 +19,17 @@ import commentRoutes from "./modules/comment/comment.routes.js";
 import planRoutes from "./modules/plan/plan.routes.js";
 import swaggerUi from "swagger-ui-express";
 import { generateOpenApiDocs } from "./swagger.js";
+import morgan from "morgan";
+import logger from "./utils/logger.js";
 
 const app = express();
+
+// รูปแบบ: Method URL Status Code เวลาที่ใช้(ms)
+app.use(
+  morgan(":method :url :status :res[content-length] - :response-time ms", {
+    stream: logger.stream,
+  })
+);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -65,19 +77,7 @@ app.use((req, res, next) => {
 });
 
 // ==========================================
-// 2. Static Files Services
-// ==========================================
-app.use(
-  "/uploads",
-  express.static(path.join(process.cwd(), "public/uploads"), {
-    setHeaders: (res, path, stat) => {
-      res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
-    },
-  }),
-);
-
-// ==========================================
-// 3. API Routes Configuration
+// 2. API Routes Configuration
 // ==========================================
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
@@ -92,7 +92,7 @@ if (process.env.NODE_ENV !== 'production') {
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiDocument));
 }
 // ==========================================
-// 4. Error Handling & 404 Handlers
+// 3. Error Handling & 404 Handlers
 // ==========================================
 // 404 Not Found Handler
 app.use((req, res) => {

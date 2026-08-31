@@ -5,44 +5,9 @@ import generateCode from "../../utils/generateCode.js";
 import {
   sendNotification,
   roleUpdated,
-  transferOwnershipSocket,
 } from "../../sockets/socket.manage.js";
 import crypto from "crypto";
-import cron from "node-cron";
 import Plan from "../plan/plan.model.js";
-
-cron.schedule("0 0 * * *", async () => {
-  console.log("cron starting...");
-
-  try {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    // ใช้ deleteMany สั่งลบห้องทั้งหมดที่ตรงเงื่อนไขในคำสั่งเดียว!
-    // const expiredRooms = await Room.deleteMany({
-    //   isDeleted: true,
-    //   deletedAt: { $lt: thirtyDaysAgo }
-    // });
-
-    const expiredRooms = await Room.find({
-      isDeleted: true,
-      deletedAt: { $lt: thirtyDaysAgo },
-    });
-
-    if (expiredRooms.length > 0) {
-      for (const room of expiredRooms) {
-        // ตรงนี้สามารถใส่ลอจิกเสริมได้ เช่น สั่งลบไฟล์ข้อความ/ไฟล์โน้ตที่ผูกกับห้องนี้ออกให้เกลี้ยง
-        // await deleteRelatedNotes(room._id);
-        await Room.findByIdAndDelete(room._id);
-        console.log(`room ${room._id} has been deleted`);
-      }
-    } else {
-      console.log("no rooms were deleted");
-    }
-  } catch (error) {
-    console.log("error while running cron job to delete room", error);
-  }
-});
 
 // create room
 export const createRoom = async (req, res) => {

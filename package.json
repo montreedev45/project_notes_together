@@ -3,9 +3,8 @@
     "concurrently": "^9.2.1"
   },
   "scripts": {
-    "dev": "concurrently \"npm run dev --prefix client\" \"npm run dev --prefix server\" \"npm run hocuspocus\"",
+    "dev": "concurrently \"npm run dev --prefix client\" \"npm run dev --prefix server\"",
     "client": "npm run dev --prefix client",
-    "server": "npm run dev --prefix server",
-    "hocuspocus": "node server/hocuspocus-server.js"
+    "server": "npm run dev --prefix server"
   }
 }

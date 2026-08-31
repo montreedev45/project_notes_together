@@ -9,7 +9,6 @@ import { setupNotificationSwagger } from "../server/modules/notification/notific
 import { setupPlanSwagger } from "./modules/plan/plan.swagger.js";
 import { setupUserSwagger } from "./modules/user/user.swagger.js";
 import { setupRoomSwagger } from "./modules/room/room.swagger.js";
-// import { setupRoomSwagger } from "../modules/room/room.swagger.js"; 
 
 extendZodWithOpenApi(z);
 
