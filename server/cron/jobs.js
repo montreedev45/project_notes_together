@@ -1,125 +1,191 @@
 import cron from "node-cron";
-import fs from "fs";
-import path from "path";
+import { extractImageUrls } from "../hocuspocus-server.js";
 import * as Y from "yjs";
 import Room from "../modules/room/room.model.js";
 import Note from "../modules/note/note.model.js";
-import { extractImageUrls } from "../hocuspocus-server.js";
 import logger from "../utils/logger.js";
+import cloudinary from "../config/cloudinary.js";
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const startDailyJobs = () => {
   cron.schedule("0 0 * * *", async () => {
-    logger.info("[Cron] เริ่มกระบวนการตรวจสอบและทำความสะอาดระบบ...");
+    const startTime = Date.now();
+    let adminApiCount = 0;
+    let deletedRoomsCount = 0;
+    let totalDeletedImages = 0;
+    const MAX_API_PER_HOUR = 450;
 
-    // ==========================================
-    // งานที่ 1: ลบห้องที่หมดอายุ และลบ Note ที่เกี่ยวข้อง
-    // ==========================================
+    const trackAndThrottleApi = async () => {
+      adminApiCount++;
+      await delay(2000);
+      if (adminApiCount >= MAX_API_PER_HOUR) {
+        logger.warn(
+          `[Cron:Limit] แตะขีดจำกัด Cloudinary API (${adminApiCount}/500) บังคับพัก 1 ชั่วโมง`,
+        );
+        await delay(60 * 60 * 1000);
+        adminApiCount = 0;
+        logger.info("[Cron:Resume] รีเซ็ตโควต้า API กลับมาทำงานต่อ");
+      }
+    };
+
     try {
+      // ==========================================
+      // งานที่ 1: ลบห้องที่หมดอายุ
+      // ==========================================
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
       const expiredRooms = await Room.find({
         isDeleted: true,
         deletedAt: { $lt: thirtyDaysAgo },
       });
 
       if (expiredRooms.length > 0) {
+        logger.info(
+          `[Cron:Task1] พบห้องหมดอายุ ${expiredRooms.length} ห้อง เริ่มดำเนินการ...`,
+        );
         for (const room of expiredRooms) {
-          // ลบ Note ที่ผูกกับห้องนี้ทิ้งก่อน (ถ้า Note ถูกลบ รูปภาพใน Note จะกลายเป็นไฟล์ขยะทันที)
-          await Note.findOneAndDelete({ room: room._id });
+          const roomId = room._id.toString();
+          const folderPrefix = `notes_together/${roomId}`;
+          try {
+            await cloudinary.api.delete_resources_by_prefix(folderPrefix, {
+              type: "authenticated"
+            });
+            await trackAndThrottleApi();
+            await cloudinary.api.delete_folder(folderPrefix);
+            await trackAndThrottleApi();
 
-          // ลบห้อง
-          await Room.findByIdAndDelete(room._id);
-          logger.info(`ลบห้อง ${room._id} และข้อมูลที่เกี่ยวข้องสำเร็จ`);
-
-          const roomFolderPath = path.join(
-            process.cwd(),
-            "public/uploads",
-            room._id.toString(),
-          );
-          if (fs.existsSync(roomFolderPath)) {
-            fs.rmSync(roomFolderPath, { recursive: true, force: true });
+            await Note.findOneAndDelete({ room: roomId });
+            await Room.findByIdAndDelete(roomId);
+            deletedRoomsCount++;
+          } catch (err) {
+            logger.error(`[Cron:Task1] ลบห้อง ${roomId} ล้มเหลว:`, err.message);
           }
         }
-      } else {
-        logger.info("ไม่มีห้องที่หมดอายุ");
       }
-    } catch (error) {
-      logger.error("[Cron] Error ระหว่างเคลียร์ห้องหมดอายุ:", error);
-    }
 
-    // ==========================================
-    // งานที่ 2: กวาดล้างไฟล์รูปภาพขยะ (ต่อยอดจากงานที่ 1 ทันที)
-    // ==========================================
-    try {
-      logger.info("เริ่มสแกนลบไฟล์รูปภาพขยะแบบแยกโฟลเดอร์ห้อง...");
-      const uploadsDir = path.join(process.cwd(), "public/uploads");
+      // ==========================================
+      // งานที่ 2: กวาดล้างไฟล์รูปภาพขยะ
+      // ==========================================
+      const activeRooms = await Room.find({ isDeleted: false });
 
-      if (fs.existsSync(uploadsDir)) {
-        // 1. อ่านรายการ "โฟลเดอร์ห้อง" ทั้งหมดใน uploads
-        const roomFolders = fs.readdirSync(uploadsDir);
-        let totalDeletedImages = 0;
+      for (const room of activeRooms) {
+        const roomId = room._id.toString();
+        const folderPrefix = `notes_together/${roomId}/`;
 
-        for (const folderName of roomFolders) {
-          const roomFolderPath = path.join(uploadsDir, folderName);
+        try {
+          const { resources } = await cloudinary.api.resources({
+            type: "upload",
+            prefix: folderPrefix,
+            max_results: 500,
+          });
+          await trackAndThrottleApi();
 
-          // เช็กให้ชัวร์ว่าเป็นโฟลเดอร์ (กันไฟล์แปลกปลอมหลุดมาอยู่ข้างนอก)
-          if (!fs.statSync(roomFolderPath).isDirectory()) continue;
+          if (resources.length === 0) continue;
 
-          // folderName คือ Room ID
-          const note = await Note.findOne({ room: folderName }, "content");
+          const note = await Note.findOne({ room: roomId }, "content");
+          if (!note || !note.content) continue;
 
-          // กรณีที่ 1: ห้องถูกลบไปแล้ว แต่โฟลเดอร์รูปยังตกค้าง
-          if (!note) {
-            // ลบโฟลเดอร์นี้ทิ้งทั้งยวงได้เลย! (โคตรประหยัดเวลา)
-            fs.rmSync(roomFolderPath, { recursive: true, force: true });
-            logger.info(
-              `ลบโฟลเดอร์ตกค้างของห้อง ${folderName} ทิ้งทั้งโฟลเดอร์`,
-            );
-            continue;
-          }
+          const ydoc = new Y.Doc();
+          Y.applyUpdate(ydoc, new Buffer.from(note.content));
+          const xmlString = ydoc.getXmlFragment("content").toString();
+          const imagesInDoc = extractImageUrls(xmlString);
+          const activeFilenames = new Set();
 
-          // กรณีที่ 2: ห้องยังมีชีวิตอยู่ สแกนหาไฟล์ขยะข้างใน
-          if (note.content) {
-            const ydoc = new Y.Doc();
-            Y.applyUpdate(ydoc, new Buffer.from(note.content));
-            const xmlString = ydoc.getXmlFragment("content").toString();
+          imagesInDoc.forEach((url) => {
+            if (!url.includes("/api/notes/image/")) return;
+            const filename = url.split("?")[0].split("#")[0].split("/").pop();
+            if (filename) activeFilenames.add(filename);
+          });
 
-            // สกัดชื่อไฟล์เฉพาะของห้องนี้
-            const activeImages = new Set();
-            const imagesInDoc = extractImageUrls(xmlString);
-
-            imagesInDoc.forEach((url) => {
-              // 1. ดักจับและข้ามรูปภาพประเภท Base64
-              if (url.startsWith("data:image")) return;
-
-              // 2. ดำเนินการเฉพาะ URL ที่เป็นของระบบเราเท่านั้น (ต้องมีคำว่า /uploads/)
-              if (!url.includes("/uploads/")) return;
-
-              // 3. ลบ Query Parameters หรือ Hash Tags ทิ้งก่อน (ถ้ามี)
-              const cleanUrl = url.split("?")[0].split("#")[0];
-
-              // 4. สกัดชื่อไฟล์อย่างปลอดภัย
-              const filename = cleanUrl.split("/").pop();
-              if (filename) activeImages.add(filename);
-            });
-
-            // เทียบรูปในโฟลเดอร์ห้องนี้ กับ Set รูปที่ใช้จริง
-            const filesInRoom = fs.readdirSync(roomFolderPath);
-            for (const file of filesInRoom) {
-              if (!activeImages.has(file)) {
-                fs.unlinkSync(path.join(roomFolderPath, file));
-                totalDeletedImages++;
-              }
+          const publicIdsToDelete = [];
+          for (const res of resources) {
+            const filename = res.public_id.split("/").pop();
+            if (!activeFilenames.has(filename)) {
+              publicIdsToDelete.push(res.public_id);
             }
           }
+
+          if (publicIdsToDelete.length > 0) {
+            await cloudinary.api.delete_resources(publicIdsToDelete);
+            await trackAndThrottleApi();
+            totalDeletedImages += publicIdsToDelete.length;
+            logger.debug(
+              `[Cron:Task2] ลบไฟล์ขยะ ${publicIdsToDelete.length} รูป ในห้อง ${roomId}`,
+            );
+          }
+        } catch (err) {
+          logger.error(
+            `[Cron:Task2] สแกนไฟล์ขยะห้อง ${roomId} ล้มเหลว:`,
+            err.message,
+          );
         }
+      }
+
+      // ==========================================
+      // งานที่ 3: Deep Clean (ล้างบางโฟลเดอร์ขยะอมตะจาก Hard Delete)
+      // ==========================================
+      try {
         logger.info(
-          `ลบไฟล์รูปภาพขยะย่อยๆ ไปทั้งหมด ${totalDeletedImages} ไฟล์`,
+          "[Cron:DeepClean] เริ่มตรวจสอบโฟลเดอร์ขยะตกค้างบน Cloudinary...",
+        );
+
+        // 1. ดึงรายชื่อโฟลเดอร์ทั้งหมดที่อยู่ภายใต้ "notes_together" บน Cloudinary
+        const { folders } = await cloudinary.api.sub_folders("notes_together");
+        await trackAndThrottleApi();
+
+        let orphanFoldersDeleted = 0;
+
+        for (const folder of folders) {
+          const roomId = folder.name; // ชื่อโฟลเดอร์คือ Room ID
+
+          // 2. ตรวจสอบว่า Room ID นี้ยังมีชีวิตอยู่ใน MongoDB หรือไม่ (รวมถึงที่ถูก Soft Delete ด้วย)
+          const roomExists = await Room.exists({ _id: roomId });
+
+          // 3. ถ้าไม่มีใน Database แล้ว แสดงว่าเป็น "ขยะอมตะ" (เกิดจาก Hard Delete)
+          if (!roomExists) {
+            logger.warn(
+              `[Cron:DeepClean] พบโฟลเดอร์ไร้สังกัด ${roomId} กำลังดำเนินการลบทิ้ง...`,
+            );
+
+            const folderPath = folder.path; // เช่น notes_together/6a9d02f...
+
+            // สั่งกวาดล้างไฟล์และโฟลเดอร์ทิ้งทันที
+            await cloudinary.api.delete_resources_by_prefix(folderPath, {
+              type: "authenticated"
+            });
+            await trackAndThrottleApi();
+
+            await cloudinary.api.delete_folder(folderPath);
+            await trackAndThrottleApi();
+
+            orphanFoldersDeleted++;
+          }
+        }
+
+        if (orphanFoldersDeleted > 0) {
+          logger.info(
+            `[Cron:DeepClean] ล้างโฟลเดอร์ขยะอมตะสำเร็จ ${orphanFoldersDeleted} ห้อง`,
+          );
+        }
+      } catch (error) {
+        logger.error("[Cron:DeepClean] ระบบตรวจสอบย้อนกลับล้มเหลว:", error);
+      }
+
+
+      // ==========================================
+      // สรุปผล (พิมพ์เฉพาะเมื่อมีการทำงานเกิดขึ้น)
+      // ==========================================
+      if (deletedRoomsCount > 0 || totalDeletedImages > 0) {
+        const durationSec = ((Date.now() - startTime) / 1000).toFixed(2);
+        logger.info(
+          `[Cron:Summary] เสร็จสิ้น! ลบห้อง: ${deletedRoomsCount} | ลบรูป: ${totalDeletedImages} (ใช้เวลา ${durationSec} วินาที)`,
         );
       }
     } catch (error) {
-      logger.error("[Cron] Error ระหว่างลบไฟล์รูปภาพ:", error);
+      logger.error("[Cron:Fatal] ระบบล้มเหลวแบบคริติคอล:", error);
     }
+  }, {
+    timezone: "Asia/Bangkok"
   });
 };

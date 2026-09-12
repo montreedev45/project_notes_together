@@ -52,123 +52,106 @@ function SettingRoomMember() {
 
   return (
     <>
-      <div className=" border-s-2 border-gray px-15 pt-9 flex flex-col gap-8">
-        <div className=" gap-3 relative ">
-          <div className=" max-h-42 overflow-auto no-scrollbar">
-            {users.map((user) => {
-              const isMember = roomData?.members?.some(
-                (member) => member?.user?._id === user?._id,
-              );
-
-              return (
-                <div
-                  key={user?._id}
-                  className="flex items-center justify-between py-2 px-5"
-                >
-                  <div className=" flex items-center gap-3">
-                    <div
-                      style={{ borderColor: user?.avatar }}
-                      className="flex-none bg-white border-2 w-10 h-10 rounded-full flex items-center justify-center"
-                    >
-                      <Icon
-                        icon="mdi:account"
-                        style={{ color: user?.avatar }}
-                        width="30"
-                      />
-                    </div>
-                    <div className="flex flex-col ">
-                      <span className="font-bold text-sm truncate text-slate-800">
-                        {user?.username}
-                      </span>
-                      <span className="font-normal text-xs text-secondary truncate">
-                        {user?.email}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+      <div className="flex flex-col gap-6 w-full max-w-3xl pt-2 pb-8 mx-auto">
+        <div className="flex items-center justify-between border-b border-gray-200 pb-3">
+          <span className="text-2xl font-medium text-slate-800">Members</span>
+          <span className="text-sm font-bold bg-blue-50 text-blue-600 px-4 py-1.5 rounded-full border border-blue-100">
+            {roomData?.members?.length || 0} Total
+          </span>
         </div>
 
-        <div className=" flex flex-col relative">
-          <span className="flex  justify-between text-2xl font-semibold">
-            Members ({roomData?.members?.length || 0})
-          </span>
-          <div className="h-115 px-5 mt-1 overflow-auto no-scrollbar">
-            {roomData?.members?.map((m) => {
-              const isRoomOwner = m?.user?._id === roomData?.owner?._id;
-              return (
-                <div
-                  key={m?.user?._id}
-                  className="flex items-center justify-between mt-3 pb-1"
-                >
-                  <div className="grow flex items-center gap-3">
-                    <div
-                      style={{ borderColor: m?.user?.avatar }}
-                      className="flex-none bg-white border-2 w-10 h-10 rounded-full flex items-center justify-center"
-                    >
-                      <Icon
-                        icon="mdi:account"
-                        style={{ color: m?.user?.avatar }}
-                        width="30"
-                      />
-                    </div>
-                    <div className="flex flex-col min-w-20 leading-tight">
-                      <span className="font-bold text-sm truncate text-slate-800 flex gap-2">
-                        {m?.user?.username}
-                        {isRoomOwner && (
-                          <>
-                            <Icon
-                              icon="mdi:star"
-                              width="20"
-                              className="text-yellow-300"
-                            />
-                          </>
-                        )}
-                      </span>
-                      <span className="font-normal text-xs text-secondary truncate">
-                        {m?.user?.email}
-                      </span>
-                    </div>
+        <div className="max-h-150 overflow-y-auto no-scrollbar flex flex-col gap-3 pr-2">
+          {roomData?.members?.map((m) => {
+            const isRoomOwner = m?.user?._id === roomData?.owner?._id;
+
+            return (
+              <div
+                key={m?.user?._id}
+                className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-4 p-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-blue-100 transition-colors"
+              >
+                <div className="flex items-center gap-4 min-w-50 flex-1">
+                  <div
+                    style={{ borderColor: m?.user?.avatar || "#e2e8f0" }}
+                    className="flex-none bg-white border-2 w-12 h-12 rounded-full flex items-center justify-center relative shadow-sm"
+                  >
+                    <Icon
+                      icon="mdi:account"
+                      style={{ color: m?.user?.avatar }}
+                      width="28"
+                    />
+                    <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 border-2 border-white rounded-full bg-green-500"></span>
                   </div>
-                  <div className="grow flex-none flex gap-3 items-center">
-                    <span className="w-3 h-3 rounded-full bg-green-500"></span>
-                    online
-                  </div>
-                  <div className="min-w-42 max-w-42 flex-none flex gap-3 py-1 items-center">
-                    {!isRoomOwner && (
-                      <>
-                        <div className="px-2 border-2 border-gray rounded-lg">
-                          <select
-                            name="permission"
-                            value={selectedRoles[m?.user?._id] || m?.role}
-                            onChange={(e) =>
-                              handleUpdateRole(m?.user?._id, e.target.value)
-                            }
-                            id=""
-                            className="cursor-pointer px-2 py-1 outline-0 rounded-lg  text-sm font-semibold text-secondary"
-                          >
-                            {roles?.map((role) => (
-                              <option key={role} value={role} disabled={role === m?.role}>
-                                {role}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
+
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-bold text-base text-slate-800 truncate flex items-center gap-1.5">
+                      {m?.user?.username}
+                      {isRoomOwner && (
                         <Icon
-                          icon="mdi:trash"
-                          onClick={() => handleDeleteMember(m?.user?._id)}
-                          className="text-secondary cursor-pointer hover:text-olive-500 transition-all"
-                          width="24"
-                        ></Icon>
-                      </>
-                    )}
+                          icon="mdi:star"
+                          width="18"
+                          className="text-yellow-400 shrink-0 drop-shadow-sm"
+                          title="Room Owner"
+                        />
+                      )}
+                    </span>
+                    <span className="font-medium text-xs text-slate-500 truncate">
+                      {m?.user?.email}
+                    </span>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+
+                <div className="flex items-center gap-3 w-full sm:w-auto justify-end border-t sm:border-none border-gray-50 pt-3 sm:pt-0">
+                  {isRoomOwner ? (
+                    <span className="text-xs font-bold text-slate-400 bg-slate-50 px-4 py-2 rounded-lg border border-slate-100">
+                      Owner
+                    </span>
+                  ) : (
+                    <>
+                      <div className="px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors">
+                        <select
+                          name="permission"
+                          value={selectedRoles[m?.user?._id] || m?.role}
+                          onChange={(e) =>
+                            handleUpdateRole(m?.user?._id, e.target.value)
+                          }
+                          className="cursor-pointer bg-transparent outline-none text-sm font-semibold text-slate-700 w-23.75"
+                        >
+                          {roles?.map((role) => (
+                            <option
+                              key={role}
+                              value={role}
+                              disabled={role === m?.role}
+                            >
+                              {role}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <button
+                        onClick={() => handleDeleteMember(m?.user?._id)}
+                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                        title="Remove member"
+                      >
+                        <Icon icon="mdi:trash-can-outline" width="22" />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {roomData?.members?.length === 0 && (
+            <div className="flex flex-col items-center justify-center p-10 text-slate-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+              <Icon
+                icon="mdi:account-group-outline"
+                width="48"
+                className="mb-2 opacity-50"
+              />
+              <span className="font-medium">No members found</span>
+            </div>
+          )}
         </div>
       </div>
     </>

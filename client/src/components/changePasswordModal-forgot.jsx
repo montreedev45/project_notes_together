@@ -8,7 +8,7 @@ function ChangePasswordModalForgot({ isOpen, onClose }) {
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
       <div className="bg-third w-full max-w-md rounded-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="flex items-center justify-between p-6 border-b-2 border-secondary">
+        <div className="flex items-center justify-between p-6 border-b-2 border-gray">
           <h2 className="text-xl font-semibold text-slate-800">change password</h2>
           <button
             onClick={onClose}
@@ -24,12 +24,12 @@ function ChangePasswordModalForgot({ isOpen, onClose }) {
             <input
               type="text"
               placeholder="New password"
-              className="w-full px-4 py-2.5 bg-gray-100 border-2 border-secondary rounded-lg outline-none "
+              className="w-full px-4 py-2.5 bg-gray-100 border-2 border-gray rounded-lg outline-none "
             />
             <input
               type="text"
               placeholder="Confirm password"
-              className="w-full px-4 py-2.5 bg-gray-100 border-2 border-secondary rounded-lg outline-none "
+              className="w-full px-4 py-2.5 bg-gray-100 border-2 border-gray rounded-lg outline-none "
             />
           </div>
         </div>

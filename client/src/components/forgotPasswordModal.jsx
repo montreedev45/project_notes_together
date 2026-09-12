@@ -3,18 +3,18 @@ import { useState, useEffect } from "react";
 import useAuthStore from "../store/useAuthStore";
 
 function ForgotPasswordModal({ isOpen, onClose }) {
-  if (!isOpen) return null;
-
   const forgotPassword = useAuthStore((state) => state.forgotPassword);
-
   const [email, setEmail] = useState("");
+  
   const [isSent, setIsSent] = useState(false);
-  const [errorMsg, setErrorMsg] = useState(null);
+  const [errorMsg, setErrorMsg] = useState("");
 
+  if (!isOpen) return null;
 
   const handleClose = () => {
     setEmail("");
     setIsSent(false);
+    setErrorMsg("");
     onClose();
   };
 
@@ -22,57 +22,80 @@ function ForgotPasswordModal({ isOpen, onClose }) {
     e.preventDefault();
     if (!email) return;
 
+    setErrorMsg("");
+
     try {
       const res = await forgotPassword(email);
-      if(res.message.includes("Google")){
-        setErrorMsg(res.message || "")
+      
+      if(res?.message?.includes("Google")){
+        setErrorMsg(res.message || "");
       }
+      
       setIsSent(true);
     } catch (error) {
       console.error("Failed to send reset link:", error);
+      setErrorMsg("An error occurred. Please try again.");
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
-      <div className="bg-third w-full max-w-md rounded-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="flex items-center justify-between p-6 border-b-2 border-secondary">
-          <h2 className="text-xl font-semibold text-slate-800">
-            Forgot Password
-          </h2>
-          <button
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-70 md:max-w-100 overflow-hidden transform transition-all">
+        
+        <div className="flex justify-between items-center p-6 border-b border-gray-100">
+          <h2 className="text-xl font-bold text-gray-800">Forgot Password</h2>
+          <button 
             onClick={handleClose}
-            className="p-1 hover:bg-slate-100 rounded-full cursor-pointer transition-colors"
+            className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-md hover:bg-gray-100 cursor-pointer"
           >
-            <Icon icon="mdi:close" width="24" className="text-slate-500" />
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
-        <div className="my-6 text-black">
-          <form onSubmit={handleForgotPassword} className="flex gap-3 items-center mx-6">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              required
-              className="flex-1 py-2 outline-none px-4 text-base rounded-lg border-2 border-gray-300 text-secondary focus:border-primary"
-            />
-
-            <button
-              type="submit"
-              className="cursor-pointer bg-primary hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg font-semibold transition-colors"
-            >
-              Send
-            </button>
-          </form>
-
-          {isSent && (
-            <div className="p-4 mx-6 my-6 bg-amber-100 text-amber-800 rounded-lg text-sm border border-amber-300">
-              {`${errorMsg ? errorMsg : "We have sent the verification link to your email. Please check your inbox and click the link to reset your password."}`}
+        <div className="px-6 py-4">
+          {isSent ? (
+            <div className="text-center py-6">
+              <Icon icon="mdi:check-circle" className="text-green-500 w-16 h-16 mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-gray-800 mb-2">Check your inbox</h3>
+              <p className="text-gray-600 text-sm">
+                We've sent a password reset link to <br/>
+                <span className="font-semibold">{email}</span>
+              </p>
             </div>
+          ) : (
+            <>
+              <p className="text-sm text-gray-500 mb-6 leading-relaxed bg-amber-100 p-5 rounded-lg">
+                Enter the email address associated with your account, and we'll send you a link to reset your password.
+              </p>
+
+              {errorMsg && (
+                <p className="text-red-500 text-sm mb-4 text-center font-medium bg-red-50 p-2 rounded">
+                  {errorMsg}
+                </p>
+              )}
+
+              <form className="flex flex-col gap-4" onSubmit={handleForgotPassword}>
+                <input
+                  type="email"
+                  placeholder="Enter your email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-primary transition-colors text-gray-700"
+                />
+                <button
+                  type="submit"
+                  className="w-full py-3 button-primary rounded-lg font-semibold hover:scale-[1.02] active:scale-95 transition-transform"
+                >
+                  Send Reset Link
+                </button>
+              </form>
+            </>
           )}
         </div>
+
       </div>
     </div>
   );

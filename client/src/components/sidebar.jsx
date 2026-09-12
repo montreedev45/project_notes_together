@@ -4,32 +4,42 @@ import useAuthStore from "../store/useAuthStore";
 import useRoomStore from "../store/useRoomStore";
 import { disconnectSocket } from "../socket";
 
-function Sidebar() {
+function Sidebar({ onClose }) {
   const resetRoomStore = useRoomStore((state) => state.resetRoomStore);
   const logout = useAuthStore((state) => state.logout);
   const user = useAuthStore((state) => state.user);
 
-const handleLogout = async () => {
-  try {
-    // 1. ตัดสาย Socket ทันที!
-    disconnectSocket();
+  const handleLogout = async () => {
+    try {
+      // 1. ตัดสาย Socket ทันที!
+      disconnectSocket();
 
-    // 2. ล้าง State / Clear Cookie (จะทำให้ user เป็น null)
-    await resetRoomStore();
-    await logout();
-  } catch (error) {
-    console.error("Logout error:", error);
-  }
-};
+      // 2. ล้าง State / Clear Cookie (จะทำให้ user เป็น null)
+      await resetRoomStore();
+      await logout();
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
 
   return (
-    <div className="w-60 h-full border-r-2 border-gray-200 flex flex-col justify-between py-8 px-6 bg-third">
-      <nav>
-        <ul className="flex flex-col gap-6 text-secondary font-medium">
+    <div className="w-full h-full flex flex-col justify-between py-8 px-6">
+      <nav className="">
+        <ul className="flex flex-col gap-6 text-gray-400 font-medium text-sm md:text-lg">
+          <li className="cursor-pointer hover:text-primary transition-colors flex md:hidden mb-2">
+            <Link to="/" className="items-center flex">
+              <img
+                src="/logo.svg"
+                alt="Logo"
+                className="w-full min-w-40 max-w-60 cursor-pointer"
+              />
+            </Link>
+          </li>
           <li className="cursor-pointer hover:text-primary transition-colors">
             <Link
               to="/notes-together/explore"
               className="flex gap-4 items-center"
+              onClick={onClose}
             >
               <Icon icon="mdi:explore" width="24" />
               <span>Explorer</span>
@@ -67,7 +77,10 @@ const handleLogout = async () => {
 
       <div className="flex flex-col gap-6">
         <div className="cursor-pointer hover:scale-105 transition-transform">
-          <Link to={`/notes-together/${user?._id}/setting-account`} className="flex items-center gap-3 ">
+          <Link
+            to={`/notes-together/${user?._id}/setting-account`}
+            className="flex items-center gap-3 "
+          >
             <div
               style={{ borderColor: user?.avatar }}
               className="flex-none bg-white border-2 w-10 h-10 rounded-full flex items-center justify-center cursor-pointer"
@@ -89,7 +102,7 @@ const handleLogout = async () => {
           </Link>
         </div>
 
-        <div className="flex flex-col gap-6 text-secondary font-medium ">
+        <div className="flex flex-col gap-6 font-medium text-sm md:text-lg text-gray-400">
           <Link
             to={`/notes-together/${user?._id}/setting-account`}
             className="flex items-center gap-4 cursor-pointer hover:text-primary transition-colors"

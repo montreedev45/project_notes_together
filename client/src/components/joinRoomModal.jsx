@@ -1,9 +1,9 @@
 import { Icon } from "@iconify/react";
 import { useState } from "react";
-import ColorPicker from "./colorPicker";
 import useRoomStore from "../store/useRoomStore";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import useAuthStore from "../store/useAuthStore";
 
 function JoinRoomModal({ isOpen, onClose }) {
   const navigate = useNavigate();
@@ -13,6 +13,7 @@ function JoinRoomModal({ isOpen, onClose }) {
   const [errorMsg, setErrorMsg] = useState("");
 
   const joinRoom = useRoomStore((state) => state.joinRoom);
+  const user = useAuthStore((state) => state.user);
 
   //clear value when modal close
   useEffect(() => {
@@ -24,23 +25,29 @@ function JoinRoomModal({ isOpen, onClose }) {
   const handleFillCode = async (element, index) => {
     if (isNaN(element.value)) return false;
 
-    // 1. สร้าง Array ใหม่และอัปเดตค่า
     const newCode = [...code];
     newCode[index] = element.value;
     setCode(newCode);
 
-    // 2. รวม Array เป็น String ทันที (แก้ปัญหา Combined)
     const fullCode = newCode.join("");
 
-    // 3. Logic: Auto-focus
     if (element.nextSibling && element.value !== "") {
       element.nextSibling.focus();
     }
 
-    // 4. เมื่อกรอกครบ 6 ตัว ให้เรียก API (ใช้ fullCode ที่เพิ่งรวมเสร็จ)
     if (fullCode.length === 6) {
       const res = await joinRoom(fullCode);
-      if (res.success) onClose();
+      const roomId = res?._id || res?.data?._id;
+      const userId = user?._id;
+
+      const matchedMember = res.data.members.find(
+        (m) => m?.user?._id === userId || m?._id === userId,
+      );
+
+      if (res.success === true) {
+        onClose();
+        navigate(`/notes-together/${roomId}/${matchedMember.role}`);
+      }
     }
   };
 
@@ -66,20 +73,25 @@ function JoinRoomModal({ isOpen, onClose }) {
     if (fullCode.length === 6) {
       try {
         const res = await joinRoom(fullCode);
-        if (res?.success) {
+        const roomId = res?._id || res?.data?._id;
+        const userId = user?._id;
+
+        const matchedMember = res.data.members.find(
+          (m) => m?.user?._id === userId || m?._id === userId,
+        );
+
+        if (res.success === true) {
           setStatus("success");
-          navigate(`/notes-together/${roomId}/${role}`);
+          navigate(`/notes-together/${roomId}/${matchedMember.role}`);
+          onClose();
         } else {
           setErrorMsg(res.message);
           setStatus(res?.status || "error");
         }
 
-        const roomId = res?._id || res?.data?._id;
-
         if (roomId) {
           onClose();
-          // นำทางไปยังหน้า editor ของห้องนั้นๆ
-          navigate(`/notes-together/${roomId}/editor`);
+          navigate(`/notes-together/${roomId}/${matchedMember.role}`);
         } else {
           console.error("Join failed: Invalid Room ID");
           setErrorMsg(res.message);
@@ -94,24 +106,27 @@ function JoinRoomModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
-      <div className="bg-third w-full max-w-md rounded-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="flex items-center justify-between p-6 border-b-2 border-secondary">
-          <h2 className="text-xl font-semibold text-slate-800">join room</h2>
+    <div
+      className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 transition-opacity"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white w-full max-w-md rounded-2xl overflow-hidden animate-in fade-in zoom-in duration-200 shadow-xl ring-1 ring-slate-900/5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-slate-50">
+          <h2 className="text-xl font-bold text-slate-800">Join Room</h2>
           <button
-            onClick={() => {
-              onClose();
-              setStatus("");
-            }}
-            className="p-1 hover:bg-slate-100 rounded-full cursor-pointer transition-colors"
+            onClick={onClose}
+            className="p-1.5 hover:bg-slate-200 rounded-full cursor-pointer transition-colors"
           >
-            <Icon icon="mdi:close" width="24" className="text-slate-500" />
+            <Icon icon="mdi:close" width="22" className="text-slate-500" />
           </button>
         </div>
 
-        {/* Form Body */}
-        <div className="p-6 pt-6 space-y-6">
-          <div className=" flex items-center justify-center gap-3 my-5">
+        <div className="p-6 pt-8 space-y-6 flex flex-col items-center">
+          {/* OTP Inputs */}
+          <div className="flex items-center justify-center gap-3">
             {code.map((data, index) => (
               <input
                 key={index}
@@ -119,11 +134,10 @@ function JoinRoomModal({ isOpen, onClose }) {
                 onPaste={index === 0 ? handlePaste : undefined}
                 type="text"
                 maxLength="1"
-                className=" w-10 h-12 border-2 rounded-lg text-center text-xl font-semibold focus:border-blue-500 outline-none"
+                className="w-12 h-14 bg-gray-50 border-2 border-gray-200 rounded-lg text-center text-2xl font-bold text-slate-800 focus:border-primary focus:bg-white outline-none transition-colors"
                 value={data}
                 onChange={(e) => handleFillCode(e.target, index)}
                 onKeyDown={(e) => {
-                  // ถ้ากด Backspace ให้ถอยกลับไปช่องก่อนหน้า
                   if (
                     e.key === "Backspace" &&
                     !code[index] &&
@@ -134,13 +148,6 @@ function JoinRoomModal({ isOpen, onClose }) {
                 }}
               />
             ))}
-          </div>
-          <div className="h-auto text-center">
-            {status === 403 && (
-              <span className="text-red-600 flex justify-center items-center">
-                {errorMsg || ""}
-              </span>
-            )}
           </div>
         </div>
       </div>

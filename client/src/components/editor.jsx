@@ -221,7 +221,11 @@ function ChatInput({
             {stickers.map((fileName) => (
               <button
                 key={fileName}
-                onClick={() => onSendSticker(fileName)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSendSticker(fileName);
+                  setIsOpenStickerModal(false);
+                }}
                 className="shrink-0 p-1 w-18 h-18 hover:bg-blue-100 rounded-xl transition-all transform hover:scale-110 cursor-pointer mx-1"
               >
                 <img
@@ -245,7 +249,7 @@ function ChatInput({
           }
         }}
         onChange={(e) => onChangeText(e)}
-        className="w-full border-2 border-gray-300 rounded-lg h-10 ps-10 pe-10 outline-none"
+        className="w-full border-2 border-gray-200 rounded-lg h-10 ps-10 pe-10 outline-none"
       />
       <Icon
         icon="mdi:send"
@@ -283,10 +287,11 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
   );
   const updateLinkShare = useRoomStore((state) => state.updateLinkShare);
   const invitedUsers = useRoomStore((state) => state.invitedUsers);
+  const updateRoomCode = useRoomStore((state) => state.updateRoomCode);
 
   const [isOpenShareModal, setIsOpenShareModal] = useState(false);
+  const [isOpenCommentModal, setIsOpenCommentModal] = useState(false);
 
-  const [selectedRoles, setSelectedRoles] = useState({});
   const roles = ["viewer", "editor", "commenter"];
   const access = ["anyone", "invited"];
   const link = `${import.meta.env.VITE_CLIENT_URL}/notes-together/join-link/${room?.shareLink?.token}/${room?.shareLink?.role || "viewer"}`;
@@ -449,6 +454,22 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
   const handleAccessChange = (access) => {
     setSelectedAccess(access);
     updateLinkShare(room._id, selectedRole, access);
+  };
+
+  const handleUpdateCodeRoom = async () => {
+    if (loading) return;
+
+    setIsChangeCode(true);
+    const result = await updateRoomCode(roomData._id);
+
+    if (result.success) {
+      setTimeout(() => {
+        setIsChangeCode(false);
+      }, 1000);
+    } else {
+      setIsChangeCode(false);
+      alert(result.message);
+    }
   };
 
   const handleInvite = (userId) => {
@@ -685,7 +706,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
             return cursor;
           },
         }),
-        LimitPageHeight
+        LimitPageHeight,
       ],
       editorProps: {
         attributes: {
@@ -709,610 +730,697 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
   return (
     <div className="w-full h-full sm:p-0 sm:pt-0 overflow-y-auto no-scrollbar">
       <div className="" ref={editorStartRef}>
-        <div className="w-full flex items-center justify-between p-5 px-8 bg-third border-b-2 border-gray-200">
-          <div className="text-2xl font-semibold">{room?.name || ""}</div>
-          <div className="text-lg text-gray-400 font-medium">
-            {saveStatus === "saving" && <span>saving data...</span>}
-            {saveStatus === "saved" && (
-              <span className="text-green-500">changes saved</span>
-            )}
-            {saveStatus === "idle" && (
-              <span className="text-gray-300">data synced</span>
-            )}
-          </div>
-          <div className="flex gap-5 items-center">
-            <div className="flex items-center gap-2 py-1 rounded-lg text-secondary">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-ping"></span>
-              {activeUsersList.length || 1} online
-            </div>
-            <div className="flex items-center gap-1 -space-x-4">
-              {activeUsersList?.slice(0, 5).map((member, index) => (
-                <div
-                  key={member._id || index}
-                  style={{ borderColor: member?.avatar }}
-                  className="flex-none bg-white border-2 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer"
-                >
-                  <Icon
-                    icon="mdi:account"
-                    style={{ color: member?.avatar }}
-                    width="30"
-                  />
+        {/* Main layout */}
+        <div className="flex flex-col justify-center items-center">
+          <div className="w-full flex-col items-center justify-center sticky z-10 top-0 bg-white">
+            {/* Menu bar */}
+            <div className="w-full flex items-center justify-between p-3 md:p-4 px-4 md:px-6 border-b border-gray-100 z-50 shadow-sm bg-gray-50">
+              {/* 1. Room Name & Save Status */}
+              <div className="flex flex-row justify-center items-end gap-4 truncate">
+                <h1 className="text-xl md:text-2xl font-bold text-slate-800 truncate max-w-37.5 md:max-w-xs">
+                  {room?.name || "Untitled Room"}
+                </h1>
+                <div className="text-xs md:text-sm font-medium">
+                  {saveStatus === "saving" && (
+                    <span className="text-slate-400">Saving...</span>
+                  )}
+                  {saveStatus === "saved" && (
+                    <span className="text-green-500">All changes saved</span>
+                  )}
+                  {saveStatus === "idle" && (
+                    <span className="text-slate-400">Synced</span>
+                  )}
                 </div>
-              ))}
-              {activeUsersList?.length > 5 && (
-                <div className="flex-none bg-gray-200 border-2 border-white w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold text-gray-600 z-0">
-                  +{activeUsersList.length - 5}
-                </div>
-              )}
-            </div>
-            <div className="relative ms-3">
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setIsOpenShareModal(!isOpenShareModal)}
-                  className="bg-primary cursor-pointer hover:bg-blue-500 px-3 py-1.5 flex items-center gap-1.5 rounded-lg text-sm font-semibold text-white transition-all"
-                >
-                  <Icon icon="mdi:share" width="20" />
-                  Share
-                </button>
-                <button
-                  onClick={handleExport}
-                  className="bg-red-400 cursor-pointer hover:bg-red-500 px-3 py-1.5 flex items-center gap-1.5 rounded-lg text-sm font-semibold text-white transition-all"
-                >
-                  <Icon icon="mdi:file" width="20" />
-                  Export
-                </button>
               </div>
-              {isOpenShareModal && (
-                <>
-                  <div className="absolute flex flex-col z-20 min-w-100 -right-20 mt-5 ">
-                    <div className="bg-gray-200 py-2 px-3 rounded-t-2xl">
-                      <button
-                        onClick={() => setActiveTab(1)}
-                        className={`flex-1 py-2.5 cursor-pointer px-2 text-center font-medium text-sm border-b-2 transition-colors duration-200 ${
-                          activeTab === 1
-                            ? "border-blue-600 text-blue-600"
-                            : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                        }`}
+
+              {/* 2. Online Users & Share & Export*/}
+              <div className="flex items-center gap-4">
+                <div className=" sm:flex items-center gap-3">
+                  <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full">
+                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    {activeUsersList.length || 1}
+                  </div>
+                  <div className="hidden md:flex items-center -space-x-2">
+                    {activeUsersList?.slice(0, 3).map((member, index) => (
+                      <div
+                        key={member._id || index}
+                        style={{ borderColor: member?.avatar || "#e2e8f0" }}
+                        className="flex-none bg-white border-2 w-8 h-8 rounded-full flex items-center justify-center z-10"
                       >
-                        Link
-                      </button>
+                        <Icon
+                          icon="mdi:account"
+                          style={{ color: member?.avatar }}
+                          width="20"
+                        />
+                      </div>
+                    ))}
+                    {activeUsersList?.length > 3 && (
+                      <div className="flex-none bg-gray-100 border-2 border-white w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-slate-600 z-0">
+                        +{activeUsersList.length - 3}
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-                      <button
-                        onClick={() => setActiveTab(2)}
-                        className={`flex-1 py-2.5 cursor-pointer px-2 text-center font-medium text-sm border-b-2 transition-colors duration-200 ${
-                          activeTab === 2
-                            ? "border-blue-600 text-blue-600"
-                            : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                        }`}
-                      >
-                        Code
-                      </button>
+                {/* Buttons */}
+                <div className="flex gap-2 items-center relative">
+                  <button
+                    onClick={() => setIsOpenShareModal(!isOpenShareModal)}
+                    className="bg-primary hover:bg-blue-600 px-3 py-1.5 flex items-center gap-1.5 rounded-lg text-sm font-bold text-white transition-colors"
+                  >
+                    <Icon icon="mdi:share-variant" width="18" />
+                    <span className="hidden sm:inline">Share</span>
+                  </button>
+                  <button
+                    onClick={handleExport}
+                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 flex items-center gap-1.5 rounded-lg text-sm font-bold transition-colors"
+                  >
+                    <Icon icon="mdi:export" width="18" />
+                    <span className="hidden sm:inline">Export</span>
+                  </button>
 
-                      <button
-                        onClick={() => setActiveTab(3)}
-                        className={`flex-1 py-2.5 cursor-pointer px-2 text-center font-medium text-sm border-b-2 transition-colors duration-200 ${
-                          activeTab === 3
-                            ? "border-blue-600 text-blue-600"
-                            : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                        }`}
-                      >
-                        Invite
-                      </button>
-                    </div>
+                  {/* Share Dropdown (แก้ไขให้ไม่ล้นจอ) */}
+                  {isOpenShareModal && (
+                    <div className="absolute top-full right-0 mt-3 w-[320px] sm:w-90 bg-white rounded-xl shadow-2xl border border-gray-200 z-60 flex flex-col overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                      {/* Tabs */}
+                      <div className="flex bg-slate-50 border-b border-gray-200">
+                        {["Link", "Code", "Invite"].map((tab, idx) => (
+                          <button
+                            key={tab}
+                            onClick={() => setActiveTab(idx + 1)}
+                            className={`flex-1 py-3 text-sm font-bold transition-colors ${
+                              activeTab === idx + 1
+                                ? "text-primary border-b-2 border-primary bg-white"
+                                : "text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+                            }`}
+                          >
+                            {tab}
+                          </button>
+                        ))}
+                      </div>
 
-                    <div className="bg-third px-5 py-5 rounded-b-2xl border-2 border-gray-200">
-                      {activeTab === 1 && (
-                        <div className="space-y-4 animate-in fade-in duration-200">
-                          <div className="flex flex-col gap-3 relative mb-1">
-                            <div className="flex justify-between items-center gap-5">
-                              <div className="flex-1 px-2 border border-gray rounded-lg">
-                                <select
-                                  value={room?.shareLink?.role}
-                                  onChange={(e) =>
-                                    handleRoleChange(e.target.value)
-                                  }
-                                  className={`${isAllowLinkSharing ? "cursor-pointer" : "cursor-not-allowed"} px-2 py-1 outline-0 text-sm font-medium text-secondary`}
-                                  disabled={!isAllowLinkSharing}
-                                >
-                                  {roles.map((role) => (
-                                    <option key={role} value={role}>
-                                      {role}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                              <div className="px-4 border border-gray rounded-lg">
-                                <select
-                                  value={room?.shareLink?.access || "anyone"}
-                                  onChange={(e) =>
-                                    handleAccessChange(e.target.value)
-                                  }
-                                  name="people-with-access"
-                                  id=""
-                                  className={`${isAllowLinkSharing ? "cursor-pointer" : "cursor-not-allowed"} ps-1 pe-3 py-1 outline-0 rounded-lg text-sm font-medium text-secondary`}
-                                  disabled={!isAllowLinkSharing}
-                                >
-                                  {access.map((ac) => (
-                                    <option key={ac} value={ac}>
-                                      {ac === "anyone"
-                                        ? "anyone with link"
-                                        : "only invited people"}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-                            <div className="flex gap-5 items-center">
-                              <input
-                                type="text"
-                                readOnly
-                                onCopy={(e) =>
-                                  isAllowLinkSharing === false &&
-                                  e.preventDefault()
-                                }
-                                onCut={(e) =>
-                                  isAllowLinkSharing === false &&
-                                  e.preventDefault()
-                                }
-                                onPaste={(e) =>
-                                  isAllowLinkSharing === false &&
-                                  e.preventDefault()
-                                }
-                                value={link || ""}
-                                className={`${isAllowLinkSharing ? "cursor-pointer" : "cursor-not-allowed"} flex-1 py-2 outline-none px-4 text-md rounded-lg border-2 border-gray text-black`}
-                              />
-
-                              <button
-                                disabled={!isAllowLinkSharing}
-                                onClick={handleCopy}
-                                className={`${isAllowLinkSharing ? "bg-blue-500 hover:bg-blue-600 cursor-pointer" : "bg-gray-400 cursor-not-allowed"} text-white px-6 py-2 rounded-lg font-semibold transition-colors`}
-                              >
-                                {isCopied ? "Copied" : "Copy"}
-                              </button>
-                            </div>
-                            {!isAllowLinkSharing && (
-                              <span className="text-red-600">
-                                The room owner has disabled sharing via link.
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                      {activeTab === 2 && (
-                        <>
+                      {/* Tab Content Area (จำกัดความสูงไว้ไม่ให้ยาวเกินไป) */}
+                      <div className="p-4 max-h-100 overflow-y-auto no-scrollbar">
+                        {activeTab === 1 && (
                           <div className="space-y-4 animate-in fade-in duration-200">
-                            <div className="flex gap-3 relative mb-3">
-                              <input
-                                type="text"
-                                readOnly
-                                onCopy={(e) =>
-                                  isAllowCodeSharing === false &&
-                                  e.preventDefault()
-                                }
-                                onCut={(e) =>
-                                  isAllowCodeSharing === false &&
-                                  e.preventDefault()
-                                }
-                                onPaste={(e) =>
-                                  isAllowCodeSharing === false &&
-                                  e.preventDefault()
-                                }
-                                value={room?.code || ""}
-                                className={`${isAllowCodeSharing ? "cursor-pointer" : "cursor-not-allowed"} flex-1 py-2 outline-none px-4 text-sm rounded-lg border border-gray text-gray-500`}
-                              />
-
-                              <button
-                                disabled={!isAllowCodeSharing}
-                                onClick={handleCopyCode}
-                                className={`${isAllowCodeSharing ? "bg-blue-500 hover:bg-blue-600 cursor-pointer" : "bg-gray-400 cursor-not-allowed"} text-white px-6 py-2 rounded-lg font-semibold transition-colors`}
-                              >
-                                {isCopiedCode ? "Copied" : "Copy"}
-                              </button>
-                            </div>
-                            {!isAllowCodeSharing && (
-                              <span className="text-red-600">
-                                The room owner has disabled sharing via code.
-                              </span>
-                            )}
-                          </div>
-                        </>
-                      )}
-
-                      {activeTab === 3 && (
-                        <>
-                          <div className="space-y-4 animate-in fade-in duration-200">
-                            <div className="flex flex-col gap-3 relative mb-3">
-                              <div className="bg-white flex items-center rounded-xl relative">
-                                <Icon
-                                  icon="mdi:search"
-                                  width="20"
-                                  height="20"
-                                  className="absolute left-2 text-secondary"
-                                />
+                            <div className="flex flex-col gap-3 relative mb-1">
+                              <div className="flex justify-between items-center gap-5">
+                                <div className="flex-1 px-2 border border-gray rounded-lg">
+                                  <select
+                                    value={room?.shareLink?.role}
+                                    onChange={(e) =>
+                                      handleRoleChange(e.target.value)
+                                    }
+                                    className={`${isAllowLinkSharing ? "cursor-pointer" : "cursor-not-allowed"} px-2 py-1 outline-0 text-sm font-medium text-secondary`}
+                                    disabled={!isAllowLinkSharing}
+                                  >
+                                    {roles.map((role) => (
+                                      <option key={role} value={role}>
+                                        {role}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div className="px-4 border border-gray rounded-lg">
+                                  <select
+                                    value={room?.shareLink?.access || "anyone"}
+                                    onChange={(e) =>
+                                      handleAccessChange(e.target.value)
+                                    }
+                                    name="people-with-access"
+                                    id=""
+                                    className={`${isAllowLinkSharing ? "cursor-pointer" : "cursor-not-allowed"} ps-1 pe-3 py-1 outline-0 rounded-lg text-sm font-medium text-secondary`}
+                                    disabled={!isAllowLinkSharing}
+                                  >
+                                    {access.map((ac) => (
+                                      <option key={ac} value={ac}>
+                                        {ac === "anyone"
+                                          ? "anyone with link"
+                                          : "only invited people"}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+                              <div className="flex gap-5 items-center">
                                 <input
                                   type="text"
-                                  value={searchTerm}
-                                  onChange={(e) =>
-                                    setSearchTerm(e.target.value)
+                                  readOnly
+                                  onCopy={(e) =>
+                                    isAllowLinkSharing === false &&
+                                    e.preventDefault()
                                   }
-                                  className="w-full py-1.5 rounded-lg ps-9 outline-0 font-normal text-gray-500 border-2 border-gray text-sm"
+                                  onCut={(e) =>
+                                    isAllowLinkSharing === false &&
+                                    e.preventDefault()
+                                  }
+                                  onPaste={(e) =>
+                                    isAllowLinkSharing === false &&
+                                    e.preventDefault()
+                                  }
+                                  value={link || ""}
+                                  className={`${isAllowLinkSharing ? "cursor-pointer" : "cursor-not-allowed"} flex-1 py-2 outline-none px-4 text-md rounded-lg border-2 border-gray text-black`}
                                 />
-                              </div>
-                              <div className=" max-h-42 overflow-auto no-scrollbar">
-                                {users.map((user) => {
-                                  const isMember = room?.members?.some(
-                                    (member) => member?.user?._id === user?._id,
-                                  );
 
-                                  const isInvited = room?.invitedUsers?.some(
-                                    (m) => {
-                                      // กรณีที่ 1: m เป็น Object ให้เช็ก m?._id
-                                      // กรณีที่ 2: m เป็น String ID โล่งๆ ให้เอา m มาเทียบตรงๆ ได้เลย
-                                      return (m?._id || m) === user?._id;
-                                    },
-                                  );
-
-                                  return (
-                                    <div
-                                      key={user?._id}
-                                      className="flex items-center justify-between py-2 px-5"
-                                    >
-                                      <div className=" flex items-center gap-3">
-                                        <div
-                                          style={{ borderColor: user?.avatar }}
-                                          className="flex-none bg-white border-2 w-10 h-10 rounded-full flex items-center justify-center"
-                                        >
-                                          <Icon
-                                            icon="mdi:account"
-                                            style={{ color: user?.avatar }}
-                                            width="30"
-                                          />
-                                        </div>
-                                        <div className="flex flex-col ">
-                                          <span className="font-bold text-sm truncate text-slate-800">
-                                            {user?.username}
-                                          </span>
-                                          <span className="font-normal text-xs text-secondary truncate">
-                                            {user?.email}
-                                          </span>
-                                        </div>
-                                      </div>
-                                      <div>
-                                        <button
-                                          onClick={() =>
-                                            handleInvite(user?._id)
-                                          }
-                                          disabled={isInvited}
-                                          className={`${isInvited ? "bg-gray-300 cursor-not-allowed" : "bg-blue-400 cursor-pointer hover:bg-blue-500"} flex text-white items-center gap-2 px-5 text-sm py-1 font-semibold rounded-md `}
-                                        >
-                                          <Icon icon="mdi:invite" width={20} />
-                                          Invite
-                                        </button>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
+                                <button
+                                  disabled={!isAllowLinkSharing}
+                                  onClick={handleCopy}
+                                  className={`${isAllowLinkSharing ? "bg-blue-500 hover:bg-blue-600 cursor-pointer" : "bg-gray-400 cursor-not-allowed"} text-white px-6 py-2 rounded-lg font-semibold transition-colors`}
+                                >
+                                  {isCopied ? "Copied" : "Copy"}
+                                </button>
                               </div>
+                              {!isAllowLinkSharing && (
+                                <span className="text-red-600">
+                                  The room owner has disabled sharing via link.
+                                </span>
+                              )}
                             </div>
                           </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-        {/* toolbar */}
-        <div className="flex justify-evenly">
-          <div className="w-full min-w-100 max-w-260 ">
-            <div className="w-full top-0 pt-5 pb-10 gap-3 sticky z-10 bg-white">
-              {isEditable && (
-                <div className="w-full flex py-5 px-3 rounded-md shadow-sm bg-gray-100 border border-slate-200">
-                  <button
-                    onClick={() => editor.chain().focus().toggleBold().run()}
-                    disabled={!editor.can().chain().focus().toggleBold().run()}
-                    className={`p-2 rounded transition-colors ${editor.isActive("bold") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                    title="Bold (Ctrl+B)"
-                  >
-                    <Icon icon="mdi:format-bold" width="20" />
-                  </button>
-                  <button
-                    onClick={() => editor.chain().focus().toggleItalic().run()}
-                    disabled={
-                      !editor.can().chain().focus().toggleItalic().run()
-                    }
-                    className={`p-2 rounded transition-colors ${editor.isActive("italic") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                    title="Italic (Ctrl+I)"
-                  >
-                    <Icon icon="mdi:format-italic" width="20" />
-                  </button>
-                  <button
-                    onClick={() =>
-                      editor.chain().focus().toggleUnderline().run()
-                    }
-                    className={`p-2 rounded transition-colors ${editor.isActive("underline") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                    title="Underline (Ctrl+U)"
-                  >
-                    <Icon icon="mdi:format-underline" width="20" />
-                  </button>
-                  <button
-                    onClick={() => editor.chain().focus().toggleStrike().run()}
-                    className={`p-2 rounded transition-colors ${editor.isActive("strike") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                    title="Strikethrough"
-                  >
-                    <Icon icon="mdi:format-strikethrough-variant" width="20" />
-                  </button>
-                  <button
-                    onClick={() => editor.chain().focus().toggleCode().run()}
-                    className={`p-2 rounded transition-colors ${editor.isActive("code") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                    title="Inline Code"
-                  >
-                    <Icon icon="mdi:code-tags" width="20" />
-                  </button>
-                  <div className="w-px h-6 bg-slate-200 mx-1" />
-                  {/* เส้นคั่น */}
-                  {/* --- Group 2: Headings --- */}
-                  <select
-                    onChange={(e) => {
-                      if (e.target.value === "none") {
-                        editor.chain().focus().setParagraph().run();
-                      } else {
-                        const levelValue = Number(e.target.value);
+                        )}
+                        {activeTab === 2 && (
+                          <>
+                            <div className="space-y-4 animate-in fade-in duration-200">
+                              <div className="flex flex-col gap-3 relative mb-3">
+                                <input
+                                  type="text"
+                                  readOnly
+                                  onCopy={(e) =>
+                                    isAllowCodeSharing === false &&
+                                    e.preventDefault()
+                                  }
+                                  onCut={(e) =>
+                                    isAllowCodeSharing === false &&
+                                    e.preventDefault()
+                                  }
+                                  onPaste={(e) =>
+                                    isAllowCodeSharing === false &&
+                                    e.preventDefault()
+                                  }
+                                  value={room?.code || ""}
+                                  className={`${isAllowCodeSharing ? "cursor-pointer" : "cursor-not-allowed"} flex-1 py-2 outline-none px-4 text-sm rounded-lg border border-gray text-gray-500`}
+                                />
 
-                        editor
-                          .chain()
-                          .focus()
-                          .setHeading({ level: levelValue })
-                          .run();
+                                <div className="flex gap-4">
+                                  <button
+                                    disabled={!isAllowCodeSharing}
+                                    onClick={handleCopyCode}
+                                    className={`${isAllowCodeSharing ? "bg-blue-500 hover:bg-blue-600 cursor-pointer" : "bg-gray-400 cursor-not-allowed"} text-white px-6 py-2 rounded-lg font-semibold transition-colors`}
+                                  >
+                                    {isCopiedCode ? "Copied" : "Copy"}
+                                  </button>
+                                  <button
+                                    disabled={!isAllowCodeSharing}
+                                    onClick={handleUpdateCodeRoom}
+                                    className={`flex-1 sm:flex-none px-6 py-2.5 rounded-lg font-bold transition-all active:scale-95 ${
+                                      isAllowCodeSharing
+                                        ? "bg-amber-500 text-white hover:bg-amber-600 shadow-sm"
+                                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                    }`}
+                                  >
+                                    {isChangeCode ? "Changing..." : "Reset"}
+                                  </button>
+                                </div>
+                              </div>
+                              {!isAllowCodeSharing && (
+                                <span className="text-red-600">
+                                  The room owner has disabled sharing via code.
+                                </span>
+                              )}
+                            </div>
+                          </>
+                        )}
+
+                        {activeTab === 3 && (
+                          <>
+                            <div className="space-y-4 animate-in fade-in duration-200">
+                              <div className="flex flex-col gap-3 relative mb-3">
+                                <div className="bg-white flex items-center rounded-xl relative">
+                                  <Icon
+                                    icon="mdi:search"
+                                    width="20"
+                                    height="20"
+                                    className="absolute left-2 text-secondary"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={searchTerm}
+                                    onChange={(e) =>
+                                      setSearchTerm(e.target.value)
+                                    }
+                                    className="w-full py-1.5 rounded-lg ps-9 outline-0 font-normal text-gray-500 border-2 border-gray text-sm"
+                                  />
+                                </div>
+                                <div className=" max-h-42 overflow-auto no-scrollbar">
+                                  {users.map((user) => {
+                                    const isMember = room?.members?.some(
+                                      (member) =>
+                                        member?.user?._id === user?._id,
+                                    );
+
+                                    const isInvited = room?.invitedUsers?.some(
+                                      (m) => {
+                                        // กรณีที่ 1: m เป็น Object ให้เช็ก m?._id
+                                        // กรณีที่ 2: m เป็น String ID โล่งๆ ให้เอา m มาเทียบตรงๆ ได้เลย
+                                        return (m?._id || m) === user?._id;
+                                      },
+                                    );
+
+                                    return (
+                                      <div
+                                        key={user?._id}
+                                        className="flex items-center justify-between py-2 px-5"
+                                      >
+                                        <div className=" flex items-center gap-3">
+                                          <div
+                                            style={{
+                                              borderColor: user?.avatar,
+                                            }}
+                                            className="flex-none bg-white border-2 w-10 h-10 rounded-full flex items-center justify-center"
+                                          >
+                                            <Icon
+                                              icon="mdi:account"
+                                              style={{ color: user?.avatar }}
+                                              width="30"
+                                            />
+                                          </div>
+                                          <div className="flex flex-col ">
+                                            <span className="font-bold text-sm truncate text-slate-800">
+                                              {user?.username}
+                                            </span>
+                                            <span className="font-normal text-xs text-secondary truncate">
+                                              {user?.email}
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <button
+                                            onClick={() =>
+                                              handleInvite(user?._id)
+                                            }
+                                            disabled={isInvited}
+                                            className={`${isInvited ? "bg-gray-300 cursor-not-allowed" : "bg-blue-400 cursor-pointer hover:bg-blue-500"} flex text-white items-center gap-2 px-5 text-sm py-1 font-semibold rounded-md `}
+                                          >
+                                            <Icon
+                                              icon="mdi:invite"
+                                              width={20}
+                                            />
+                                            Invite
+                                          </button>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            {isEditable && (
+              // Tool bar
+              <div className="flex justify-center items-center pt-5 pb-10 px-5 bg-gray-50">
+                <div className="flex w-full flex-wrap max-w-7xl items-center gap-1.5 p-2 md:py-5 rounded-xl bg-gray-50 border-gray-200 border-2">
+                  {/* 📝 Group 1: Basic Formatting */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => editor.chain().focus().toggleBold().run()}
+                      disabled={
+                        !editor.can().chain().focus().toggleBold().run()
                       }
-                    }}
-                    className="p-1.5 border border-slate-300 rounded text-sm text-slate-600 bg-white outline-none cursor-pointer hover:border-blue-400"
-                    title="Headings"
-                  >
-                    <option value="none">Heading</option>
-                    <option value="1">H1</option>
-                    <option value="2">H2</option>
-                    <option value="3">H3</option>
-                    <option value="4">H4</option>
-                    <option value="5">H5</option>
-                    <option value="6">H6</option>
-                  </select>
-                  <div className="w-px h-6 bg-slate-200 ms-1" />
-                  {/* เส้นคั่น */}
-                  {/* font style */}
-                  {/* 🔤 1. Dropdown เลือกฟอนต์ (Font Family) */}
-                  <select
-                    onChange={(e) => {
-                      if (e.target.value === "normal") {
-                        editor.chain().focus().unsetFontFamily().run();
-                      } else {
-                        editor
-                          .chain()
-                          .focus()
-                          .setFontFamily(e.target.value)
-                          .run();
+                      className={`p-1.5 md:p-2 rounded-lg transition-colors ${editor.isActive("bold") ? "bg-blue-100 text-blue-700" : "hover:bg-slate-100 text-slate-600"}`}
+                      title="Bold (Ctrl+B)"
+                    >
+                      <Icon icon="mdi:format-bold" width="20" />
+                    </button>
+                    <button
+                      onClick={() =>
+                        editor.chain().focus().toggleItalic().run()
                       }
-                    }}
-                    className="p-1.5 border border-slate-300 rounded text-sm text-slate-600 bg-white outline-none cursor-pointer hover:border-blue-400"
-                    title="Font Family"
-                  >
-                    <option value="normal">Default Font</option>
-                    <option value="Arial">Arial</option>
-                    <option value="Courier New">Courier New</option>
-                    <option value="Georgia">Georgia</option>
-                    <option value="Times New Roman">Times New Roman</option>
-                    <option value="Comic Sans MS">Comic Sans MS</option>
-                    <option value="Bitcount Single">Bitcount Single</option>
-                    <option value="Indie Flower">Indie Flower</option>
-                    <option value="Amatic SC">Amatic SC</option>
-                  </select>
-                  {/* 📐 2. Dropdown เลือกขนาดตัวอักษร (Font Size) */}
-                  <select
-                    onChange={(e) => {
-                      if (e.target.value === "normal") {
-                        editor.chain().focus().unsetFontSize().run();
-                      } else {
-                        editor
-                          .chain()
-                          .focus()
-                          .setFontSize(e.target.value)
-                          .run();
+                      disabled={
+                        !editor.can().chain().focus().toggleItalic().run()
                       }
-                    }}
-                    className="p-1.5 border border-slate-300 rounded text-sm text-slate-600 bg-white outline-none cursor-pointer hover:border-blue-400 ml-1"
-                    title="Font Size"
-                  >
-                    <option value="normal">Size</option>
-                    <option value="12px">12px</option>
-                    <option value="14px">14px</option>
-                    <option value="16px">16px</option>
-                    <option value="18px">18px</option>
-                    <option value="24px">24px</option>
-                    <option value="32px">32px</option>
-                    <option value="64px">64px</option>
-                    <option value="128px">128px</option>
-                  </select>
-                  {/* --- Group 3: Lists & Blocks --- */}
-                  <button
-                    onClick={() =>
-                      editor.chain().focus().toggleBulletList().run()
-                    }
-                    className={`p-2 rounded ${editor.isActive("bulletList") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                  >
-                    <Icon icon="mdi:format-list-bulleted" width="20" />
-                  </button>
-                  <button
-                    onClick={() =>
-                      editor.chain().focus().toggleOrderedList().run()
-                    }
-                    className={`p-2 rounded ${editor.isActive("orderedList") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                  >
-                    <Icon icon="mdi:format-list-numbered" width="20" />
-                  </button>
-                  <button
-                    onClick={() =>
-                      editor.chain().focus().toggleBlockquote().run()
-                    }
-                    className={`p-2 rounded ${editor.isActive("blockquote") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                  >
-                    <Icon icon="mdi:format-quote-close" width="20" />
-                  </button>
-                  {/* ปุ่มอัปโหลดรูปภาพ */}
-                  <button
-                    onClick={() => fileInputRef.current.click()}
-                    className={`p-2 rounded ${editor.isActive("image") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                    title="Upload Image"
-                  >
-                    <Icon icon="mdi:image-outline" width="20" />
-                  </button>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                  />
-                  <button
-                    onClick={() =>
-                      editor.chain().focus().setTextAlign("left").run()
-                    }
-                    className={`p-2 rounded ${editor.isActive({ textAlign: "left" }) ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                    title="Align Left"
-                  >
-                    <Icon icon="mdi:format-align-left" width="20" />
-                  </button>
-                  <button
-                    onClick={() =>
-                      editor.chain().focus().setTextAlign("center").run()
-                    }
-                    className={`p-2 rounded ${editor.isActive({ textAlign: "center" }) ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                    title="Align Center"
-                  >
-                    <Icon icon="mdi:format-align-center" width="20" />
-                  </button>
-                  <button
-                    onClick={() =>
-                      editor.chain().focus().setTextAlign("right").run()
-                    }
-                    className={`p-2 rounded ${editor.isActive({ textAlign: "right" }) ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                    title="Align Right"
-                  >
-                    <Icon icon="mdi:format-align-right" width="20" />
-                  </button>
-                  <div
-                    className={`relative flex items-center justify-center overflow-hidden p-2 rounded ${editor.isActive("textStyle") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                    title="Text Color"
-                  >
-                    <Icon icon="mdi:format-color-text" width="20" />
-                    <input
-                      type="color"
-                      onChange={(e) =>
-                        editor.chain().focus().setColor(e.target.value).run()
+                      className={`p-1.5 md:p-2 rounded-lg transition-colors ${editor.isActive("italic") ? "bg-blue-100 text-blue-700" : "hover:bg-slate-100 text-slate-600"}`}
+                      title="Italic (Ctrl+I)"
+                    >
+                      <Icon icon="mdi:format-italic" width="20" />
+                    </button>
+                    <button
+                      onClick={() =>
+                        editor.chain().focus().toggleUnderline().run()
                       }
-                      className="absolute inset-0 w-[200%] h-[200%] -ml-[50%] -mt-[50%] opacity-0 cursor-pointer"
-                    />
+                      className={`p-1.5 md:p-2 rounded-lg transition-colors ${editor.isActive("underline") ? "bg-blue-100 text-blue-700" : "hover:bg-slate-100 text-slate-600"}`}
+                      title="Underline (Ctrl+U)"
+                    >
+                      <Icon icon="mdi:format-underline" width="20" />
+                    </button>
+                    <button
+                      onClick={() =>
+                        editor.chain().focus().toggleStrike().run()
+                      }
+                      className={`p-1.5 md:p-2 rounded-lg transition-colors ${editor.isActive("strike") ? "bg-blue-100 text-blue-700" : "hover:bg-slate-100 text-slate-600"}`}
+                      title="Strikethrough"
+                    >
+                      <Icon
+                        icon="mdi:format-strikethrough-variant"
+                        width="20"
+                      />
+                    </button>
+                    <button
+                      onClick={() => editor.chain().focus().toggleCode().run()}
+                      className={`p-2 rounded transition-colors ${editor.isActive("code") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
+                      title="Inline Code"
+                    >
+                      <Icon icon="mdi:code-tags" width="20" />
+                    </button>
                   </div>
-                  <button
-                    onClick={() =>
-                      editor.chain().focus().setHorizontalRule().run()
-                    }
-                    className={`p-2 rounded ${editor.isActive("horizontalRule") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                    title="Divider"
-                  >
-                    <Icon icon="mdi:minus" width="20" />
-                  </button>
-                  <button
-                    onClick={() =>
-                      editor.chain().focus().toggleCodeBlock().run()
-                    }
-                    className={`p-2 rounded ${editor.isActive("codeBlock") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
-                    title="Code Block"
-                  >
-                    <Icon icon="mdi:code-braces" width="20" />
-                  </button>
-                  <div className="flex-1 " /> {/* ดันปุ่มที่เหลือไปทางขวา */}
-                  {/* --- Group 4: Clear Formatting --- */}
+                  <div className="w-px h-6 bg-gray-200 mx-1 hidden sm:block" />
+                  {/* 🔠 Group 2: Typography (Headings, Font, Size) */}
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <select
+                      onChange={(e) => {
+                        if (e.target.value === "none")
+                          editor.chain().focus().setParagraph().run();
+                        else
+                          editor
+                            .chain()
+                            .focus()
+                            .setHeading({ level: Number(e.target.value) })
+                            .run();
+                      }}
+                      value={
+                        editor.isActive("heading", { level: 1 })
+                          ? "1"
+                          : editor.isActive("heading", { level: 2 })
+                            ? "2"
+                            : editor.isActive("heading", { level: 3 })
+                              ? "3"
+                              : "none"
+                      }
+                      className="p-1.5 border border-gray-300 rounded-lg text-sm font-medium text-slate-700 bg-white outline-none cursor-pointer hover:border-primary focus:ring-2 focus:ring-blue-100 min-w-22.5"
+                    >
+                      <option value="none">Normal</option>
+                      <option value="1">Heading 1</option>
+                      <option value="2">Heading 2</option>
+                      <option value="3">Heading 3</option>
+                      <option value="4">Heading 4</option>
+                      <option value="5">Heading 5</option>
+                      <option value="6">Heading 6</option>
+                    </select>
+
+                    <select
+                      onChange={(e) => {
+                        if (e.target.value === "normal")
+                          editor.chain().focus().unsetFontFamily().run();
+                        else
+                          editor
+                            .chain()
+                            .focus()
+                            .setFontFamily(e.target.value)
+                            .run();
+                      }}
+                      className="p-1.5 border border-gray-300 rounded-lg text-sm font-medium text-slate-700 bg-white outline-none cursor-pointer hover:border-primary min-w-25"
+                    >
+                      <option value="normal">Default Font</option>
+                      <option value="Arial">Arial</option>
+                      <option value="Courier New">Courier</option>
+                      <option value="Georgia">Georgia</option>
+                      <option value="Times New Roman">Times New Roman</option>
+                      <option value="Comic Sans MS">Comic Sans MS</option>
+                      <option value="Bitcount Single">Bitcount Single</option>
+                      <option value="Indie Flower">Indie Flower</option>
+                      <option value="Amatic SC">Amatic SC</option>
+                    </select>
+
+                    <select
+                      onChange={(e) => {
+                        if (e.target.value === "normal")
+                          editor.chain().focus().unsetFontSize().run();
+                        else
+                          editor
+                            .chain()
+                            .focus()
+                            .setFontSize(e.target.value)
+                            .run();
+                      }}
+                      className="p-1.5 border border-gray-300 rounded-lg text-sm font-medium text-slate-700 bg-white outline-none cursor-pointer hover:border-primary min-w-17.5"
+                    >
+                      <option value="normal">Size</option>
+                      <option value="14px">14px</option>
+                      <option value="16px">16px</option>
+                      <option value="18px">18px</option>
+                      <option value="24px">24px</option>
+                      <option value="32px">32px</option>
+                      <option value="64px">64px</option>
+                    </select>
+                  </div>
+                  <div className="w-px h-6 bg-gray-200 mx-1 hidden md:block" />
+                  {/* 📋 Group 3: Lists & Alignment */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() =>
+                        editor.chain().focus().toggleBulletList().run()
+                      }
+                      className={`p-1.5 md:p-2 rounded-lg transition-colors ${editor.isActive("bulletList") ? "bg-blue-100 text-blue-700" : "hover:bg-slate-100 text-slate-600"}`}
+                    >
+                      <Icon icon="mdi:format-list-bulleted" width="20" />
+                    </button>
+                    <button
+                      onClick={() =>
+                        editor.chain().focus().toggleOrderedList().run()
+                      }
+                      className={`p-1.5 md:p-2 rounded-lg transition-colors ${editor.isActive("orderedList") ? "bg-blue-100 text-blue-700" : "hover:bg-slate-100 text-slate-600"}`}
+                    >
+                      <Icon icon="mdi:format-list-numbered" width="20" />
+                    </button>
+
+                    {/* Alignment */}
+                    <button
+                      onClick={() =>
+                        editor.chain().focus().setTextAlign("left").run()
+                      }
+                      className={`p-1.5 md:p-2 rounded-lg transition-colors ${editor.isActive({ textAlign: "left" }) ? "bg-blue-100 text-blue-700" : "hover:bg-slate-100 text-slate-600"}`}
+                    >
+                      <Icon icon="mdi:format-align-left" width="20" />
+                    </button>
+                    <button
+                      onClick={() =>
+                        editor.chain().focus().setTextAlign("center").run()
+                      }
+                      className={`p-1.5 md:p-2 rounded-lg transition-colors ${editor.isActive({ textAlign: "center" }) ? "bg-blue-100 text-blue-700" : "hover:bg-slate-100 text-slate-600"}`}
+                    >
+                      <Icon icon="mdi:format-align-center" width="20" />
+                    </button>
+                    <button
+                      onClick={() =>
+                        editor.chain().focus().setTextAlign("right").run()
+                      }
+                      className={`p-1.5 md:p-2 rounded-lg transition-colors ${editor.isActive({ textAlign: "right" }) ? "bg-blue-100 text-blue-700" : "hover:bg-slate-100 text-slate-600"}`}
+                      title="Align Right"
+                    >
+                      <Icon icon="mdi:format-align-right" width="20" />
+                    </button>
+                    <button
+                      onClick={() =>
+                        editor.chain().focus().setHorizontalRule().run()
+                      }
+                      className={`p-1.5 md:p-2 rounded-lg transition-colors ${editor.isActive("horizontalRule") ? "bg-blue-100 text-blue-700" : "hover:bg-slate-100 text-slate-600"}`}
+                      title="Divider"
+                    >
+                      <Icon icon="mdi:minus" width="20" />
+                    </button>
+                  </div>
+                  <div className="w-px h-6 bg-gray-200 mx-1 hidden lg:block" />
+                  {/* 🎨 Group 4: Inserts & Colors */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => fileInputRef.current.click()}
+                      className="p-1.5 md:p-2 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
+                      title="Upload Image"
+                    >
+                      <Icon icon="mdi:image-outline" width="20" />
+                    </button>
+
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                    />
+
+                    <div
+                      className={`relative flex items-center justify-center overflow-hidden p-1.5 md:p-2 rounded-lg transition-colors ${editor.isActive("textStyle") ? "bg-blue-100 text-blue-700" : "hover:bg-slate-100 text-slate-600"}`}
+                      title="Text Color"
+                    >
+                      <Icon icon="mdi:format-color-text" width="20" />
+                      <input
+                        type="color"
+                        onChange={(e) =>
+                          editor.chain().focus().setColor(e.target.value).run()
+                        }
+                        className="absolute inset-0 w-[200%] h-[200%] -ml-[50%] -mt-[50%] opacity-0"
+                      />
+                    </div>
+
+                    <button
+                      onClick={() =>
+                        editor.chain().focus().toggleCodeBlock().run()
+                      }
+                      className={`p-1.5 md:p-2 rounded-lg transition-colors ${editor.isActive("codeBlock") ? "bg-blue-100 text-blue-700" : "hover:bg-slate-100 text-slate-600"}`}
+                      title="Code Block"
+                    >
+                      <Icon icon="mdi:code-braces" width="20" />
+                    </button>
+                  </div>
+                  <div className="flex-1" /> {/* ดันปุ่มที่เหลือไปทางขวาสุด */}
+                  {/* 🗑️ Group 5: Clear */}
                   <button
                     onClick={() =>
                       editor.chain().focus().unsetAllMarks().clearNodes().run()
                     }
-                    className="p-2 rounded hover:bg-red-100 text-red-400"
+                    className="p-1.5 md:p-2 rounded-lg hover:bg-red-50 text-red-500 transition-colors"
                     title="Clear Formatting"
                   >
                     <Icon icon="mdi:format-clear" width="20" />
                   </button>
                 </div>
-              )}
-            </div>
-            <div className="editor-background">
-              <div id="note-content-container">
-                <EditorContent editor={editor} />
               </div>
-            </div>
+            )}
           </div>
 
-          <div className="sticky z-0 top-0 w-70 h-fit">
-            <div className="flex flex-col pt-4">
-              <span className="flex items-center gap-2 font-semibold">
-                Comments <Icon icon="mdi:comment" className="" />
-              </span>
-              <div className="flex flex-col border-gray-300 border-2 rounded-lg w-full h-150 my-4 p-5 overflow-auto no-scrollbar">
-                {(comments?.comments || comments || []).map((c) => {
+          <div className="w-full h-full flex flex-col lg:flex-row justify-center gap-10 bg-slate-50">
+            <div className="flex-1 flex justify-center overflow-x-hidden no-scrollbar pb-10 px-2 sm:px-6 pt-4">
+              <div
+                id="note-content-container"
+                className="prose prose-slate max-w-none shrink-0 bg-white border border-gray-200 shadow-sm p-4 sm:p-8 md:p-12 wrap-break-word cursor-text flex flex-col"
+                style={{
+                  width: "100%" /* ให้กางเต็มจอเมื่ออยู่บนมือถือ */,
+                  maxWidth:
+                    "210mm" /* ล็อกไม่ให้กว้างเกิน A4 เมื่ออยู่บนจอคอม */,
+                  minHeight: "297mm" /* ล็อกความสูงขั้นต่ำให้เท่า A4 เสมอ */,
+                }}
+                onClick={() => editor?.commands.focus()}
+              >
+                <EditorContent
+                  editor={editor}
+                  /* บังคับตัว Tiptap ให้ยืดเต็มพื้นที่กระดาษ */
+                  className="flex-1 w-full outline-none"
+                  style={{ minHeight: "100%" }}
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={() => setIsOpenCommentModal(!isOpenCommentModal)}
+              className="cursor-pointer absolute bottom-6 right-6 z-50 bg-primary text-white p-4 rounded-full shadow-xl hover:scale-105 active:scale-95 transition-transform flex items-center justify-center"
+            >
+              <Icon
+                icon={
+                  isOpenCommentModal
+                    ? "mdi:close"
+                    : "mdi:comment-multiple-outline"
+                }
+                width="24"
+              />
+            </button>
+
+            <div
+              className={`
+                /* 1. ควบคุมตำแหน่งให้อยู่ "เหนือ" ปุ่ม (bottom-24 คือเว้นระยะจากขอบล่าง 6rem) */
+                absolute bottom-24 right-6 z-40 
+                
+                /* 2. ขนาดของกล่องแชท */
+                w-[calc(100vw-3rem)] sm:w-95 /* มือถือเว้นขอบข้างละนิด, จอใหญ่กว้าง 380px */
+                h-125 max-h-[70vh] /* สูง 500px แต่ไม่เกิน 75% ของความสูงหน้าจอ */
+                
+                /* 3. รูปแบบกล่อง */
+                flex flex-col bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden
+                
+                /* 4. Animation: เด้งออกมาจากมุมขวาล่าง */
+                transform origin-bottom-right transition-all duration-200 ease-out
+                ${isOpenCommentModal ? "scale-100 opacity-100 pointer-events-auto" : "scale-95 opacity-0 pointer-events-none"}
+              `}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 font-bold border-b border-gray-100 bg-gray-100">
+                <div className="flex items-center gap-2 text-slate-800">
+                  <Icon
+                    icon="mdi:comment-multiple-outline"
+                    className="text-primary"
+                    width="22"
+                  />
+                  Comments
+                </div>
+              </div>
+
+              {/* Message List */}
+              <div className="flex-1 overflow-y-auto p-4 bg-white no-scrollbar">
+                {(comments?.comments || comments || []).map((c, index) => {
                   const isMe = c?.sender?._id === user?._id;
+                  const safeKey = c?._id || `comment-fallback-${index}`;
 
                   return (
                     <div
-                      key={c?._id || Math.random()}
-                      className={`flex w-full ${isMe ? "justify-end" : "justify-start"}`}
+                      key={safeKey}
+                      className={`flex w-full ${isMe ? "justify-end" : "justify-start"} py-2`}
                     >
                       <div
-                        className={`max-w-[85%] border border-gray-200 px-5 py-2 my-3 rounded-xl shadow-sm ${
+                        className={`max-w-[85%] border px-4 py-2 rounded-2xl shadow-sm flex flex-col ${
                           isMe
-                            ? "bg-blue-50/60 border-blue-200 rounded-tr-none"
-                            : "bg-white rounded-tl-none"
+                            ? "bg-blue-50 border-blue-100 rounded-tr-sm"
+                            : "bg-white border-gray-200 rounded-tl-sm"
                         }`}
                       >
+                        {/* Meta: Avatar & Name */}
                         <div
-                          className={`flex gap-2 items-center mb-1 ${isMe ? "flex-row-reverse" : "flex-row"}`}
+                          className={`flex gap-2 items-center mb-1.5 ${isMe ? "flex-row-reverse" : "flex-row"}`}
                         >
                           <div
-                            style={{ borderColor: c?.sender?.avatar }}
-                            className="flex-none border-2 w-10 h-10 rounded-full flex items-center justify-center cursor-pointer bg-white"
+                            style={{
+                              borderColor: c?.sender?.avatar || "#e2e8f0",
+                            }}
+                            className="flex-none border-2 w-8 h-8 rounded-full flex items-center justify-center bg-white shadow-sm overflow-hidden"
                           >
                             <Icon
                               icon="mdi:account"
-                              color={c?.sender?.avatar}
-                              width="30"
+                              color={c?.sender?.avatar || "#94a3b8"}
+                              width="24"
                             />
                           </div>
-
                           <div
                             className={`flex flex-col leading-tight ${isMe ? "items-end" : "items-start"}`}
                           >
-                            <span className="font-bold text-sm text-slate-800">
-                              {isMe ? "You" : c?.sender?.username}
+                            <span className="font-bold text-xs text-slate-700">
+                              {isMe ? "You" : c?.sender?.username || "Unknown"}
                             </span>
-                            <span className="font-normal text-[10px] text-gray-400">
+                            <span className="font-medium text-[10px] text-slate-400">
                               {formatChatTime(c.createdAt)}
                             </span>
                           </div>
                         </div>
 
+                        {/* Content */}
                         <div
-                          style={{ borderColor: c?.sender?.avatar }}
-                          className={`py-2 px-4 text-sm text-slate-700 whitespace-pre-wrap wrap-break-word ${
+                          style={{
+                            borderColor: c?.sender?.avatar || "#cbd5e1",
+                          }}
+                          className={`text-sm text-slate-700 whitespace-pre-wrap wrap-break-word py-1 ${
                             isMe
-                              ? "border-e-2 me-1 text-right"
-                              : "border-s-2 ms-1"
+                              ? "border-r-2 pr-3 text-right"
+                              : "border-l-2 pl-3 text-left"
                           }`}
                         >
                           {c.type === "sticker" ? (
                             <img
-                              src={`${import.meta.env.VITE_PATH_STICKERS}?nameImg=${c?.stickerUrl.replace(".png", "")}`}
+                              src={`${import.meta.env.VITE_PATH_STICKERS}?nameImg=${c?.stickerUrl?.replace(".png", "")}`}
                               alt="sticker"
-                              className="w-22 h-22 object-contain animate-bounce-once"
+                              className="w-20 h-20 md:w-24 md:h-24 object-contain animate-in zoom-in duration-200"
                             />
                           ) : (
                             c.text
@@ -1322,25 +1430,27 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                     </div>
                   );
                 })}
-                <div className="">
-                  {typingUserNames.length > 0 && (
-                    <span className="h-6 text-sm text-gray-500 italic rounded-md bg-gray-200 px-2">
+
+                {/* Typing Indicator */}
+                <div className="min-h-6">
+                  {typingUserNames?.length > 0 && (
+                    <span className="inline-block text-xs text-slate-500 font-medium italic bg-slate-200/60 px-3 py-1 rounded-full animate-pulse">
                       {typingUserNames.join(", ")}{" "}
                       {typingUserNames.length === 1 ? "is" : "are"} typing...
                     </span>
                   )}
                 </div>
-                <div ref={messagesEndRef} />{" "}
-                {/* จุดปักหมุดสำหรับ Auto Scroll */}
+
+                <div ref={messagesEndRef} className="h-1" />
               </div>
-              <div className="flex flex-col justify-center relative">
+
+              {/* Input Area */}
+              <div className="p-3 border-t border-gray-100 shrink-0 bg-slate-50">
                 <ChatInput
                   value={typedMessage}
                   onChangeText={handleTypingChange}
                   onSend={handleSend}
-                  onSendSticker={(stickerSelect) =>
-                    handleSendSticker(stickerSelect)
-                  }
+                  onSendSticker={handleSendSticker}
                   permissionUser={permissionUser}
                 />
               </div>

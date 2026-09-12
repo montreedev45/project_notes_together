@@ -84,7 +84,7 @@ function RoomCard({ data = {} }) {
 
     // เคลียร์ท่อเวลาก่อนหน้า ป้องกัน Memory Leak
     return () => clearInterval(interval);
-  }, [relativeTimeFromStore]); 
+  }, [relativeTimeFromStore]);
 
   useEffect(() => {
     // ฟังก์ชันตรวจจับการคลิกข้างนอก
@@ -184,9 +184,8 @@ function RoomCard({ data = {} }) {
   };
 
   const handleSettingRoom = () => {
+    const isAlreadyMember = data?.owner?._id === user?._id;
 
-    const isAlreadyMember = data?.owner?._id === user?._id
-    
     if (!isAlreadyMember) {
       alert(`Only owner room can access setting page.`);
     } else {
@@ -199,158 +198,171 @@ function RoomCard({ data = {} }) {
       <div
         key={data._id}
         onClick={handleClickRoom}
-        className="min-w-55 max-w-55 min-h-55 max-h-55 bg-white shadow-md p-3 rounded-lg cursor-pointer hover:scale-105 transition-transform flex flex-col justify-start"
+        // 1. เปลี่ยนจากล็อกขนาด (w-55) เป็น w-full h-full เพื่อให้ Grid ในหน้า Explore เป็นตัวคุมขนาด
+        className="w-full h-full bg-white shadow-md p-4 rounded-xl cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col justify-between border border-gray-100"
       >
+        {/* --- Header (Icon + Menu) --- */}
         <div className="flex items-center justify-between">
-          <Icon icon="mdi:folder" width="50" style={{ color: data.color }} />
-          <div className="relative flex items-center">
-            {data?.isPrivate ? (
-              <Icon icon="mdi:lock" className="text-black" width={20} />
-            ) : (
-              ""
+          <Icon icon="mdi:folder" width="45" style={{ color: data.color }} />
+
+          <div className="relative flex items-center gap-2">
+            {data?.isPrivate && (
+              <Icon icon="mdi:lock" className="text-slate-700" width={18} />
             )}
+
             <Icon
               ref={buttonRef}
               onClick={(e) => {
                 e.stopPropagation();
                 setIsOpenMenuModal(!isOpenMenuModal);
               }}
-              icon="mdi:menu"
-              width="30"
-              className="text-secondary"
+              icon="mdi:dots-horizontal" // เปลี่ยนจาก mdi:menu เป็น 3 จุด จะสื่อถึงการตั้งค่าการ์ดได้ดีกว่า
+              width="28"
+              className="text-gray-400 hover:text-gray-700 transition-colors p-1 rounded-md hover:bg-gray-100"
             />
-            {isOpenMenuModal && (
-              <>
-                <div
-                  ref={menuRef}
-                  className="absolute left-full ml-7 -top-2 z-50 select-none"
-                  onClick={(e) => e.stopPropagation()} // กันการคลิกในเมนูแล้วเด้งเข้าห้อง
-                >
-                  <div
-                    className={`relative ${isUrlFromTrash ? `w-35` : `w-30`} bg-white border border-slate-200 rounded-xl shadow-lg p-2`}
-                  >
-                    {/* 1. ส่วนที่เป็น "ติ่ง" (Arrow) ชี้ไปทางซ้าย */}
-                    <div className="absolute -left-1.5 top-4 w-3 h-3 bg-white border-l border-t border-slate-200 -rotate-45"></div>
 
-                    {/* 2. รายการเมนูข้างใน */}
-                    <ul className="relative z-10 flex flex-col gap-1">
-                      {isUrlFromTrash ? (
-                        <>
-                          <li onClick={handleRestore}>
-                            <span className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-green-100 hover:text-green-500 cursor-pointer transition-colors">
-                              restore
-                            </span>
-                          </li>
-                          <li onClick={handleDeleteForever}>
-                            <span className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-red-200 hover:text-red-400 cursor-pointer transition-colors">
-                              delete forever
-                            </span>
-                          </li>
-                        </>
-                      ) : (
-                        <>
-                          <li onClick={handleClickRoom}>
-                            <span className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-black cursor-pointer transition-colors">
-                              open
-                            </span>
-                          </li>
-                          {isOwner && (
-                            <li
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setIsOpenMenuModal(false);
-                              }}
+            {/* 2. Dropdown Menu (ปรับให้เด้งลงล่าง ไม่ทะลุจอ) */}
+            {isOpenMenuModal && (
+              <div
+                ref={menuRef}
+                className="absolute right-0 top-10 z-50 select-none min-w-35"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="relative bg-white border border-slate-200 rounded-xl shadow-xl p-1.5">
+                  {/* ลูกศรชี้ขึ้น (Arrow) */}
+                  <div className="absolute right-2 -top-1.5 w-3 h-3 bg-white border-l border-t border-slate-200 rotate-45"></div>
+
+                  <ul className="relative z-10 flex flex-col gap-0.5">
+                    {isUrlFromTrash ? (
+                      <>
+                        <li onClick={handleRestore}>
+                          <span className="block px-3 py-2 text-slate-600 font-medium rounded-md text-sm hover:bg-green-50 hover:text-green-600 cursor-pointer transition-colors">
+                            Restore
+                          </span>
+                        </li>
+                        <li onClick={handleDeleteForever}>
+                          <span className="block px-3 py-2 text-red-500 font-medium rounded-md text-sm hover:bg-red-50 hover:text-red-600 cursor-pointer transition-colors">
+                            Delete Forever
+                          </span>
+                        </li>
+                      </>
+                    ) : (
+                      <>
+                        <li onClick={handleClickRoom}>
+                          <span className="block px-3 py-2 text-slate-600 font-medium rounded-md text-sm hover:bg-gray-100 hover:text-slate-900 cursor-pointer transition-colors">
+                            Open Room
+                          </span>
+                        </li>
+                        {isOwner && (
+                          <li
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIsOpenMenuModal(false);
+                            }}
+                          >
+                            <span
+                              onClick={handleSettingRoom}
+                              className="block px-3 py-2 text-slate-600 font-medium rounded-md text-sm hover:bg-gray-100 hover:text-slate-900 cursor-pointer transition-colors"
                             >
-                              <span
-                                onClick={handleSettingRoom}
-                                className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-black cursor-pointer transition-colors"
-                              >
-                                setting
-                              </span>
-                            </li>
-                          )}
-                          {isAlreadyMember && !isOwner && (
-                            <li onClick={handleLeaveRoom}>
-                              <span className="block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-black cursor-pointer transition-colors">
-                                leave
-                              </span>
-                            </li>
-                          )}
-                          {isOwner && (
-                            <li onClick={handleDeleteRoom}>
-                              <button className="w-full block text-left px-4 py-1.5 text-slate-500 font-medium rounded-lg text-sm hover:bg-gray-200 hover:text-red-500 cursor-pointer transition-colors">
-                                delete
-                              </button>
-                            </li>
-                          )}
-                        </>
-                      )}
-                    </ul>
-                  </div>
+                              Settings
+                            </span>
+                          </li>
+                        )}
+                        {isAlreadyMember && !isOwner && (
+                          <li onClick={handleLeaveRoom}>
+                            <span className="block px-3 py-2 text-slate-600 font-medium rounded-md text-sm hover:bg-gray-100 hover:text-slate-900 cursor-pointer transition-colors">
+                              Leave Room
+                            </span>
+                          </li>
+                        )}
+                        {isOwner && (
+                          <li onClick={handleDeleteRoom}>
+                            <span className="block w-full text-left px-3 py-2 text-red-500 font-medium rounded-md text-sm hover:bg-red-50 hover:text-red-600 cursor-pointer transition-colors">
+                              Delete Room
+                            </span>
+                          </li>
+                        )}
+                      </>
+                    )}
+                  </ul>
                 </div>
-              </>
+              </div>
             )}
           </div>
         </div>
-        <span className="text-2xl font-semibold py2 flex items-center">
-          {data.name}
-          {data?.owner?._id === user._id && (
-            <Icon icon="mdi:star" className="text-yellow-200 ms-2" width={25} />
-          )}
-        </span>
 
-        <div className="text-secondary my-1.5 text-sm wrap-break-word min-h-10 font-medium overflow-y-auto">
-          <span>{data?.description}</span>
+        {/* --- Body (Title + Description) --- */}
+        <div className="mt-3 mb-2 flex flex-col grow">
+          <span className="text-xl font-bold flex items-center text-slate-800 truncate">
+            {data.name}
+            {data?.owner?._id === user._id && (
+              <Icon
+                icon="mdi:star"
+                className="text-yellow-400 ms-1 shrink-0"
+                width={20}
+              />
+            )}
+          </span>
+
+          {/* 3. ใช้ line-clamp-2 ตัดคำที่ยาวเกิน 2 บรรทัด เพื่อไม่ให้การ์ดยืด */}
+          <p className="text-slate-500 mt-1 text-sm wrap-break-word line-clamp-2">
+            {data?.description || "No description provided."}
+          </p>
         </div>
-        <div className="flex flex-1 items-center py-1 -space-x-4">
+
+        {/* --- Footer (Avatars + Status) --- */}
+        <div className="mt-auto pt-3 border-t border-gray-50 flex flex-col gap-3">
+          {/* Avatar Stack */}
           {data.isPeopleJoinRoom && (
-            <>
+            <div className="flex items-center -space-x-3">
               {(roomOnlineCounts[data._id] || [])
                 .slice(0, 5)
                 .map((member, index) => (
                   <div
-                    key={member?._id || member?.username || index}
-                    style={{ borderColor: member?.avatar }}
-                    className="flex-none bg-white border-2 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer relative z-10 hover:z-20 transition-all" // เพิ่ม z-index ให้ไม่บังกันมั่วซั่ว
+                    key={member?._id || index}
+                    style={{ borderColor: member?.avatar || "#fff" }}
+                    className="flex-none bg-white border-2 w-8 h-8 rounded-full flex items-center justify-center relative z-10 hover:z-20 hover:-translate-y-1 transition-transform"
                   >
                     <Icon
                       icon="mdi:account"
                       style={{ color: member?.avatar }}
-                      width="30"
+                      width="24"
                     />
                   </div>
                 ))}
 
               {(roomOnlineCounts[data._id] || []).length > 5 && (
-                <div className="flex-none bg-gray-200 border-2 border-white w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-gray-600 relative z-0">
+                <div className="flex-none bg-slate-100 border-2 border-white w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-slate-600 relative z-0">
                   +{(roomOnlineCounts[data._id] || []).length - 5}
                 </div>
               )}
-            </>
+            </div>
           )}
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="flex items-center gap-2 text-secondary text-sm">
-            {data?.isOnlineStatus && (
-              <>
-                <div className="w-2 h-2 rounded-full bg-green-400"></div>
-                <span>{roomOnlineCounts[data._id]?.length || 0} online</span>
-              </>
-            )}
-          </span>
-          <span className="text-sm text-secondary">
-            {data?.isLastEditTime && (
-              <>
-                <span>{displayTime}</span>
-              </>
-            )}
-          </span>
+
+          {/* Online Status & Time */}
+          <div className="flex items-center justify-between text-xs font-medium text-slate-400">
+            <span className="flex items-center gap-1.5">
+              {data?.isOnlineStatus && (
+                <>
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                  <span className="text-slate-600">
+                    {roomOnlineCounts[data._id]?.length || 0} online
+                  </span>
+                </>
+              )}
+            </span>
+            <span>{data?.isLastEditTime && displayTime}</span>
+          </div>
         </div>
       </div>
-      <JoinRoomModal
-        isOpen={isOpenJoinRoomModal}
-        onClose={() => setIsOpenJoinRoomModal(false)}
-      />
+
+      {/* 4. Conditional Rendering สำหรับ Modal (สร้างเฉพาะตอนเปิดเท่านั้น) */}
+      {isOpenJoinRoomModal && (
+        <JoinRoomModal
+          isOpen={isOpenJoinRoomModal}
+          onClose={() => setIsOpenJoinRoomModal(false)}
+        />
+      )}
     </>
   );
 }

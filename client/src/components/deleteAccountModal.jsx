@@ -1,5 +1,4 @@
 import { Icon } from "@iconify/react";
-import { useState } from "react";
 import useAuthStore from "../store/useAuthStore";
 
 function DeleteAccountModal({ isOpen, onClose }) {
@@ -14,44 +13,56 @@ function DeleteAccountModal({ isOpen, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-999 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-999 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 transition-opacity"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
     >
       <div
-        className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200"
+        className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 ring-1 ring-red-900/5"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between p-6 border-b-2 border-secondary">
-          <h2 className="text-xl font-semibold text-slate-800">delete account</h2>
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-red-50">
+          <h2 className="text-xl font-bold text-red-600 flex items-center gap-2">
+            <Icon icon="mdi:alert-octagon" width="26" />
+            Delete Account
+          </h2>
           <button
             onClick={(e) => {
               e.stopPropagation();
               onClose();
             }}
-            className="p-1 hover:bg-slate-100 rounded-full cursor-pointer transition-colors"
+            className="p-1.5 hover:bg-red-100 rounded-full cursor-pointer transition-colors"
           >
-            <Icon icon="mdi:close" width="24" className="text-slate-500" />
+            <Icon icon="mdi:close" width="22" className="text-red-400" />
           </button>
         </div>
 
-        <div className="p-10 text-center">
-          <div className="bg-yellow-100 p-4 rounded-xl text-slate-700">
-            Are you sure? We will delete all information about you.
+        {/* Body */}
+        <div className="p-8 text-center flex flex-col gap-4">
+          <div className="bg-red-50 border border-red-200 p-5 rounded-xl text-red-600 font-medium text-sm leading-relaxed text-left">
+            <strong className="block text-base mb-1">
+              Are you absolutely sure?
+            </strong>
+            This action is irreversible. All of your rooms, notes, and personal
+            data will be permanently wiped from our servers immediately.
           </div>
         </div>
 
-        <div className="p-6 flex justify-center gap-4 bg-slate-50">
+        {/* Footer */}
+        <div className="p-5 flex justify-end gap-3 bg-gray-50 border-t border-gray-200">
           <button
             onClick={onClose}
-            className="w-32 py-2.5 bg-secondary text-white rounded-lg hover:scale-105 active:scale-95 transition-transform cursor-pointer"
+            className="px-6 py-2.5 font-semibold text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 active:scale-95 transition-all cursor-pointer shadow-sm"
           >
-            cancel
+            Cancel
           </button>
           <button
             onClick={handleDelete}
-            className="w-32 py-2.5 bg-red-500 text-white rounded-lg hover:scale-105 active:scale-95 transition-transform cursor-pointer"
+            className="px-6 py-2.5 font-bold text-white bg-red-600 rounded-lg hover:bg-red-700 active:scale-95 transition-all cursor-pointer shadow-sm"
           >
-            delete
+            Delete Account
           </button>
         </div>
       </div>

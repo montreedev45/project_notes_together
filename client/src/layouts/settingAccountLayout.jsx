@@ -1,28 +1,18 @@
-import { useState } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
-import { Icon } from "@iconify/react";
+import { Outlet } from "react-router-dom";
 
 import SettingAccountSidebar from "../components/settingAccount-sidebar";
 function SettingAccountLayout() {
-  const navigate = useNavigate();
 
   return (
     <>
-      <div className="p-12 pt-8 pb-0">
-        <span className="flex  items-center gap-2 font-bold text-3xl ">
-          <Icon
-            icon="ooui:arrow-previous-ltr"
-            className="cursor-pointer"
-            onClick={() => navigate(-1)}
-            width="28"
-            height="28"
-          />
+      <div className="p-4 md:p-8 lg:p-12 pb-0 flex flex-col h-full">
+        <span className="flex items-center gap-2 font-bold text-2xl md:text-3xl text-slate-800">
           Account Setting
         </span>
-        <div className=" border-2 border-gray mt-5 h-155 overflow-auto rounded-2xl ps-10 py-0 grid grid-cols-[260px_1fr]">
-          <SettingAccountSidebar/>
-          <div className="flex justify-center">
-          <Outlet/>
+        <div className="border-2 border-gray-200 mt-5 rounded-2xl flex flex-col md:flex-row overflow-hidden bg-white min-h-125">
+          <SettingAccountSidebar />
+          <div className="flex-1 p-4 md:p-8 flex justify-center overflow-y-auto">
+            <Outlet />
           </div>
         </div>
       </div>

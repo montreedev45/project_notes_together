@@ -180,7 +180,7 @@ const useRoomStore = create((set, get) => ({
         useRoomStore.getState().saveToRecent(res.data);
 
         set({ loading: false });
-        return res.data;
+        return {data:res.data, success: true};
       }
     } catch (error) {
       set({ loading: false });

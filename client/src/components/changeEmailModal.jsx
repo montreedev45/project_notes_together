@@ -107,8 +107,8 @@ function ChangeEmailModal({ isOpen, onClose }) {
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
       <div className="bg-third w-full max-w-md rounded-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="flex items-center justify-between p-6 border-b-2 border-secondary">
-          <h2 className="text-xl font-semibold text-slate-800">change email</h2>
+        <div className="flex items-center justify-between p-6 border-b-2 border-gray">
+          <h2 className="text-xl font-semibold text-slate-800">Change Email</h2>
           <button
             onClick={handleClose}
             className="p-1 hover:bg-slate-100 rounded-full cursor-pointer transition-colors"

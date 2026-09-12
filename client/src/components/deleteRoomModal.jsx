@@ -4,7 +4,7 @@ import useRoomStore from "../store/useRoomStore";
 import { useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 
-function DeleteRoomModal({  isOpen, roomId, onClose }) {
+function DeleteRoomModal({ isOpen, roomId, onClose }) {
   const navigate = useNavigate();
   const deleteRoom = useRoomStore((state) => state.deleteRoom);
 
@@ -25,44 +25,55 @@ function DeleteRoomModal({  isOpen, roomId, onClose }) {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-999 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-999 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 transition-opacity"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
     >
       <div
-        className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200"
+        // แก้ไข z-index และเพิ่ม ring เพื่อเน้นย้ำความสำคัญ
+        className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 ring-1 ring-slate-900/5"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between p-6 border-b-2 border-secondary">
-          <h2 className="text-xl font-semibold text-slate-800">delete room</h2>
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-slate-50">
+          <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+            <Icon icon="mdi:alert-circle" className="text-red-500" width="24" />
+            Delete Room
+          </h2>
           <button
             onClick={(e) => {
               e.stopPropagation();
               onClose();
             }}
-            className="p-1 hover:bg-slate-100 rounded-full cursor-pointer transition-colors"
+            className="p-1.5 hover:bg-slate-200 rounded-full cursor-pointer transition-colors"
           >
-            <Icon icon="mdi:close" width="24" className="text-slate-500" />
+            <Icon icon="mdi:close" width="22" className="text-slate-500" />
           </button>
         </div>
 
-        <div className="p-10 text-center">
-          <div className="bg-yellow-100 p-4 rounded-xl text-slate-700">
-            Are you sure? We will delete all information about this room.
+        {/* Body */}
+        <div className="p-8 text-center flex flex-col gap-4">
+          <div className="bg-red-50 border border-red-100 p-4 rounded-xl text-red-600 font-medium text-sm leading-relaxed">
+            Are you absolutely sure? <br />
+            This action cannot be undone and all information inside this room
+            will be permanently deleted.
           </div>
         </div>
 
-        <div className="p-6 flex justify-center gap-4 bg-slate-50">
+        {/* Footer */}
+        <div className="p-5 flex justify-end gap-3 bg-slate-50 border-t border-gray-200">
           <button
             onClick={onClose}
-            className="w-32 py-2.5 bg-secondary text-white rounded-lg hover:scale-105 active:scale-95 transition-transform cursor-pointer"
+            className="px-6 py-2.5 font-semibold text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 active:scale-95 transition-all cursor-pointer shadow-sm"
           >
-            cancel
+            Cancel
           </button>
           <button
             onClick={handleDeleteRoom}
-            className="w-32 py-2.5 bg-red-500 text-white rounded-lg hover:scale-105 active:scale-95 transition-transform cursor-pointer"
+            className="px-6 py-2.5 font-bold text-white bg-red-500 rounded-lg hover:bg-red-600 active:scale-95 transition-all cursor-pointer shadow-sm"
           >
-            delete
+            Delete Room
           </button>
         </div>
       </div>

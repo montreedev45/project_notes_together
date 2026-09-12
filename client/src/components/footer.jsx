@@ -4,9 +4,9 @@ import { HashLink } from "react-router-hash-link";
 function Footer() {
   return (
     <>
-      <div className="text-black w-full flex flex-col items-center gap-5 justify-center  pt-20 pb-5 h-auto bg-third">
-        <div className="max-w-280 w-full flex flex-col justify-center items-center md:items-start  gap-15 md:gap-0 md:flex-row mb-15">
-          <div className="flex flex-col items-center  md:items-start min-w-100 grow md:ps-20">
+      <div className="text-black w-full flex flex-col items-center gap-5 justify-center px-10 pt-20 pb-5 h-auto bg-third">
+        <div className="max-w-280 w-full flex flex-col justify-center items-center md:items-start gap-10 md:gap-0 md:flex-row mb-15">
+          <div className="flex flex-col items-center text-center md:text-start gap-2 md:items-start w-full md:ps-15">
             <Link to="/">
               <img src="/logo.svg" alt="" className="w-60" />
             </Link>
@@ -46,7 +46,7 @@ function Footer() {
               />
             </div>
           </div>
-          <div className="text-secondary font-semibold flex flex-col text-center leading-7 min-w-25 w-full max-w-50">
+          <div className="text-secondary font-semibold flex flex-col text-center leading-7 min-w-25 w-full max-w-40">
             <span className="text-black ">Product</span>
             <HashLink
               to="/#feature"
@@ -70,7 +70,7 @@ function Footer() {
               API
             </span>
           </div>
-          <div className="text-secondary font-semibold flex flex-col text-center leading-7 min-w-25 w-full max-w-50">
+          <div className="text-secondary font-semibold flex flex-col text-center leading-7 min-w-25 w-full max-w-40">
             <span className="text-black">Resource</span>
             <span className="hover:text-primary transition-colors cursor-pointer">
               Docs
@@ -88,7 +88,7 @@ function Footer() {
               Terms
             </span>
           </div>
-          <div className="text-secondary font-semibold flex flex-col text-center leading-7 min-w-25 w-full max-w-50">
+          <div className="text-secondary font-semibold flex flex-col text-center leading-7 min-w-25 w-full max-w-40">
             <span className="text-black">Company</span>
             <span className="hover:text-primary transition-colors cursor-pointer">
               Contact
@@ -98,7 +98,7 @@ function Footer() {
             </span>
           </div>
         </div>
-        <span className="text-secondary font-semibold block">
+        <span className="text-secondary font-normal block mb-2">
           @2026 Notes Together. all rights reserved
         </span>
       </div>

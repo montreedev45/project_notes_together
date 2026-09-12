@@ -62,7 +62,7 @@ function ResetPasswordModal({ isOpen, onClose, token, email }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
       <div className="bg-third w-full max-w-md rounded-2xl overflow-hidden animate-in fade-in zoom-in duration-200 shadow-xl">
-        <div className="flex items-center justify-between p-6 border-b-2 border-secondary">
+        <div className="flex items-center justify-between p-6 border-b-2 border-gray">
           <h2 className="text-xl font-semibold text-slate-800">
             Reset Password
           </h2>

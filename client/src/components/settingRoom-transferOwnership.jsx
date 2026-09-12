@@ -69,80 +69,88 @@ function SettingRoomTransferOwnership() {
 
   return (
     <>
-      <div className=" border-s-2 border-gray px-15 pt-9 flex flex-col gap-8">
-        <div className="flex flex-col gap-3 relative mb-1">
-          <div className=" gap-3 relative ">
-            <span className="flex items-center justify-between text-2xl font-semibold mb-4">
-              Transfer Ownership
-              <div className="bg-white flex items-center rounded-xl relative">
-                <Icon
-                  icon="mdi:search"
-                  width="20"
-                  height="20"
-                  className="absolute left-2 text-secondary"
-                />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-53 py-1.5 rounded-lg ps-9 outline-0 font-normal text-gray-500 border-2 border-gray text-sm"
-                />
-              </div>
-            </span>
-            <div className=" max-h-120 overflow-auto no-scrollbar">
-              {filteredMembers.length === 0 ? (
-                <p className="text-gray-500 text-sm text-center py-4">
-                  ไม่พบสมาชิกที่คุณกำลังค้นหา
-                </p>
-              ) : (
-                filteredMembers.map((member) => {
-                  const isOwner = roomData?.owner?._id === member.user?._id;
-
-                  return (
-                    <div
-                      key={member?.user?._id}
-                      className="flex items-center justify-between py-2 px-5"
-                    >
-                      <div className=" flex items-center gap-3">
-                        <div
-                          style={{ borderColor: member?.user?.avatar }}
-                          className="flex-none bg-white border-2 w-10 h-10 rounded-full flex items-center justify-center"
-                        >
-                          <Icon
-                            icon="mdi:account"
-                            style={{ color: member?.user?.avatar }}
-                            width="30"
-                          />
-                        </div>
-                        <div className="flex flex-col ">
-                          <span className="font-bold text-sm truncate text-slate-800">
-                            {member?.user?.username}
-                          </span>
-                          <span className="font-normal text-xs text-secondary truncate">
-                            {member?.user?.email}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="min-w-50 flex">
-                        <button
-                          onClick={() => handleTransfer(member?.user?._id, member?.user?.username)}
-                          disabled={isOwner}
-                          className={
-                            `${isOwner ? "bg-gray-300 cursor-not-allowed" : "bg-red-400 hover:bg-red-500 cursor-pointer"}   flex text-white items-center gap-2 px-5 text-sm py-1 font-semibold rounded-md transition-all flex-1 justify-center`
-                          }
-                        >
-                          <Icon icon={isOwner ? "mdi:star" :"mdi:transfer"} width={20} />
-                          {isOwner ? "owner" : "transfer ownership"}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
+      <div className="flex flex-col gap-6 w-full max-w-3xl pt-2 pb-8 mx-auto">
+      
+      {/* --- Header & Search (แยกออกจากกันอย่างถูกต้อง) --- */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-3">
+        <h2 className="text-xl font-bold text-slate-800">Transfer Ownership</h2>
+        
+        <div className="bg-white flex items-center rounded-lg relative w-full sm:w-64 border border-gray-300 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+          <Icon icon="mdi:search" width="20" className="absolute left-3 text-slate-400" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search member..."
+            className="w-full py-2 pl-10 pr-4 outline-none text-sm text-slate-700 bg-transparent"
+          />
         </div>
       </div>
+
+      {/* --- Member List --- */}
+      {/* เปลี่ยน max-h-120 เป็น max-h-[500px] */}
+      <div className="max-h-125 overflow-y-auto no-scrollbar bg-gray-50 border border-gray-200 rounded-xl p-2 shadow-inner">
+        {filteredMembers.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-8 text-slate-400">
+            <Icon icon="mdi:account-search-outline" width="48" className="mb-2 opacity-50" />
+            <span className="font-medium text-sm">No members found matching your search.</span>
+          </div>
+        ) : (
+          filteredMembers.map((member) => {
+            const isOwner = roomData?.owner?._id === member.user?._id;
+
+            return (
+              <div
+                key={member?.user?._id}
+                className="flex flex-wrap sm:flex-nowrap items-center justify-between py-3 px-4 bg-white rounded-lg mb-2 last:mb-0 shadow-sm border border-gray-100 gap-4"
+              >
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div
+                    style={{ borderColor: member?.user?.avatar || "#e2e8f0" }}
+                    className="flex-none bg-white border-2 w-10 h-10 rounded-full flex items-center justify-center shadow-sm"
+                  >
+                    <Icon
+                      icon="mdi:account"
+                      style={{ color: member?.user?.avatar }}
+                      width="24"
+                    />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-bold text-sm text-slate-800 truncate">
+                      {member?.user?.username}
+                    </span>
+                    <span className="font-medium text-xs text-slate-500 truncate">
+                      {member?.user?.email}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* --- Actions --- */}
+                <div className="w-full sm:w-auto flex shrink-0">
+                  {isOwner ? (
+                    // UX Fix: เปลี่ยนจากปุ่มกดไม่ได้ เป็นป้ายบอกสถานะ
+                    <span className="flex items-center justify-center gap-1.5 w-full sm:w-auto px-5 py-2 text-sm font-bold text-slate-500 bg-slate-100 border border-slate-200 rounded-lg">
+                      <Icon icon="mdi:star" width="18" className="text-yellow-500" />
+                      Current Owner
+                    </span>
+                  ) : (
+                    // ปุ่ม Transfer ที่ดูอันตรายและโดดเด่น
+                    <button
+                      onClick={() => handleTransfer(member?.user?._id, member?.user?.username)}
+                      className="flex items-center justify-center gap-2 w-full sm:w-auto px-5 py-2 text-sm font-bold text-white bg-red-500 hover:bg-red-600 active:scale-95 rounded-lg transition-all shadow-sm"
+                    >
+                      <Icon icon="mdi:transfer-right" width="20" />
+                      Transfer
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+      
+    </div>
     </>
   );
 }

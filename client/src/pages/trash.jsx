@@ -1,7 +1,6 @@
 import { Icon } from "@iconify/react";
 import { useState, useMemo, useEffect } from "react";
 import RoomCard from "../components/roomCard";
-import { data } from "react-router-dom";
 import useRoomStore from "../store/useRoomStore";
 import useAuthStore from "../store/useAuthStore";
 
@@ -54,23 +53,39 @@ function Trash() {
 
   return (
     <>
-      <div className="p-12 pt-8 pb-0">
-        <span className="font-bold text-3xl ">Trash</span>
-        <div className="mt-5 flex items-center justify-between">
-          <div className="bg-white flex items-center gap-5 rounded-xl relative">
-            <Icon
-              icon="mdi:search"
-              width="25"
-              height="25"
-              className="absolute left-2 text-secondary cursor-pointer"
-            />
-            <input
-              type="text"
-              placeholder="Search room name"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="py-2 ps-9 rounded-lg outline-0 font-medium text-secondary border-2 border-secodary w-80"
-            />
+      <div className="p-4 md:p-8 lg:p-12 pb-0 flex flex-col h-full">
+        <span className="font-bold text-2xl lg:text-3xl block text-slate-800">
+          Trash
+        </span>
+
+        <div className="mt-5 flex flex-wrap items-center gap-4">
+          {sortedRooms.length !== 0 && (
+            <div className="flex justify-end items-center px-6 py-2.5 text-xl font-medium rounded-lg bg-red-500 text-white transition-colors">
+              <button
+                onClick={handleDeleteAllRoom}
+                className="flex items-center cursor-pointer "
+              >
+                <Icon icon="mdi:trash" className="" width="18" />
+                <span className="text-sm">Delete All</span>
+              </button>
+            </div>
+          )}
+          <div className="flex items-center gap-3 w-full lg:w-auto">
+            <div className="bg-white flex items-center rounded-xl relative grow">
+              <Icon
+                icon="mdi:search"
+                width="24"
+                className="absolute left-3 text-secondary cursor-pointer"
+              />
+              <input
+                type="text"
+                placeholder="Search room name"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="py-2.5 ps-10 pr-4 rounded-lg outline-none font-medium text-secondary border-2 border-gray-300 focus:border-primary w-full lg:max-w-120 transition-colors"
+              />
+            </div>
+
             <button
               onClick={() => setIsSorting(!isSorting)}
               title={isSorting ? "Sort by Newest" : "Sort by Oldest"}
@@ -78,25 +93,13 @@ function Trash() {
               <Icon
                 icon={isSorting ? "mdi:sort-descending" : "mdi:sort-ascending"}
                 width="30"
-                className="text-secondary hover:scale-105 transition-transform cursor-pointer"
+                className="text-secondary hover:scale-110 transition-transform cursor-pointer"
               />
             </button>
           </div>
-
-          {sortedRooms.length !== 0 && (
-            <div className="flex justify-end items-center px-6 py-2 text-xl font-medium rounded-lg bg-red-500 text-white transition-colors">
-              <button
-                onClick={handleDeleteAllRoom}
-                className="flex items-center cursor-pointer "
-              >
-                <Icon icon="mdi:trash" className="" width="18" />
-                <span className="text-sm">delete all</span>
-              </button>
-            </div>
-          )}
         </div>
 
-        <div className="bg-gray-200 mt-5 h-140 overflow-auto no-scrollbar rounded-2xl p-6 grid grid-cols-5 grid-rows-auto gap-9 place-items-start">
+        <div className="bg-third mt-6 flex-1 overflow-y-auto no-scrollbar rounded-2xl p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 content-start justify-items-center">
           {sortedRooms.map((room) => (
             <RoomCard key={room._id} data={room} />
           ))}

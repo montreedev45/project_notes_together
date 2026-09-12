@@ -102,88 +102,135 @@ function SettingRoomShare() {
 
   return (
     <>
-      <div className=" border-s-2 border-gray px-15 pt-9 flex flex-col gap-8">
-        <div className="flex flex-col gap-3 relative mb-1">
-          <div className=" gap-3 relative ">
-            <span className="flex items-center justify-between text-2xl font-semibold mb-4">
-              Invited Colleague
-              <div className="bg-white flex items-center rounded-xl relative">
-                <Icon
-                  icon="mdi:search"
-                  width="20"
-                  height="20"
-                  className="absolute left-2 text-secondary"
-                />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-53 py-1.5 rounded-lg ps-9 outline-0 font-normal text-gray-500 border-2 border-gray text-sm"
-                />
+      <div className="flex flex-col gap-8 w-full max-w-3xl pt-2 pb-8 mx-auto">
+        {/* =========================================
+          SECTION 1: Invite Colleagues
+      ========================================= */}
+        <div className="flex flex-col gap-4">
+          {/* แก้ไข HTML Nesting: แยก Header และ Search ออกจากกัน */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-3">
+            <h2 className="text-xl font-bold text-slate-800">
+              Invite Colleagues
+            </h2>
+
+            <div className="bg-white flex items-center rounded-lg relative w-full sm:w-64 border border-gray-300 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+              <Icon
+                icon="mdi:search"
+                width="20"
+                className="absolute left-3 text-slate-400"
+              />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search by name or email..."
+                className="w-full py-2 pl-10 pr-4 outline-none text-sm text-slate-700 bg-transparent"
+              />
+            </div>
+          </div>
+
+          {/* User List */}
+          <div className="max-h-75 overflow-y-auto no-scrollbar bg-gray-50 border border-gray-200 rounded-xl p-2 shadow-inner">
+            {users.length === 0 ? (
+              <div className="text-center py-8 text-slate-400 text-sm font-medium">
+                No users found matching your search.
               </div>
-            </span>
-            <div className=" max-h-42 overflow-auto no-scrollbar">
-              {users.map((user) => {
+            ) : (
+              users.map((user) => {
                 const isMember = roomData?.members?.some(
                   (member) => member?.user?._id === user?._id,
                 );
-
-                const isInvited = roomData?.invitedUsers?.some((m) => {
-                  // กรณีที่ 1: m เป็น Object ให้เช็ก m?._id
-                  // กรณีที่ 2: m เป็น String ID โล่งๆ ให้เอา m มาเทียบตรงๆ ได้เลย
-                  return (m?._id || m) === user?._id;
-                });
+                const isInvited = roomData?.invitedUsers?.some(
+                  (m) => (m?._id || m) === user?._id,
+                );
 
                 return (
                   <div
                     key={user?._id}
-                    className="flex items-center justify-between py-2 px-5"
+                    className="flex items-center justify-between py-3 px-4 bg-white rounded-lg mb-2 last:mb-0 shadow-sm border border-gray-100"
                   >
-                    <div className=" flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
                       <div
-                        style={{ borderColor: user?.avatar }}
-                        className="flex-none bg-white border-2 w-10 h-10 rounded-full flex items-center justify-center"
+                        style={{ borderColor: user?.avatar || "#e2e8f0" }}
+                        className="flex-none bg-white border-2 w-10 h-10 rounded-full flex items-center justify-center shadow-sm"
                       >
                         <Icon
                           icon="mdi:account"
                           style={{ color: user?.avatar }}
-                          width="30"
+                          width="24"
                         />
                       </div>
-                      <div className="flex flex-col ">
-                        <span className="font-bold text-sm truncate text-slate-800">
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-bold text-sm text-slate-800 truncate">
                           {user?.username}
                         </span>
-                        <span className="font-normal text-xs text-secondary truncate">
+                        <span className="font-medium text-xs text-slate-500 truncate">
                           {user?.email}
                         </span>
                       </div>
                     </div>
-                    <div>
-                      <button
-                        onClick={() => handleInvite(user?._id)}
-                        disabled={isInvited}
-                        className={`${isInvited ? "bg-gray-300 cursor-not-allowed" : "bg-blue-400 cursor-pointer hover:bg-blue-500"} flex text-white items-center gap-2 px-5 text-sm py-1 font-semibold rounded-md `}
-                      >
-                        <Icon icon="mdi:invite" width={20} />
-                        Invite
-                      </button>
+
+                    {/* UI Logic: แสดงสถานะที่ชัดเจน (Member > Invited > Invite) */}
+                    <div className="shrink-0 ml-3">
+                      {isMember ? (
+                        <span className="text-xs font-semibold text-green-600 bg-green-50 px-3 py-1.5 rounded-full border border-green-100">
+                          Joined
+                        </span>
+                      ) : isInvited ? (
+                        <span className="text-xs font-semibold text-yellow-600 bg-yellow-50 px-3 py-1.5 rounded-full border border-yellow-100">
+                          Pending
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleInvite(user?._id)}
+                          className="flex items-center gap-1.5 text-xs font-semibold text-white bg-blue-500 hover:bg-blue-600 px-4 py-1.5 rounded-full transition-colors active:scale-95"
+                        >
+                          <Icon icon="mdi:invite" width="16" />
+                          Invite
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
-              })}
-            </div>
+              })
+            )}
           </div>
         </div>
-        <div className="flex flex-col gap-3 relative mb-1">
-          <div className="flex items-center gap-5 mb-2">
-            <span className="text-2xl font-semibold">Share Link</span>
-            <div className="px-4 border-2 border-gray rounded-lg">
+
+        {/* =========================================
+          SECTION 2: Share Link
+      ========================================= */}
+        <div className="flex flex-col gap-4 bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <h2 className="text-xl font-bold text-slate-800">
+              Share Link
+              {selectedAccess === "invited" && <span className="text-red-400 text-xs font-medium">
+                &nbsp; ( user must be invited before they can use this link. )
+              </span>}
+            </h2>
+
+            {/* Settings Dropdowns */}
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={roomData?.shareLink?.access || "anyone"}
+                onChange={(e) => handleAccessChange(e.target.value)}
+                disabled={!isAllowLinkSharing}
+                className="bg-gray-50 border border-gray-200 text-slate-700 text-sm font-medium rounded-lg px-3 py-1.5 outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:border-gray-300 transition-colors"
+              >
+                {access.map((ac) => (
+                  <option key={ac} value={ac}>
+                    {ac === "anyone"
+                      ? "Anyone with link"
+                      : "Only invited people"}
+                  </option>
+                ))}
+              </select>
+
               <select
                 value={roomData?.shareLink?.role}
                 onChange={(e) => handleRoleChange(e.target.value)}
-                className={`${isAllowLinkSharing ? "cursor-pointer" : "cursor-not-allowed"} px-2 py-1 outline-0 text-sm font-medium text-secondary`}
                 disabled={!isAllowLinkSharing}
+                className="bg-gray-50 border border-gray-200 text-slate-700 text-sm font-medium rounded-lg px-3 py-1.5 outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:border-gray-300 transition-colors"
               >
                 {roles.map((role) => (
                   <option key={role} value={role}>
@@ -192,82 +239,87 @@ function SettingRoomShare() {
                 ))}
               </select>
             </div>
-            <div className="px-4 border-2 border-gray rounded-lg">
-              <select
-                value={roomData?.shareLink?.access || "anyone"}
-                onChange={(e) => handleAccessChange(e.target.value)}
-                name="people-with-access"
-                id=""
-                className={`${isAllowLinkSharing ? "cursor-pointer" : "cursor-not-allowed"} ps-1 pe-3 py-1 outline-0 rounded-lg text-sm font-medium text-secondary`}
-                disabled={!isAllowLinkSharing}
-              >
-                {access.map((ac) => (
-                  <option key={ac} value={ac}>
-                    {ac === "anyone"
-                      ? "anyone with link"
-                      : "only invited people"}
-                  </option>
-                ))}
-              </select>
-            </div>
           </div>
-          <div className="flex gap-5 items-center">
+
+          {/* Link Input & Action */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <input
               type="text"
               readOnly
-              onCopy={(e) => isAllowLinkSharing === false && e.preventDefault()}
-              onCut={(e) => isAllowLinkSharing === false && e.preventDefault()}
-              onPaste={(e) =>
-                isAllowLinkSharing === false && e.preventDefault()
-              }
               value={link || ""}
-              className={`${isAllowLinkSharing ? "cursor-pointer" : "cursor-not-allowed"} flex-1 py-2 outline-none px-4 text-md rounded-lg border-2 border-gray text-black`}
+              className={`flex-1 py-2.5 px-4 outline-none text-sm rounded-lg border-2 transition-colors ${
+                isAllowLinkSharing
+                  ? "border-gray-200 bg-white text-slate-700"
+                  : "border-gray-100 bg-gray-100 text-gray-400 select-none"
+              }`}
             />
-
             <button
               disabled={!isAllowLinkSharing}
               onClick={handleCopy}
-              className={`${isAllowLinkSharing ? "bg-blue-500 hover:bg-blue-600 cursor-pointer" : "bg-gray-400 cursor-not-allowed"} text-white px-6 py-2 rounded-lg font-semibold transition-colors`}
+              className={`shrink-0 px-6 py-2.5 rounded-lg font-bold transition-all active:scale-95 ${
+                isAllowLinkSharing
+                  ? "bg-primary text-white hover:bg-blue-600 shadow-sm"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+              }`}
             >
-              {isCopied ? "Copied" : "Copy"}
+              {isCopied ? "Copied!" : "Copy Link"}
             </button>
           </div>
+
           {!isAllowLinkSharing && (
-            <span className="text-red-600">
-              The room owner has disabled sharing via link.
+            <span className="text-sm font-medium text-red-500 bg-red-50 px-3 py-1.5 rounded-md inline-block w-fit">
+              Sharing via link is currently disabled.
             </span>
           )}
         </div>
-        <div className="flex flex-col gap-3 relative mb-3">
-          <div className="flex items-center gap-5 mb-2">
-            <span className="text-2xl font-semibold">Room code</span>
-          </div>
-          <div className="flex gap-5 items-center">
+
+        {/* =========================================
+          SECTION 3: Room Code
+      ========================================= */}
+        <div className="flex flex-col gap-4 bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+          <h2 className="text-xl font-bold text-slate-800">Room Code</h2>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <input
               type="text"
               readOnly
               value={roomData?.code || ""}
-              className=" py-2 outline-none px-4 text-md rounded-lg border-2 border-gray text-black"
+              className={`flex-1 sm:max-w-50 text-center font-mono font-bold tracking-widest py-2.5 px-4 outline-none text-lg rounded-lg border-2 transition-colors ${
+                isAllowCodeSharing
+                  ? "border-gray-200 bg-slate-50 text-slate-800"
+                  : "border-gray-100 bg-gray-100 text-gray-400 select-none"
+              }`}
             />
 
-            <button
-              disabled={!isAllowCodeSharing}
-              onClick={handleCopyCode}
-              className={`${isAllowCodeSharing ? "bg-blue-500 hover:bg-blue-600 cursor-pointer" : "bg-gray-400 cursor-not-allowed"} text-white px-6 py-2 rounded-lg font-semibold transition-colors`}
-            >
-              {isCopiedCode ? "Copied" : "Copy"}
-            </button>
-            <button
-              disabled={!isAllowCodeSharing}
-              onClick={handleUpdateCodeRoom}
-              className={`${isAllowCodeSharing ? "bg-yellow-400 hover:bg-yellow-500 cursor-pointer" : "bg-gray-400 cursor-not-allowed"} text-white px-6 py-2 rounded-lg font-semibold transition-colors`}
-            >
-              {isChangeCode ? "Changing" : "Change"}
-            </button>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <button
+                disabled={!isAllowCodeSharing}
+                onClick={handleCopyCode}
+                className={`flex-1 sm:flex-none px-6 py-2.5 rounded-lg font-bold transition-all active:scale-95 ${
+                  isAllowCodeSharing
+                    ? "bg-primary text-white hover:bg-blue-600 shadow-sm"
+                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                }`}
+              >
+                {isCopiedCode ? "Copied!" : "Copy Code"}
+              </button>
+              <button
+                disabled={!isAllowCodeSharing}
+                onClick={handleUpdateCodeRoom}
+                className={`flex-1 sm:flex-none px-6 py-2.5 rounded-lg font-bold transition-all active:scale-95 ${
+                  isAllowCodeSharing
+                    ? "bg-amber-500 text-white hover:bg-amber-600 shadow-sm"
+                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                }`}
+              >
+                {isChangeCode ? "Changing..." : "Reset"}
+              </button>
+            </div>
           </div>
+
           {!isAllowCodeSharing && (
-            <span className="text-red-600">
-              The room owner has disabled sharing via code.
+            <span className="text-sm font-medium text-red-500 bg-red-50 px-3 py-1.5 rounded-md inline-block w-fit">
+              Sharing via code is currently disabled.
             </span>
           )}
         </div>

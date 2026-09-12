@@ -1,4 +1,8 @@
 import express from "express";
+import dotenv from "dotenv";
+
+dotenv.config();
+
 import fs from "fs";
 import path from "path";
 import multer from "multer";
@@ -10,6 +14,7 @@ import { handleUploadResponse } from "./note.controller.js";
 import { validate } from "../../middleware/validateZod.js";
 import { uploadNoteImageSchema } from "./upload.schema.js";
 import { apiLimiter } from "../../middleware/rateLimiter.js";
+import cloudinary from "../../config/cloudinary.js";
 
 const router = express.Router();
 
@@ -47,7 +52,6 @@ router.get(
       const { roomId, filename } = req.params;
 
       // 1. ใช้ userId จาก authMiddleware ได้เลย ไม่ต้องถอดรหัส JWT ซ้ำ
-      // (หมายเหตุ: เช็กด้วยว่า authMiddleware ของคุณแนบค่าเป็น req.user หรือ req.userId)
       const userId = req.user.id; 
 
       // 2. ตรวจสอบสิทธิ์การเข้าห้อง
@@ -60,25 +64,14 @@ router.get(
         return res.status(403).send("Forbidden: คุณไม่มีสิทธิ์ดูรูปภาพในห้องนี้");
       }
 
-      // 3. กำหนด Path และป้องกัน Path Traversal
-      const filePath = path.join(process.cwd(), "public/uploads", roomId, filename);
-
-      if (!filePath.startsWith(path.join(process.cwd(), "public/uploads"))) {
-        return res.status(400).send("Invalid file path");
-      }
-      res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
-
-      // 4. ส่งไฟล์แบบ Asynchronous (ไม่บล็อก Event Loop)
-      res.sendFile(filePath, (err) => {
-        if (err) {
-          // หากเกิด Error เช่น หาไฟล์ไม่เจอ (ENOENT) Express จะจัดการให้
-          if (err.code === "ENOENT") {
-            res.status(404).send("File not found");
-          } else if (!res.headersSent) {
-            res.status(500).send("Error sending file");
-          }
-        }
+      const cloudinaryUrl = cloudinary.url(`notes_together/${roomId}/${filename}`, {
+        type: "authenticated",
+        secure: true,
+        sign_url: true,
       });
+
+      // 3. Redirect ไปยังรูปภาพจริง
+      return res.redirect(302, cloudinaryUrl);
 
     } catch (error) {
       console.error("❌ Image Fetch Error:", error);

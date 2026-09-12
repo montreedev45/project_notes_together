@@ -17,6 +17,7 @@
     "@hocuspocus/server": "^3.4.4",
     "@hocuspocus/transformer": "^4.3.0",
     "bcrypt": "^6.0.0",
+    "cloudinary": "^2.11.0",
     "cookie": "^2.0.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",

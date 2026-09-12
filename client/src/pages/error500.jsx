@@ -9,28 +9,38 @@ function Error500() {
     window.location.href = from;
   };
   return (
-    <div className="w-full h-dvh flex justify-center bg-third">
-      <div className="max-w-300 w-full flex justify-center items-center px-20 mt-16 mb-20">
-        <div className="p-10">
-          <img src={image_hero} alt="" className="w-130" />
+    <div className="w-full min-h-dvh flex justify-center items-center bg-third p-4 sm:p-8">
+      <div className="w-full max-w-6xl flex flex-col md:flex-row justify-center items-center gap-8 md:gap-16">
+        <div className="flex justify-center p-4 md:p-10 w-full md:w-1/2">
+          <img
+            src={image_hero}
+            alt="500 Internal Server Error"
+            className="w-full max-w-75 md:max-w-125 object-contain"
+          />
         </div>
-        <div className="flex flex-col p-10 my-10 items-center text-center">
-          <span className="font-bold text-9xl mb-10">500</span>
-          <span className="font-bold text-5xl  max-w-80 mb-10">
-            Something went wrong on our side
+
+        <div className="flex flex-col items-center md:items-start text-center md:text-left w-full md:w-1/2">
+          <span className="font-bold text-7xl md:text-9xl text-slate-800 mb-4 md:mb-6">
+            500
           </span>
-          <Link
-            onClick={handleReload}
-            className="mb-5 button-primary bg-secondary text-white font-semibold px-10 py-3 rounded-lg text-2xl hover:scale-105 transition-transform"
-          >
-            Retry
-          </Link>
-          <Link
-            to="/"
-            className="button-primary bg-primary text-white font-semibold px-6 py-2 rounded-lg text-xl hover:scale-105 transition-transform"
-          >
-            Go Home
-          </Link>
+          <h1 className="font-bold text-3xl md:text-5xl text-slate-700 max-w-md mb-8 md:mb-10 leading-tight">
+            Something went wrong on our side.
+          </h1>
+
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+            <button
+              onClick={handleReload}
+              className="w-full sm:w-auto bg-secondary text-white font-semibold px-8 py-3.5 rounded-xl text-xl hover:bg-opacity-90 active:scale-95 transition-all shadow-md cursor-pointer"
+            >
+              Retry
+            </button>
+            <Link
+              to="/"
+              className="w-full sm:w-auto bg-primary text-white font-semibold px-8 py-3.5 rounded-xl text-xl hover:bg-opacity-90 active:scale-95 transition-all shadow-md text-center"
+            >
+              Go Home
+            </Link>
+          </div>
         </div>
       </div>
     </div>

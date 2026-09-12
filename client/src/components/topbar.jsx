@@ -5,7 +5,7 @@ import useAuthStore from "../store/useAuthStore";
 import NotificationModal from "./notificationModal";
 import useNotificationStore from "../store/useNotificationStore";
 
-function Topbar() {
+function Topbar({ isOpen, onToggleSidebar }) {
   const user = useAuthStore((state) => state.user);
   const [isOpenNotificationModal, setIsOpenNotificationModal] = useState(false);
 
@@ -25,25 +25,31 @@ function Topbar() {
   const unreadCount = getUnreadCount();
 
   useEffect(() => {
-    getNotifications()
-  }, [])
+    getNotifications();
+  }, []);
 
   return (
     <>
-      <div className="bg-third flex items-center px-15 h-20 border-b-2 border-gray-200">
-        <Link to="/" className="flex items-center">
+      <div className="bg-third flex items-center px-4 md:px-8 h-20 border-b-2 border-gray-200">
+        <button
+          onClick={onToggleSidebar}
+          className="min-[1024px]:hidden mr-4 p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+        >
+          <Icon icon="mdi:menu" width="28" className="cursor-pointer"/>
+        </button>
+        <Link to="/" className="items-center flex">
           <img
             src="/logo.svg"
-            alt=""
-            className="min-w-60 max-w-60 cursor-pointer"
+            alt="Logo"
+            className="w-full min-w-40 max-w-60 hidden md:flex cursor-pointer"
           />
         </Link>
         <span
-          className={`${planColors[user.plan]} border rounded-md  flex justify-center items-center min-w-fit h-fit py-0.5 px-4 text-sm mt-1 ms-2 font-semibold`}
+          className={`${planColors[user.plan]} border rounded-md flex justify-center items-center min-w-fit h-fit py-0.5 px-3 text-xs md:text-sm mt-1 ms-2 font-semibold`}
         >
-          {user.plan} plan
+          {user.plan}
         </span>
-        <div className="relative flex justify-end items-center w-full">
+        <div className="relative flex justify-end items-center w-full gap-2 md:gap-4">
           <div className="me-5 cursor-pointer hover:scale-105 transition-transform">
             <Link
               to={`/notes-together/${user?._id}/setting-account`}
@@ -73,7 +79,7 @@ function Topbar() {
                 if (unreadCount > 0) markAllAsRead();
               }}
               icon="mdi:bell"
-              className="cursor-pointer hover:scale-105 transition-transform text-secondary"
+              className="cursor-pointer hover:scale-105 transition-transform text-gray-400"
               width="30"
             />
             {unreadCount > 0 && (

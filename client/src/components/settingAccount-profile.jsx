@@ -42,84 +42,96 @@ function SettingAccountProfile() {
 
   return (
     <>
-      <div className=" px-15 pt-9 flex flex-col gap-4 min-w-200 max-w-200">
-        <div className="flex flex-col gap-3 relative">
-          <div className="flex items-end">
-            <span className="text-2xl font-semibold flex items-center gap-3">Username
-            {user?.googleId === "google" && (
-              <span className="text-xs text-red-500 mt-1">
-                ( Email is managed by Google Sign-In and cannot be modified )
-              </span>
-            )}
-          </span>
-          <span className="ps-4 text-red-600 text-sm">
-            ( can only contain letters, numbers, and underscores )
-          </span>
+      <div className="flex flex-col gap-8 w-full max-w-2xl pt-2 pb-8">
+        <div className="flex flex-col gap-2 relative">
+          <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3">
+            <span className="text-xl md:text-2xl font-semibold flex items-center gap-3">
+              Username 
+            </span>
+            <span className="text-red-500 text-xs md:text-sm">
+              (Letters, numbers, and underscores only)
+            </span>
           </div>
-          
-          <input
-            type="text"
-            disabled={user?.googleId === "google"} 
-            value={formData.username}
-            name="username"
-            onChange={handleChange}
-            className="w-full py-2.5 outline-0 px-4 text-xl text-secondary  rounded-lg border-2 border-gray"
-          />
-          <Icon
-            icon="mdi:pencil"
-            width="30"
-            className="text-secondary absolute right-3 top-14"
-          />
+
+          {user?.googleId === "google" && (
+            <span className="text-xs text-red-500 font-medium bg-red-50 p-2 rounded">
+              Email is managed by Google Sign-In and cannot be modified.
+            </span>
+          )}
+
+          <div className="relative">
+            <input
+              type="text"
+              disabled={user?.googleId === "google"}
+              value={formData.username}
+              name="username"
+              onChange={handleChange}
+              className="w-full py-3 outline-none px-4 text-lg text-slate-700 rounded-lg border-2 border-gray-200 focus:border-primary disabled:bg-gray-100 disabled:text-gray-400 transition-colors pr-12"
+            />
+            <Icon
+              icon="mdi:pencil"
+              width="24"
+              className="text-gray-400 absolute right-4 top-1/2 -translate-y-1/2"
+            />
+          </div>
         </div>
-        <div className="flex flex-col gap-3 relative">
-          <span className="text-2xl font-semibold flex items-center gap-3">Email
-            {user?.googleId === "google" && (
-              <span className="text-xs text-red-500 mt-1">
-                ( Email is managed by Google Sign-In and cannot be modified )
-              </span>
-            )}
+
+        <div className="flex flex-col gap-2 relative">
+          <span className="text-xl md:text-2xl font-semibold flex items-center gap-3">
+            Email
           </span>
-          
-          <div className="flex gap-5 items-center ">
+          {user?.googleId === "google" && (
+            <span className="text-xs text-red-500 font-medium bg-red-50 p-2 rounded">
+              Email is managed by Google Sign-In and cannot be modified.
+            </span>
+          )}
+
+          <div className="flex flex-col sm:flex-row gap-3 items-stretch md:items-center md:justify-center">
             <input
               type="email"
               readOnly
               value={formData.email}
-              className="flex-1 py-2 outline-none px-4 text-lg rounded-lg border-2 border-gray text-secondary"
+              className="flex-1 py-3 outline-none px-4 text-lg rounded-lg border-2 border-gray-200 text-slate-500 bg-gray-50"
             />
-
             <button
               onClick={() => setIsOpenChangeEmailModal(true)}
-              disabled={user?.googleId === "google"} 
-              className={`${user?.googleId === "google" ? "bg-gray-300 cursor-not-allowed" : "bg-gray-400 hover:bg-gray-500 cursor-pointer"} text-white px-6 py-2.5 rounded-lg font-semibold transition-colors`}
-              >
+              disabled={user?.googleId === "google"}
+              className={`shrink-0 px-8 py-3 rounded-lg mt-5 md:mt-0 font-semibold transition-colors ${
+                user?.googleId === "google"
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  : "bg-gray-200 hover:bg-gray-300 text-gray-500 cursor-pointer active:scale-95"
+              }`}
+            >
               Change
             </button>
             <ChangeEmailModal
               key={isOpenChangeEmailModal}
               isOpen={isOpenChangeEmailModal}
               onClose={() => setIsOpenChangeEmailModal(false)}
-              />
-          </div>
-        </div>
-        <div className="flex flex-col gap-3 relative">
-          <div className="flex flex-col gap-5 items-start ">
-            <button
-              onClick={() => setIsOpenChangePasswordModal(true)}
-              className="bg-red hover:bg-red-400 cursor-pointer text-white px-6 py-2.5 rounded-lg font-semibold transition-colors"
-            >
-              Change Password
-            </button>
-            <span className="text-red-500 w-full text-xs p-3 bg-yellow-100">This password change is only for logging in via email on this website. It will not affect your Google account password.</span>
-            <ChangePasswordModal
-              key={isOpenChangePasswordModal}
-              isOpen={isOpenChangePasswordModal}
-              onClose={() => setIsOpenChangePasswordModal(false)}
             />
           </div>
         </div>
-        <div className="flex items-start gap-3 flex-1">
-          <span className="text-xl font-semibold">Avatar Color :</span>
+
+        <div className="flex flex-col gap-3 items-start">
+          <button
+            onClick={() => setIsOpenChangePasswordModal(true)}
+            className="bg-red-500 hover:bg-red-600 active:scale-95 cursor-pointer text-white px-6 py-3 rounded-lg font-semibold transition-all w-full sm:w-auto"
+          >
+            Change Password
+          </button>
+          <span className="text-red-600 w-full text-xs md:text-sm p-3 bg-red-50 rounded-lg border border-red-100 leading-relaxed">
+            This password change is only for logging in via email on this
+            website. It will not affect your Google account password.
+          </span>
+          <ChangePasswordModal
+            key={isOpenChangePasswordModal}
+            isOpen={isOpenChangePasswordModal}
+            onClose={() => setIsOpenChangePasswordModal(false)}
+          />
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <span className="text-lg font-semibold shrink-0">Avatar Color:</span>
           <ColorPicker
             selectedColor={selectedColor}
             setSelectedColor={handleColorChange}
@@ -127,10 +139,11 @@ function SettingAccountProfile() {
         </div>
         <button
           onClick={handleSubmit}
-          className="w-full text-center text-lg cursor-pointer button-primary bg-primary rounded-lg hover:bg-blue-500 transition-all mb-8"
+          className="w-full mt-4 py-3 text-lg cursor-pointer button-primary rounded-lg font-bold hover:scale-[1.02] active:scale-95 transition-transform"
         >
           Save Changes
         </button>
+
         <SaveModal
           isOpen={isOpenSaveModal}
           onClose={() => setIsOpenSaveModal(false)}

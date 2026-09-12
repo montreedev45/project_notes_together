@@ -11,7 +11,7 @@ function Layout() {
   const showFooter = !(isAuthPage || isResetPasswordPath);
 
   return (
-    <div className="layout-container">
+    <div className="layout-container w-full h-screen overflow-y-auto no-scrollbar">
       <Navbar />
       <main className="w-full flex justify-center">
         <Outlet />

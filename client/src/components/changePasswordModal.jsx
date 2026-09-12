@@ -12,7 +12,7 @@ function ChangePasswordModal({ isOpen, onClose }) {
     confirmPassword: "",
   });
 
-  const changePassword = useAuthStore((state) => state.changePassword)
+  const changePassword = useAuthStore((state) => state.changePassword);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -29,94 +29,123 @@ function ChangePasswordModal({ isOpen, onClose }) {
   };
 
   const handleSubmit = (e) => {
-    e.stopPropagation()
-  
-    if(formData.newPassword !== formData.confirmPassword) {
-      return alert("Please fill again, new password and confirm password not match")
+    e.stopPropagation();
+
+    if (formData.newPassword !== formData.confirmPassword) {
+      return alert(
+        "Please fill again, new password and confirm password not match",
+      );
     }
 
-    if(!formData.currentPassword || !formData.newPassword || !formData.confirmPassword){
-      return alert("Please fill in all field completely")
+    if (
+      !formData.currentPassword ||
+      !formData.newPassword ||
+      !formData.confirmPassword
+    ) {
+      return alert("Please fill in all field completely");
     }
 
-    changePassword(formData)
-  }
+    changePassword(formData);
+  };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
-      <div className="bg-third w-full max-w-md rounded-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="flex items-center justify-between p-6 border-b-2 border-secondary">
-          <h2 className="text-xl font-semibold text-slate-800">
-            change password
-          </h2>
+    <div
+      className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white w-full max-w-md rounded-2xl overflow-hidden animate-in fade-in zoom-in duration-200 shadow-2xl ring-1 ring-slate-900/5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-slate-50">
+          <h2 className="text-xl font-bold text-slate-800">Change Password</h2>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-slate-100 rounded-full cursor-pointer transition-colors"
+            className="p-1.5 hover:bg-slate-200 rounded-full cursor-pointer transition-colors"
           >
-            <Icon icon="mdi:close" width="24" className="text-slate-500" />
+            <Icon icon="mdi:close" width="22" className="text-slate-500" />
           </button>
         </div>
 
         {/* Form Body */}
         <div className="p-6 pt-8 space-y-6">
-          <div className="flex flex-col gap-8 text-lg text-gray-400">
+          <div className="flex flex-col gap-6">
+            {/* Current Password */}
             <div className="relative flex items-center">
               <input
                 type={showCurrentPassword ? "text" : "password"}
-                value={formData.currentPassword}
+                value={formData.currentPassword || ""}
                 onChange={handleChange}
                 name="currentPassword"
                 placeholder="Current password"
-                className="w-full px-4 py-2.5 bg-gray-100 border-2 border-secondary rounded-lg outline-none "
+                className="w-full pl-4 pr-10 py-3 bg-gray-50 border-2 border-gray-200 focus:border-primary focus:bg-white rounded-lg outline-none text-slate-800 transition-colors"
               />
               <Icon
-                icon={showCurrentPassword ? "mdi:eye-off" : "mdi:eye"}
+                icon={
+                  showCurrentPassword
+                    ? "mdi:eye-off-outline"
+                    : "mdi:eye-outline"
+                }
                 onClick={handleShowCurrentPassword}
-                width="20"
-                className="text-gray absolute right-3 cursor-pointer"
+                width="22"
+                className="text-gray-400 hover:text-gray-600 absolute right-3 cursor-pointer transition-colors"
               />
             </div>
+
+            {/* New Password */}
             <div className="relative flex items-center">
               <input
                 type={showNewPassword ? "text" : "password"}
-                value={formData.newPassword}
+                value={formData.newPassword || ""}
                 onChange={handleChange}
                 name="newPassword"
                 placeholder="New password"
-                className="w-full px-4 py-2.5 bg-gray-100 border-2 border-secondary rounded-lg outline-none "
+                className="w-full pl-4 pr-10 py-3 bg-gray-50 border-2 border-gray-200 focus:border-primary focus:bg-white rounded-lg outline-none text-slate-800 transition-colors"
               />
               <Icon
-                icon={showNewPassword ? "mdi:eye-off" : "mdi:eye"}
+                icon={
+                  showNewPassword ? "mdi:eye-off-outline" : "mdi:eye-outline"
+                }
                 onClick={handleShowNewPassword}
-                width="20"
-                className="text-gray absolute right-3 cursor-pointer"
+                width="22"
+                className="text-gray-400 hover:text-gray-600 absolute right-3 cursor-pointer transition-colors"
               />
             </div>
+
+            {/* Confirm Password */}
             <div className="relative flex items-center">
               <input
                 type={showConfirmPassword ? "text" : "password"}
-                value={formData.confirmPassword}
+                value={formData.confirmPassword || ""}
                 onChange={handleChange}
                 name="confirmPassword"
-                placeholder="Confirm password"
-                className="w-full px-4 py-2.5 bg-gray-100 border-2 border-secondary rounded-lg outline-none "
+                placeholder="Confirm new password"
+                className="w-full pl-4 pr-10 py-3 bg-gray-50 border-2 border-gray-200 focus:border-primary focus:bg-white rounded-lg outline-none text-slate-800 transition-colors"
               />
               <Icon
-                icon={showConfirmPassword ? "mdi:eye-off" : "mdi:eye"}
+                icon={
+                  showConfirmPassword
+                    ? "mdi:eye-off-outline"
+                    : "mdi:eye-outline"
+                }
                 onClick={handleShowConfirmPassword}
-                width="20"
-                className="text-gray absolute right-3 cursor-pointer"
+                width="22"
+                className="text-gray-400 hover:text-gray-600 absolute right-3 cursor-pointer transition-colors"
               />
             </div>
           </div>
         </div>
 
-        {/* Footer Actions */}
-        <div className="p-6 pt-2 flex justify-center">
-          <button onClick={handleSubmit} className="px-6 py-2.5 bg-primary text-white font-semibold rounded-lg hover:scale-105 cursor-pointer active:scale-95 transition-all">
-            Save
+        {/* Footer */}
+        <div className="p-6 pt-2 pb-8 flex justify-center">
+          <button
+            onClick={handleSubmit}
+            className="w-full px-6 py-3 bg-primary text-white font-bold rounded-xl hover:shadow-lg active:scale-95 transition-all cursor-pointer"
+          >
+            Save Changes
           </button>
         </div>
       </div>

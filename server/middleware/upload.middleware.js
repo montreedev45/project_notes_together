@@ -6,25 +6,28 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    // 1. ดึง roomId จาก req.body)
-    const roomId = req.body.roomId || "general";
-    // 2. กำหนด Path ชี้ไปที่ public/uploads/:roomId
-    const uploadDir = path.join(__dirname, `../public/uploads/${roomId}`);
-    // 3. สร้างโฟลเดอร์ roomId อัตโนมัติหากยังไม่มี
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
+// save file in disk
+// const storage = multer.diskStorage({
+//   destination: function (req, file, cb) {
+//     // 1. ดึง roomId จาก req.body)
+//     const roomId = req.body.roomId || "general";
+//     // 2. กำหนด Path ชี้ไปที่ public/uploads/:roomId
+//     const uploadDir = path.join(__dirname, `../public/uploads/${roomId}`);
+//     // 3. สร้างโฟลเดอร์ roomId อัตโนมัติหากยังไม่มี
+//     if (!fs.existsSync(uploadDir)) {
+//       fs.mkdirSync(uploadDir, { recursive: true });
+//     }
 
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, uniqueSuffix + ext);
-  },
-});
+//     cb(null, uploadDir);
+//   },
+//   filename: function (req, file, cb) {
+//     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+//     const ext = path.extname(file.originalname).toLowerCase();
+//     cb(null, uniqueSuffix + ext);
+//   },
+// });
+
+const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|gif|webp/;

@@ -108,7 +108,7 @@ export const getRoomByIdSchema = z.object({
 export const joinRoomSchema = z.object({
   body: z
     .object({
-      roomId: idSchema("Room id").openapi({ example: "6a5dcdcbcf..." }),
+      roomId: z.string().openapi({ example: "6a5dcdcbcf..." }).optional(),
       code: z
         .string({ invalid_type_error: "Must be a string" })
         .trim()
