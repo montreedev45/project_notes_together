@@ -13,7 +13,7 @@ import { uploadImage } from "../../middleware/upload.middleware.js";
 import { handleUploadResponse } from "./note.controller.js";
 import { validate } from "../../middleware/validateZod.js";
 import { uploadNoteImageSchema } from "./upload.schema.js";
-import { apiLimiter } from "../../middleware/rateLimiter.js";
+import { apiLimiter, writeLimiter } from "../../middleware/rateLimiter.js";
 import cloudinary from "../../config/cloudinary.js";
 
 const router = express.Router();
@@ -21,6 +21,7 @@ const router = express.Router();
 router.post(
   "/upload",
   authMiddleware,
+  writeLimiter,
   // 1. ดักจับ Error จาก Multer (ขนาดไฟล์ / ชนิดไฟล์) ให้ตอบกลับ 400 ทันที
   (req, res, next) => {
     uploadImage(req, res, (err) => {
