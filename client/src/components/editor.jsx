@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Collaboration from "@tiptap/extension-collaboration";
-import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
+import { StarterKit } from "@tiptap/starter-kit";
+import { Collaboration } from "@tiptap/extension-collaboration";
+import { CollaborationCaret } from "@tiptap/extension-collaboration-caret";
 import { createYjs } from "../lib/yjs";
 import { Icon } from "@iconify/react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -12,16 +12,15 @@ import useAuthStore from "../store/useAuthStore";
 import useRoomStore from "../store/useRoomStore";
 import useCommentStore from "../store/useCommentStore";
 
-import Underline from "@tiptap/extension-underline";
-import TextAlign from "@tiptap/extension-text-align";
-import TextStyle from "@tiptap/extension-text-style";
+import { TextAlign } from "@tiptap/extension-text-align";
+import { TextStyle } from "@tiptap/extension-text-style";
 import { Extension } from "@tiptap/core";
 import { Color } from "@tiptap/extension-color";
-import Image from "@tiptap/extension-image";
-import FontFamily from "@tiptap/extension-font-family";
-import useNoteStore from "../store/useNoteStore";
+import { Image } from "@tiptap/extension-image";
+import { FontFamily } from "@tiptap/extension-font-family";
 import { exportToPDF } from "../utils/exportToPdf";
 import { LimitPageHeight } from "../utils/limitPageHeight";
+import useNoteStore from "../store/useNoteStore";
 
 function Editor() {
   const { roomId, role } = useParams();
@@ -48,7 +47,7 @@ function Editor() {
     rooms.find((r) => r._id === roomId) ||
     myRooms.find((r) => r._id === roomId);
 
-  // 1. Fetch Room & Comment Data
+  // Fetch Room & Comment Data
   useEffect(() => {
     if (!user || !roomId) return;
 
@@ -70,9 +69,9 @@ function Editor() {
     return () => {
       isMounted = false;
     };
-  }, [user, roomId]); // ถอด function ออกจาก dependency เพื่อกัน infinite re-render
+  }, [user, roomId]);
 
-  // 2. Permission Guard (เตะออกถ้าไม่มีสิทธิ์)
+  // Permission Guard (เตะออกถ้าไม่มีสิทธิ์)
   useEffect(() => {
     if (!isReady || !user) return;
 
@@ -106,7 +105,7 @@ function Editor() {
   // สิทธิ์เข้าถึง = เป็นสมาชิก OR เป็นเจ้าของ OR เป็นห้อง Public
   const hasAccess = Boolean(roomData && (isMember || isOwner || isPublic));
 
-  // 3. Socket Connection (เชื่อมต่อเมื่อเช็กสิทธิ์ผ่านแล้วเท่านั้น!)
+  // Socket Connection (เชื่อมต่อเมื่อเช็กสิทธิ์ผ่านแล้วเท่านั้น!)
   const socket = getSocket();
   useEffect(() => {
     if (!isReady || !hasAccess || !socket || !roomId) return;
@@ -125,7 +124,7 @@ function Editor() {
     };
   }, [isReady, hasAccess, roomId, user, socket]);
 
-  // 4. Yjs Provider Setup (จะสร้างเมื่อเช็กสิทธิ์ผ่านแล้วเท่านั้น!)
+  // Yjs Provider Setup (จะสร้างเมื่อเช็กสิทธิ์ผ่านแล้วเท่านั้น!)
   useEffect(() => {
     if (!isReady || !hasAccess || !roomId) return;
 
@@ -151,7 +150,7 @@ function Editor() {
 
   // ---------------- Render Views ----------------
 
-  // 1. กำลังเช็กสิทธิ์ และ ดึงข้อมูลห้อง
+  // กำลังเช็กสิทธิ์ และ ดึงข้อมูลห้อง
   if (!isReady || !user) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -162,12 +161,12 @@ function Editor() {
     );
   }
 
-  // 2. ถ้าไม่มีข้อมูล หรือไม่มีสิทธิ์เข้าห้อง (จะถูก useEffect เตะออกไปแล้ว)
+  // ถ้าไม่มีข้อมูล หรือไม่มีสิทธิ์เข้าห้อง (จะถูก useEffect เตะออกไปแล้ว)
   if (!roomData || !hasAccess) {
     return null;
   }
 
-  // 3. เช็กสิทธิ์ผ่านแล้ว กำลังเชื่อมต่อ Realtime/Yjs
+  // เช็กสิทธิ์ผ่านแล้ว กำลังเชื่อมต่อ Realtime/Yjs
   if (!yjs) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -178,7 +177,7 @@ function Editor() {
     );
   }
 
-  // 4. พร้อมใช้งาน Render Editor
+  // พร้อมใช้งาน Render Editor
   return (
     <EditorInner
       key={roomId}
@@ -270,18 +269,14 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
   const users = useAuthStore((state) => state.users);
   const getUser = useAuthStore((state) => state.getUser);
   const clearUsers = useAuthStore((state) => state.clearUsers);
-
   const getMyRooms = useRoomStore((state) => state.getMyRooms);
-  const { role } = useParams();
 
   const socket = getSocket();
 
   const { roomId } = useParams();
   const [typedMessage, setTypedMessage] = useState("");
-  //const user = useAuthStore((state) => state.user);
   const addCommentFromMe = useCommentStore((state) => state.addCommentFromMe);
   const uploadImage = useNoteStore((state) => state.uploadImage);
-  const imageUrl = useNoteStore((state) => state.imageUrl);
   const setRoomOnlineCountProvider = useRoomStore(
     (state) => state.setRoomOnlineCountProvider,
   );
@@ -306,7 +301,6 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
 
   const [isAllowLinkSharing, setIsAllowLinkSharing] = useState(true);
   const [isAllowCodeSharing, setIsAllowCodeSharing] = useState(true);
-
   const [saveStatus, setSaveStatus] = useState("idle");
 
   const permissionUser = room?.members?.find(
@@ -337,9 +331,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
   const [typingUsers, setTypingUsers] = useState({}); // เก็บรายชื่อคนที่กำลังพิมพ์อยู่ เช่น { "user_1": "Somchai" }
   const isTypingRef = useRef(false); // ใช้จำสถานะตัวเองว่าตอนนี้กำลังพิมพ์อยู่ไหม
   const timeoutRef = useRef(null); // ใช้เก็บเลเซอร์นับเวลาถอยหลังการหยุดพิมพ์
-
   const fileInputRef = useRef(null); // image upload
-
   const timerRef = useRef(null);
 
   const [activeUsers, setActiveUsers] = useState([]);
@@ -669,9 +661,8 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
           orderedList: true,
           blockquote: true,
         }),
-        Underline,
         TextAlign.configure({
-          types: ["heading", "paragraph"], // ให้จัดหน้าได้ทั้งหัวข้อและย่อหน้าปกติ
+          types: ["heading", "paragraph"],
         }),
         TextStyle,
         FontSize,
@@ -682,7 +673,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
           document: yjs,
           field: "content", // ปรับให้ชื่อฟิลด์โครงสร้างตรงกับโมเดลเบหลังบ้าน
         }),
-        CollaborationCursor.configure({
+        CollaborationCaret.configure({
           provider: provider,
           user: {
             name: user?.username || "Guest",
@@ -690,15 +681,15 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
           },
           render(user) {
             const cursor = document.createElement("span");
-            cursor.classList.add("collab-cursor");
-            cursor.style.borderColor = user.color;
+            cursor.classList.add("collab-caret"); // ปรับชื่อคลาสให้ตรงกัน
+            cursor.style.borderLeftColor = user.color; // ใช้ border-left สำหรับขีดเคอร์เซอร์แนวตั้งที่สวยงาม
 
             const label = document.createElement("div");
-            label.classList.add("collab-cursor-label");
+            label.classList.add("collab-caret-label");
             label.style.backgroundColor = user.color;
 
             const dot = document.createElement("span");
-            dot.classList.add("collab-cursor-dot");
+            dot.classList.add("collab-caret-dot");
 
             label.appendChild(dot);
             label.appendChild(document.createTextNode(user.name));
@@ -713,7 +704,6 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
           class: "tiptap focus:outline-none",
         },
       },
-      content: "<h1>หัวข้อรายงาน A4</h1><p>เริ่มพิมพ์ข้อความตรงนี้...</p>",
       editable: false,
     },
     [yjs],

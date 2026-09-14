@@ -37,6 +37,13 @@ function JoinRoomModal({ isOpen, onClose }) {
 
     if (fullCode.length === 6) {
       const res = await joinRoom(fullCode);
+
+      if (!res || !res.success || !res.data) {
+        console.log("Join failed:", res);
+        onClose();
+        return; 
+      }
+
       const roomId = res?._id || res?.data?._id;
       const userId = user?._id;
 
@@ -47,6 +54,8 @@ function JoinRoomModal({ isOpen, onClose }) {
       if (res.success === true) {
         onClose();
         navigate(`/notes-together/${roomId}/${matchedMember.role}`);
+      }else{
+        onClose();
       }
     }
   };

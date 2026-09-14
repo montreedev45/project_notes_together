@@ -41,5 +41,9 @@
     "yjs": "^13.6.31",
     "zod": "^4.4.3"
   },
+  "overrides": {
+    "@tiptap/core": "^3.31.3",
+    "@tiptap/extensions": "^3.31.3"
+  },
   "type": "module"
 }
