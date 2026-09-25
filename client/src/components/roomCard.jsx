@@ -2,7 +2,6 @@ import { Icon } from "@iconify/react";
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import JoinRoomModal from "./joinRoomModal";
-import DeleteRoomModal from "./deleteAccountModal";
 import useAuthStore from "../store/useAuthStore";
 import useRoomStore from "../store/useRoomStore";
 import useModalStore from "../store/useModalStore";
@@ -17,8 +16,8 @@ function RoomCard({ data = {} }) {
   const saveToRecent = useRoomStore((state) => state.saveToRecent);
   const restoreRoom = useRoomStore((state) => state.restoreRoom);
   const permanentlyDelete = useRoomStore((state) => state.permanentlyDelete);
-  const deleteRoom = useRoomStore((state) => state.deleteRoom);
   const openDeleteModal = useModalStore((state) => state.openDeleteModal);
+  const joinRoom = useRoomStore((state) => state.joinRoom);
 
   const relativeTimeFromStore = useRoomStore(
     (state) => state.relativeTime[data._id] || null,
@@ -50,7 +49,7 @@ function RoomCard({ data = {} }) {
       const checkSocketTimer = setInterval(() => {
         const currentSocket = getSocket();
         if (currentSocket) {
-          setSocketLocal(currentSocket);
+          //setSocketLocal(currentSocket);
           clearInterval(checkSocketTimer);
         }
       }, 200);
@@ -107,7 +106,7 @@ function RoomCard({ data = {} }) {
     };
   }, [isOpenMenuModal]);
 
-  const handleClickRoom = (e) => {
+  const handleClickRoom = async(e) => {
     if (data?.isDeleted === true) {
       if (
         window.confirm("This room deleted, Do you want to restore this room ?")
@@ -132,6 +131,7 @@ function RoomCard({ data = {} }) {
       setIsOpenMenuModal(false);
     } else {
       // ถ้าเป็น Public หรือเป็นสมาชิกอยู่แล้ว ให้เข้า Editor ได้เลย
+      const res = await joinRoom({roomId: data?._id});
       navigate(`/notes-together/${data._id}/${role}`);
     }
   };
@@ -198,7 +198,6 @@ function RoomCard({ data = {} }) {
       <div
         key={data._id}
         onClick={handleClickRoom}
-        // 1. เปลี่ยนจากล็อกขนาด (w-55) เป็น w-full h-full เพื่อให้ Grid ในหน้า Explore เป็นตัวคุมขนาด
         className="w-full h-full bg-white shadow-md p-4 rounded-xl cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col justify-between border border-gray-100"
       >
         {/* --- Header (Icon + Menu) --- */}
@@ -216,12 +215,11 @@ function RoomCard({ data = {} }) {
                 e.stopPropagation();
                 setIsOpenMenuModal(!isOpenMenuModal);
               }}
-              icon="mdi:dots-horizontal" // เปลี่ยนจาก mdi:menu เป็น 3 จุด จะสื่อถึงการตั้งค่าการ์ดได้ดีกว่า
+              icon="mdi:dots-horizontal"
               width="28"
               className="text-gray-400 hover:text-gray-700 transition-colors p-1 rounded-md hover:bg-gray-100"
             />
 
-            {/* 2. Dropdown Menu (ปรับให้เด้งลงล่าง ไม่ทะลุจอ) */}
             {isOpenMenuModal && (
               <div
                 ref={menuRef}
@@ -229,9 +227,7 @@ function RoomCard({ data = {} }) {
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="relative bg-white border border-slate-200 rounded-xl shadow-xl p-1.5">
-                  {/* ลูกศรชี้ขึ้น (Arrow) */}
                   <div className="absolute right-2 -top-1.5 w-3 h-3 bg-white border-l border-t border-slate-200 rotate-45"></div>
-
                   <ul className="relative z-10 flex flex-col gap-0.5">
                     {isUrlFromTrash ? (
                       <>
@@ -291,11 +287,10 @@ function RoomCard({ data = {} }) {
           </div>
         </div>
 
-        {/* --- Body (Title + Description) --- */}
         <div className="mt-3 mb-2 flex flex-col grow">
           <span className="text-xl font-bold flex items-center text-slate-800 truncate">
             {data.name}
-            {data?.owner?._id === user._id && (
+            {data?.owner?._id === user?._id && (
               <Icon
                 icon="mdi:star"
                 className="text-yellow-400 ms-1 shrink-0"
@@ -304,7 +299,6 @@ function RoomCard({ data = {} }) {
             )}
           </span>
 
-          {/* 3. ใช้ line-clamp-2 ตัดคำที่ยาวเกิน 2 บรรทัด เพื่อไม่ให้การ์ดยืด */}
           <p className="text-slate-500 mt-1 text-sm wrap-break-word line-clamp-2">
             {data?.description || "No description provided."}
           </p>
@@ -356,7 +350,6 @@ function RoomCard({ data = {} }) {
         </div>
       </div>
 
-      {/* 4. Conditional Rendering สำหรับ Modal (สร้างเฉพาะตอนเปิดเท่านั้น) */}
       {isOpenJoinRoomModal && (
         <JoinRoomModal
           isOpen={isOpenJoinRoomModal}

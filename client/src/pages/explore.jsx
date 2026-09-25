@@ -16,10 +16,6 @@ function Explore() {
   const getAllRooms = useRoomStore((state) => state.getAllRooms);
   const rooms = useRoomStore((state) => state.rooms);
 
-  useEffect(() => {
-    getAllRooms();
-  }, [getAllRooms]);
-
   const sortedRooms = useMemo(() => {
     if (!Array.isArray(rooms)) return [];
     const result = [...rooms];
@@ -27,9 +23,7 @@ function Explore() {
   }, [rooms, isSorting]);
 
   const handleFilter = (e) => {
-    const criteria = e.currentTarget.name;
-    setActiveFilter(criteria);
-    getAllRooms(criteria);
+    setActiveFilter(e.currentTarget.name);
   };
 
   useEffect(() => {
@@ -85,7 +79,7 @@ function Explore() {
             title={isSorting ? "Sort by Newest" : "Sort by Oldest"}
           >
             <Icon
-              icon={isSorting ? "mdi:sort-descending" : "mdi:sort-ascending"}
+              icon={"mdi:sort"}
               width="30"
               className="text-secondary hover:scale-110 transition-transform cursor-pointer"
             />

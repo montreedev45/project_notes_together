@@ -2,27 +2,35 @@ import { Icon } from "@iconify/react";
 import { useState, useMemo, useEffect } from "react";
 import RoomCard from "../components/roomCard";
 import useRoomStore from "../store/useRoomStore";
-import useAuthStore from "../store/useAuthStore";
 
 function Trash() {
   const [isOpenFilterModal, setIsOpenFilterModal] = useState(false);
-
   const [isSorting, setIsSorting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeFilter, setActiveFilter] = useState("all");
 
   const getTrashRooms = useRoomStore((state) => state.getTrashRooms);
   const trashRooms = useRoomStore((state) => state.trashRooms);
   const permanentlyDeleteAll = useRoomStore(
     (state) => state.permanentlyDeleteAll,
   );
-  const user = useAuthStore((state) => state.user);
 
   const sortedRooms = useMemo(() => {
     if (!Array.isArray(trashRooms)) return [];
-
     const result = [...trashRooms];
     return isSorting ? result.reverse() : result;
   }, [trashRooms, isSorting]);
+
+  const handleFilter = (e) => {
+    setActiveFilter(e.currentTarget.name);
+  };
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      getTrashRooms(activeFilter, searchTerm);
+    }, 500);
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm, activeFilter, getTrashRooms]);
 
   const handleDeleteAllRoom = () => {
     if (
@@ -33,23 +41,6 @@ function Trash() {
       permanentlyDeleteAll();
     }
   };
-
-  //initial load
-  useEffect(() => {
-    if (trashRooms.length === 0) {
-      getTrashRooms();
-    }
-  }, []);
-
-  //search
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      // ยิง API โดยส่งทั้งค่า Filter ปัจจุบัน และคำค้นหา
-      getTrashRooms(searchTerm);
-    }, 500); // รอ 500ms หลังหยุดพิมพ์ถึงจะยิง API
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchTerm]);
 
   return (
     <>
@@ -91,11 +82,50 @@ function Trash() {
               title={isSorting ? "Sort by Newest" : "Sort by Oldest"}
             >
               <Icon
-                icon={isSorting ? "mdi:sort-descending" : "mdi:sort-ascending"}
+                icon={"mdi:sort"}
                 width="30"
                 className="text-secondary hover:scale-110 transition-transform cursor-pointer"
               />
             </button>
+
+            <div className="relative">
+              <Icon
+                onClick={() => setIsOpenFilterModal(!isOpenFilterModal)}
+                icon="mdi:filter"
+                width="30"
+                className="text-secondary hover:scale-110 transition-transform cursor-pointer"
+              />
+
+              {isOpenFilterModal && (
+                <div className="absolute right-0 top-10 z-50 select-none">
+                  <div className="w-32 bg-white border border-slate-200 rounded-xl shadow-lg p-2 relative">
+                    <div className="absolute right-3 -top-1.5 w-3 h-3 bg-white border-l border-t border-slate-200 rotate-45"></div>
+                    <ul className="relative z-10 flex flex-col gap-1">
+                      {["all","public", "private"].map(
+                        (filter) => (
+                          <li key={filter}>
+                            <button
+                              name={filter}
+                              onClick={(e) => {
+                                handleFilter(e);
+                                setIsOpenFilterModal(false);
+                              }}
+                              className={`w-full text-left px-4 py-1.5 font-medium rounded-lg text-sm transition-colors capitalize ${
+                                activeFilter === filter
+                                  ? "bg-blue-100 text-blue-600"
+                                  : "text-slate-500 hover:bg-gray-100 hover:text-black"
+                              }`}
+                            >
+                              {filter}
+                            </button>
+                          </li>
+                        ),
+                      )}
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

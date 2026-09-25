@@ -14,10 +14,9 @@ function Login() {
     useState(false);
   const [isOpenResetPasswordModal, setIsOpenResetPasswordModal] =
     useState(false);
-  const login = useAuthStore((state) => state.login);
   const [showPassword, setShowPassword] = useState(false);
-
   const [formData, setFormData] = useState({ email: "", password: "" });
+  const login = useAuthStore((state) => state.login);
 
   useEffect(() => {
     if (token && email) {
@@ -34,9 +33,7 @@ function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const result = await login(formData);
-
     if (result?.success) {
       navigate("/notes-together/explore");
     } else {
@@ -127,9 +124,7 @@ function Login() {
             >
               Login
             </button>
-            <span className="font-semibold mt-4 block text-gray">
-              or
-            </span>
+            <span className="font-semibold mt-4 block text-gray">or</span>
             <GoogleAuthButton />
 
             <span className="mt-8 block text-gray font-semibold">

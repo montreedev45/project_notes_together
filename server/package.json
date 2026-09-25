@@ -13,6 +13,7 @@
   "description": "",
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^9.1.0",
+    "@axiomhq/winston": "^2.0.0",
     "@hocuspocus/extension-database": "^3.4.4",
     "@hocuspocus/server": "^3.4.4",
     "@hocuspocus/transformer": "^4.3.0",

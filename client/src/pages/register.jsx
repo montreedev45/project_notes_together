@@ -9,13 +9,13 @@ function Register() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const register = useAuthStore((state) => state.register);
   const [formData, setFormData] = useState({
     username: "",
     password: "",
     email: "",
     confirmPassword: "",
   });
+  const register = useAuthStore((state) => state.register);
 
   const handleChange = (e) => {
     setFormData({
@@ -26,7 +26,6 @@ function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (
       !formData.username?.trim() ||
       !formData.email?.trim() ||

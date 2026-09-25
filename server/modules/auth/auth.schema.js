@@ -9,7 +9,7 @@ export const registerSchema = z.object({
       username: z
         .string({ required_error: "Username is required" })
         .trim()
-        .min(10, "Username must be at least 10 characters")
+        .min(5, "Username must be at least 5 characters")
         .max(20, "Username cannot exceed 20 characters")
         .regex(
           /^[a-zA-Z0-9_]+$/,
@@ -29,6 +29,12 @@ export const registerSchema = z.object({
         .string({ required_error: "Password is required" })
         .min(6, "Password must be at least 6 characters")
         .max(30, "Password is too long")
+        .openapi({ example: "securePass!23" }),
+
+      confirmPassword: z
+        .string({ required_error: "ConfirmPassword is required" })
+        .min(6, "ConfirmPassword must be at least 6 characters")
+        .max(30, "ConfirmPassword is too long")
         .openapi({ example: "securePass!23" }),
     })
     .strict(),
@@ -58,7 +64,7 @@ export const updateProfileSchema = z.object({
       username: z
         .string()
         .trim()
-        .min(10, "Username must be at least 10 characters")
+        .min(4, "Username must be at least 4 characters")
         .max(20, "Username cannot exceed 20 characters")
         .regex(
           /^[a-zA-Z0-9_]+$/,
@@ -189,7 +195,7 @@ export const getUserSchema = z.object({
 
 export const googleLoginControllerSchema = z.object({
   body: z.object({
-    credential: z
+    access_token: z
       .string({ required_error: "Credential is required" })
       .trim()
       .min(10, "Credential must be at least 10 characters")

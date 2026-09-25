@@ -36,11 +36,7 @@ function App() {
   const user = useAuthStore((state) => state.user);
   const checkAuth = useAuthStore((state) => state.checkAuth);
   const isInitialized = useAuthStore((state) => state.isInitialized);
-  //const setRoomOnlineCount = useRoomStore((state) => state.setRoomOnlineCount);
   const setRelativeTime = useRoomStore((state) => state.setRelativeTime);
-  const getNotifications = useNotificationStore(
-    (state) => state.getNotifications,
-  );
   const addNotification = useNotificationStore(
     (state) => state.addNotification,
   );
@@ -58,7 +54,7 @@ function App() {
 
     // --- Handlers ---
     const handleConnect = () => {
-      //console.log("⚡ Socket connected:", socket.id);
+      //console.log("Socket connected:", socket.id);
       socket.emit("setup", user._id);
     };
 
@@ -87,7 +83,7 @@ function App() {
       socket.off("new_notification", handleNewNotification);
       socket.off("send_relative_time", handleRelativeTime);
     };
-  }, [user?._id]); // 👈 แนะนำให้ใส่ dependency เป็น user?._id เพื่อป้องกัน re-run ถ้านาฬิกา/state อื่นใน object user เปลี่ยน
+  }, [user?._id]); // แนะนำให้ใส่ dependency เป็น user?._id เพื่อป้องกัน re-run ถ้านาฬิกา/state อื่นใน object user เปลี่ยน
 
   useEffect(() => {
     const saveRecent = JSON.parse(localStorage.getItem("recent-rooms") || "[]");

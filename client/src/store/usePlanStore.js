@@ -7,22 +7,18 @@ const usePlanStore = create((set, get) => ({
   loading: false,
 
   getPlan: async () => {
-    set({ loading: true });
     try {
       const res = await api.get("/plans");
       if (res?.data?.success === true) {
         set((state) => ({
           ...state,
           plans: res.data.data,
-          loading: false,
         }));
         return { success: true };
       }
 
-      set({ loading: false });
       return { success: false, message: "unexpected response from server" };
     } catch (error) {
-      set({ loading: false });
       return { success: false, message: "fetch plans failed" };
     }
   },
@@ -33,7 +29,6 @@ const usePlanStore = create((set, get) => ({
       const res = await api.post("/auth/upgrade-plan", { planId });
 
       if (res.data?.success && res.status === 200) {
-
         if (res.data.user) {
           useAuthStore.getState().setUser(res.data.user);
         }

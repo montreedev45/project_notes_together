@@ -1,10 +1,9 @@
-import { generateToken } from "../auth/auth.controller.js";
-import User from "../auth/auth.model.js";
 import Plan from "./plan.model.js";
 
 export const getPlan = async (req, res) => {
   try {
-    const plans = await Plan.find();
+    const plans = await Plan.find()
+    .select("_id plan price description")
 
     return res.status(200).json({ success: true, data: plans });
   } catch (error) {

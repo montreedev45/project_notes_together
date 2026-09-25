@@ -1,15 +1,17 @@
 import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
-import { useParams, useOutletContext } from "react-router-dom";
-import SettingRoomPreview from "./SettingRoom-preview";
+import { useOutletContext } from "react-router-dom";
 import useRoomStore from "../store/useRoomStore";
 import useAuthStore from "../store/useAuthStore";
 
 function SettingRoomShare() {
-  const user = useAuthStore((state) => state.user);
   const users = useAuthStore((state) => state.users);
   const getUser = useAuthStore((state) => state.getUser);
   const clearUsers = useAuthStore((state) => state.clearUsers);
+  const updateRoomCode = useRoomStore((state) => state.updateRoomCode);
+  const loading = useRoomStore((state) => state.loading);
+  const updateLinkShare = useRoomStore((state) => state.updateLinkShare);
+  const invitedUsers = useRoomStore((state) => state.invitedUsers);
   const { roomData } = useOutletContext();
   const [isCopied, setIsCopied] = useState(false);
   const [isCopiedCode, setIsCopiedCode] = useState(false);
@@ -18,14 +20,8 @@ function SettingRoomShare() {
   const [selectedAccess, setSelectedAccess] = useState(
     roomData?.shareLink?.access,
   );
-  const updateRoomCode = useRoomStore((state) => state.updateRoomCode);
-  const loading = useRoomStore((state) => state.loading);
-  const updateLinkShare = useRoomStore((state) => state.updateLinkShare);
-  const invitedUsers = useRoomStore((state) => state.invitedUsers);
-
   const [isAllowLinkSharing, setIsAllowLinkSharing] = useState(true);
   const [isAllowCodeSharing, setIsAllowCodeSharing] = useState(true);
-
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
@@ -33,11 +29,9 @@ function SettingRoomShare() {
       clearUsers();
       return;
     }
-
     const delayDebounceFn = setTimeout(() => {
       getUser(searchTerm);
     }, 500);
-
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm, getUser, clearUsers]);
 
@@ -102,7 +96,7 @@ function SettingRoomShare() {
 
   return (
     <>
-      <div className="flex flex-col gap-8 w-full max-w-3xl pt-2 pb-8 mx-auto">
+      <div className="flex flex-col gap-8 w-full max-w-3xl mx-auto">
         {/* =========================================
           SECTION 1: Invite Colleagues
       ========================================= */}

@@ -17,7 +17,7 @@ const userSchema = new mongoose.Schema(
       required: function() { return !this.googleId; }, // จะ required เฉพาะเมื่อไม่ได้ใช้ Google Login
       select: false
     },
-    googleId: { type: String },
+    googleId: { type: String, default:"" },
     avatar: {
       type: String,
       default: "#4b9fff",

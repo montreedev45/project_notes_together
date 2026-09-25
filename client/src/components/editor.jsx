@@ -304,7 +304,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
   const [saveStatus, setSaveStatus] = useState("idle");
 
   const permissionUser = room?.members?.find(
-    (m) => m.user._id === user._id,
+    (m) => m.user?._id === user._id,
   )?.role;
   const isEditable = permissionUser === "owner" || permissionUser === "editor";
 

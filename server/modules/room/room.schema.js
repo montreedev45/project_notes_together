@@ -58,7 +58,7 @@ export const createRoomSchema = z.object({
 export const getRoomsSchema = z.object({
   body: z.object({
     criteria: z
-      .enum(["all", "owner", "public", "private"], {
+      .enum(["all", "owner", "public", "private", "joined"], {
         errorMap: () => ({
           message: "Type must be all, owner, public, or private",
         }),
@@ -79,7 +79,7 @@ export const getRoomsSchema = z.object({
 export const getAllRoomsSchema = z.object({
   body: z.object({
     criteria: z
-      .enum(["all", "owner", "public", "private"], {
+      .enum(["all", "owner", "public", "private", "joined"], {
         errorMap: () => ({
           message: "Type must be all, owner, public, or private",
         }),
@@ -152,6 +152,14 @@ export const softDeleteSchema = z.object({
 
 export const getTrashRoomsSchema = z.object({
   query: z.object({
+    criteria: z
+      .enum(["all","public", "private"], {
+        errorMap: () => ({
+          message: "Type must be all, owner, public, or private",
+        }),
+      })
+      .openapi({ example: "private" }),
+
     searchTerm: z
       .string({
         invalid_type_error: "Search term must be a string",

@@ -1,15 +1,9 @@
-import { useEffect } from "react";
 import { Outlet, Navigate, useLocation } from "react-router-dom";
 import useAuthStore from "../store/useAuthStore";
 
 const ProtectedRoute = ()=> {
     const location = useLocation();
-    const {isAuthenticated, loading, checkAuth} = useAuthStore();
-
-    useEffect(()=>{
-        checkAuth();
-    }, [])
-
+    const {isAuthenticated, loading} = useAuthStore();
 
     if (loading) {
     return (

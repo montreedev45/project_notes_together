@@ -17,34 +17,23 @@ function Dashboard() {
   const getMyRooms = useRoomStore((state) => state.getMyRooms);
   const myRooms = useRoomStore((state) => state.myRooms);
 
-  useEffect(() => {
-    getMyRooms();
-  }, []);
-
-  const sortedRooms = useMemo(() => {
-    // เช็คว่า myRooms มีค่าและเป็น Array หรือไม่ ถ้าไม่ใช่ให้ส่ง Array ว่างกลับไป
+   const sortedRooms = useMemo(() => {
     if (!Array.isArray(myRooms)) return [];
-
     const result = [...myRooms];
+
     return isSorting ? result.reverse() : result;
   }, [myRooms, isSorting]);
 
-  // filter
   const handleFilter = (e) => {
-    const criteria = e.currentTarget.name;
-    setActiveFilter(criteria);
-    getMyRooms(criteria);
+    setActiveFilter(e.currentTarget.name);
   };
 
-  //search
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      // ยิง API โดยส่งทั้งค่า Filter ปัจจุบัน และคำค้นหา
       getMyRooms(activeFilter, searchTerm);
-    }, 500); // รอ 500ms หลังหยุดพิมพ์ถึงจะยิง API
-
+    }, 500);
     return () => clearTimeout(delayDebounceFn);
-  }, [searchTerm, activeFilter]); // ทำงานเมื่อพิมพ์ หรือเมื่อเปลี่ยน Filter
+  }, [searchTerm, activeFilter, getMyRooms]);
 
   return (
     <>
@@ -93,7 +82,7 @@ function Dashboard() {
               title={isSorting ? "Sort by Newest" : "Sort by Oldest"}
             >
               <Icon
-                icon={isSorting ? "mdi:sort-descending" : "mdi:sort-ascending"}
+                icon={"mdi:sort"}
                 width="30"
                 className="text-secondary hover:scale-110 transition-transform cursor-pointer"
               />

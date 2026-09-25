@@ -5,9 +5,11 @@ export const getNotification = async (req, res) => {
     const userId = req.user._id;
 
     const allNotic = await Notification.find({ recipient: userId })
-      .populate("sender", "username email avatar")
+      .select("-recipient -updatedAt -__v")
+      .populate("sender", "username avatar")
       .sort({ createdAt: -1 })
-      .limit(50);
+      .limit(50)
+      .lean();
 
     res.status(200).json(allNotic);
   } catch (error) {

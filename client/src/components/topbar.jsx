@@ -6,23 +6,23 @@ import NotificationModal from "./notificationModal";
 import useNotificationStore from "../store/useNotificationStore";
 
 function Topbar({ isOpen, onToggleSidebar }) {
-  const user = useAuthStore((state) => state.user);
   const [isOpenNotificationModal, setIsOpenNotificationModal] = useState(false);
-
-  const { notifications, getUnreadCount, markAllAsRead } =
-    useNotificationStore();
+  
+  const user = useAuthStore((state) => state.user);
+  const markAllAsRead = useNotificationStore((state) => state.markAllAsRead);
+  const getNotifications = useNotificationStore(
+    (state) => state.getNotifications,
+  );
+  const notifications = useNotificationStore(
+    (state) => state.notifications,
+  );
+  const unreadCount = notifications?.filter((n) => !n.isRead).length || 0;
 
   const planColors = {
     free: "bg-slate-400 text-white",
     teams: "bg-indigo-600 text-white",
     business: "bg-rose-500 text-white",
   };
-
-  const getNotifications = useNotificationStore(
-    (state) => state.getNotifications,
-  );
-
-  const unreadCount = getUnreadCount();
 
   useEffect(() => {
     getNotifications();
@@ -35,7 +35,7 @@ function Topbar({ isOpen, onToggleSidebar }) {
           onClick={onToggleSidebar}
           className="min-[1024px]:hidden mr-4 p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
         >
-          <Icon icon="mdi:menu" width="28" className="cursor-pointer"/>
+          <Icon icon="mdi:menu" width="28" className="cursor-pointer" />
         </button>
         <Link to="/" className="items-center flex">
           <img

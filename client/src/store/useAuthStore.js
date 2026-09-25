@@ -1,5 +1,8 @@
 import { create } from "zustand";
 import api from "../services/api";
+import useRoomStore from "../store/useRoomStore";
+import { disconnectSocket } from "../socket";
+
 const useAuthStore = create((set) => ({
   users: [],
   user: null,
@@ -79,20 +82,16 @@ const useAuthStore = create((set) => ({
   },
 
   changePassword: async (formData) => {
-    set({ loading: true });
     try {
       const res = await api.put("/auth/change-password", formData);
 
       if (res?.data) {
-        set({ loading: false });
         return { success: true };
       }
 
-      set({ loading: false });
       return { success: false, message: "Unexpected response from server" };
     } catch (error) {
-      set({ loading: false });
-      return { success: false, message: "change password failed" };
+      return { success: false, message: error.response.data.message };
     }
   },
 
@@ -140,7 +139,7 @@ const useAuthStore = create((set) => ({
       }
       return { success: false };
     } catch (error) {
-      return { success: false };
+      return { success: false, message: error.response.data.message };
     }
   },
 
@@ -194,11 +193,9 @@ const useAuthStore = create((set) => ({
     }
   },
 
-  googleLogin: async (credential) => {
+  googleLogin: async (access_token) => {
     try {
-      // ส่ง credential ที่ได้จาก Google ไปให้ Backend
-      const res = await api.post('/auth/google', { credential });
-
+      const res = await api.post('/auth/google', { access_token });
       // บันทึก Token / User Info เข้า Zustand Store
       if (res?.data?.user && res?.status === 200) {
 
@@ -225,7 +222,6 @@ const useAuthStore = create((set) => ({
 
   clearUsers: ()=> set({ users: []}),
   
-  
   logout: async() => {
     try {
       const res = await api.post("/auth/logout")
@@ -236,6 +232,9 @@ const useAuthStore = create((set) => ({
         localStorage.removeItem("temporalyToken");
         localStorage.removeItem("verificationCode");
         set({ user: null, isAuthenticated: false, loading: false });
+
+        useRoomStore.getState().resetRoomStore()
+        disconnectSocket();
         return {success: true}
       }
     } catch (error) {

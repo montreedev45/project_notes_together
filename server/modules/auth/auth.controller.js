@@ -23,7 +23,7 @@ const getTransporter = () => {
 export const generateToken = (user) => {
   return jwt.sign(
     {
-      id: user._id,
+      _id: user._id,
       username: user.username,
       email: user.email,
       avatar: user.avatar,
@@ -69,9 +69,12 @@ export const register = async (req, res) => {
 
     return res.status(201).json({
       user: {
-        id: user._id,
+        _id: user._id,
         username: user.username,
         email: user.email,
+        avatar: user.avatar,
+        plan: user.plan,
+        googleId: user.googleId
       },
     });
   } catch (error) {
@@ -94,6 +97,12 @@ export const login = async (req, res) => {
       });
     }
 
+    if (!user.password) {
+      return res.status(400).json({
+        message: "This account has been Google.",
+      });
+    }
+
     // check password is match?
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
@@ -111,13 +120,16 @@ export const login = async (req, res) => {
 
     res.status(200).json({
       user: {
-        id: user._id,
+        _id: user._id,
         username: user.username,
         email: user.email,
+        avatar: user.avatar,
+        plan: user.plan,
+        googleId: user.googleId
       },
     });
   } catch (error) {
-    res.status(500).json({ message: "server error" });
+    res.status(500).json({ message: error });
   }
 };
 
@@ -179,7 +191,7 @@ export const updateProfile = async (req, res) => {
         email: updatedUser.email,
         avatar: updatedUser.avatar,
         plan: updatedUser.plan,
-        googleId: updatedUser.googleId ? "google" : "local",
+        googleId: updatedUser.googleId,
       },
     });
   } catch (error) {
@@ -342,7 +354,7 @@ export const checkDuplicateEmail = async (req, res) => {
     if (!user) return res.status(400).json({ message: "User not found" });
 
     const isMatch = await bcrypt.compare(currentPassword, user.password);
-    if (!isMatch) return res.status(400).json({ message: "Invalid password" });
+    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
     // เช็กว่าอีเมลใหม่ซ้ำกับใครไหม (ใช้ .lean() และ select เฉพาะ isDeleted เพื่อความเร็วในการ Query)
     const checkEmail = await User.findOne({ email: newEmail })
@@ -366,7 +378,7 @@ export const checkDuplicateEmail = async (req, res) => {
 
     const temporalyToken = jwt.sign(
       {
-        id: user._id,
+        _id: user._id,
         newEmail: newEmail,
         type: "CHANGE_EMAIL_VERIFY",
       },
@@ -414,7 +426,7 @@ export const changeEmail = async (req, res) => {
         .status(401)
         .json({ message: "Invalid or expired token session" });
 
-    const user = await User.findById(decode.id);
+    const user = await User.findById(decode._id);
     if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
     if (user.changeEmailCode !== verifyCode)
@@ -440,7 +452,14 @@ export const changeEmail = async (req, res) => {
 
     res.status(200).json({
       message: "Change email successfully",
-      user: user,
+      user: {
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        avatar: user.avatar,
+        plan: user.plan,
+        googleId: user.googleId
+      },
     });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
@@ -459,7 +478,7 @@ export const getUser = async (req, res) => {
     let query = { _id: { $ne: userId }, isDeleted: false };
     query.username = { $regex: searchTerm, $options: "i" };
 
-    const users = await User.find(query).select("username email avatar");
+    const users = await User.find(query).select("username avatar");
 
     return res.status(200).json(users);
   } catch (error) {
@@ -501,7 +520,7 @@ export const deleteAccount = async (req, res) => {
           (targetMember.user._id || targetMember.user).toString(),
         );
 
-        // 🎯 Step A: โอน Owner และเปลี่ยน Role ของ Owner ใหม่เป็น editor
+        // Step A: โอน Owner และเปลี่ยน Role ของ Owner ใหม่เป็น editor
         await Room.updateOne(
           { _id: room._id },
           {
@@ -515,7 +534,7 @@ export const deleteAccount = async (req, res) => {
           },
         );
 
-        // 🎯 Step B: ถอด Owner เก่า (คนที่ลบบัญชี) ออกจาก array members
+        // Step B: ถอด Owner เก่า (คนที่ลบบัญชี) ออกจาก array members
         await Room.updateOne(
           { _id: room._id },
           {
@@ -557,19 +576,22 @@ export const deleteAccount = async (req, res) => {
 
 export const googleLoginController = async (req, res) => {
   try {
-    const { credential } = req.body; // รับ ID Token จาก Frontend
+    const { access_token } = req.body; 
 
-    if (!credential) {
+    if (!access_token) {
       return res.status(400).json({ message: "Google Token is required" });
     }
 
-    // 1. Verify Google Token
-    const ticket = await client.verifyIdToken({
-      idToken: credential,
-      audience: process.env.GOOGLE_CLIENT_ID,
+    // 1. นำ Access Token ไปเรียก API เพื่อดึงข้อมูลโปรไฟล์จาก Google โดยตรง
+    const googleResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${access_token}` }
     });
 
-    const payload = ticket.getPayload();
+    if (!googleResponse.ok) {
+      return res.status(401).json({ message: "Invalid or expired Google Access Token" });
+    }
+
+    const payload = await googleResponse.json();
     const { email, name, picture, sub: googleId } = payload;
 
     // 2. เช็กว่าผู้ใช้เคยมี Account ใน DB หรือยัง
@@ -581,12 +603,10 @@ export const googleLoginController = async (req, res) => {
         username: name,
         email: email,
         googleId: googleId,
-        isVerified: true, // อีเมลจาก Google ผ่านการยืนยันแล้ว
-        // รหัสผ่านไม่ต้องตั้ง หรือสุ่มเก็บไว้กรณี Schema บังคับ
       });
       await user.save();
     } else if (!user.googleId) {
-      // 🟡 มีอีเมลอยู่แล้วแต่สมัครผ่านแบบธรรมดา -> อัปเดตผูก googleId ไว้
+      // มีอีเมลอยู่แล้วแต่สมัครผ่านแบบธรรมดา -> อัปเดตผูก googleId ไว้
       user.googleId = googleId;
       await user.save();
     }
@@ -601,15 +621,15 @@ export const googleLoginController = async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    // 4. ส่งข้อมูล User และ Token กลับไป
     res.status(200).json({
       success: true,
       user: {
-        id: user._id,
+        _id: user._id,
         username: user.username,
         email: user.email,
         avatar: user.avatar,
-        googleId: user.googleId,
+        plan: user.plan,
+        googleId: user.googleId
       },
     });
   } catch (error) {
@@ -649,7 +669,14 @@ export const upgradePlan = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Plan upgraded successfully",
-      user: upgradedPlan,
+      user: {
+        _id: upgradedPlan._id,
+        username: upgradedPlan.username,
+        email: upgradedPlan.email,
+        avatar: upgradedPlan.avatar,
+        plan: upgradedPlan.plan,
+        googleId: upgradedPlan.googleId
+      },
     });
   } catch (error) {
     console.error("Upgrade plan error:", error);

@@ -2,13 +2,9 @@ import { Icon } from "@iconify/react";
 import { useState, useEffect, useMemo } from "react";
 import RoomCard from "../components/roomCard";
 import useRoomStore from "../store/useRoomStore";
-import useAuthStore from "../store/useAuthStore";
 
 function Recent() {
-  const user = useAuthStore((state) => state.user);
   const [isOpenFilterModal, setIsOpenFilterModal] = useState(false);
-  // const [recentRoomsState, setRecentRoomsState] = useState([]);
-
   const [isSorting, setIsSorting] = useState(false);
   const [activeFilter, setActiveFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
@@ -17,36 +13,22 @@ function Recent() {
   const recentRooms = useRoomStore((state) => state.recentRooms);
   const clearRecentRooms = useRoomStore((state) => state.clearRecentRooms);
 
-  //initial load
-  // useEffect(() => {
-  //   const data = JSON.parse(localStorage.getItem("recent-rooms") || "[]");
-  //   setRecentRoomsState(data);
-  // }, []);
-
   const sortedRooms = useMemo(() => {
-    // เช็คว่า rooms มีค่าและเป็น Array หรือไม่ ถ้าไม่ใช่ให้ส่ง Array ว่างกลับไป
     if (!Array.isArray(recentRooms)) return [];
-
     const result = [...recentRooms];
     return isSorting ? result.reverse() : result;
   }, [recentRooms, isSorting]);
 
-  // filter
   const handleFilter = (e) => {
-    const criteria = e.currentTarget.name;
-    setActiveFilter(criteria);
-    getRecentRooms(criteria);
+    setActiveFilter(e.currentTarget.name);
   };
 
-  //search
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      // ยิง API โดยส่งทั้งค่า Filter ปัจจุบัน และคำค้นหา
-      getRecentRooms(activeFilter, searchTerm, user._id);
-    }, 500); // รอ 500ms หลังหยุดพิมพ์ถึงจะยิง API
-
+      getRecentRooms(activeFilter, searchTerm);
+    }, 500);
     return () => clearTimeout(delayDebounceFn);
-  }, [searchTerm, activeFilter]); // ทำงานเมื่อพิมพ์ หรือเมื่อเปลี่ยน Filter
+  }, [searchTerm, activeFilter, getRecentRooms]);
 
   const deleteRecentRooms = () => {
     if (window.confirm(`Are you sure you want to delete recent rooms`)) {
@@ -62,16 +44,17 @@ function Recent() {
         </span>
 
         <div className="mt-5 flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-3 w-full lg:w-auto">
-            <button
-              onClick={deleteRecentRooms}
-              className="bg-red-500 text-white transition-colors font-medium text-sm cursor-pointer py-2.5 px-4 gap-2 flex justify-center items-center rounded-md"
-            >
-              <Icon icon="mdi:trash" width="18" />
-              Clear All Rooms
-            </button>
-          </div>
-
+          {recentRooms.length !== 0 && (
+            <div className="flex items-center gap-3 w-full lg:w-auto">
+              <button
+                onClick={deleteRecentRooms}
+                className="bg-red-500 text-white transition-colors font-medium text-sm cursor-pointer py-2.5 px-4 gap-2 flex justify-center items-center rounded-md"
+              >
+                <Icon icon="mdi:trash" width="18" />
+                Clear All Rooms
+              </button>
+            </div>
+          )}
           <div className="flex items-center gap-3 w-full lg:w-auto">
             <div className="bg-white flex items-center rounded-xl relative grow">
               <Icon
@@ -93,7 +76,7 @@ function Recent() {
               title={isSorting ? "Sort by Newest" : "Sort by Oldest"}
             >
               <Icon
-                icon={isSorting ? "mdi:sort-descending" : "mdi:sort-ascending"}
+                icon={"mdi:sort"}
                 width="30"
                 className="text-secondary hover:scale-110 transition-transform cursor-pointer"
               />

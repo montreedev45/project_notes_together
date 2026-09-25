@@ -1,11 +1,21 @@
 import { Outlet } from "react-router-dom";
 import Topbar from "../components/topbar";
 import Sidebar from "../components/sidebar";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import useAuthStore from "../store/useAuthStore";
 
 function DashboardLayout() {
   const [isSidebarMobileOpen, setIsSidebarMobileOpen] = useState(false);
 
+  const user = useAuthStore((state) => state.user);
+
+  if (!user) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-20 w-20 border-t-3 border-primary"></div>
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col h-screen w-full overflow-hidden bg-gray-50">
       <header className="h-20 flex-none bg-white border-b z-20 relative">

@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
 import { useParams, useOutletContext } from "react-router-dom";
 import ColorPicker from "../components/colorPicker";
@@ -7,18 +7,17 @@ import SettingRoomPreview from "./SettingRoom-preview";
 import useRoomStore from "../store/useRoomStore";
 
 function SettingRoomGeneral() {
+  const { id } = useParams();
   const updateRoomLocal = useRoomStore((state) => state.updateRoomLocal);
   const myRooms = useRoomStore((state) => state.myRooms);
   const updateRoom = useRoomStore((state) => state.updateRoom);
-
   const { roomData } = useOutletContext();
-  const { id } = useParams();
+  const [formData, setFormData] = useState({});
   const [selectedColor, setSelectedColor] = useState("");
 
-  //set data when roomData have value
   useEffect(() => {
     if (roomData) {
-      // ใช้การเช็คว่ามี Property นี้อยู่จริงไหม แทนการเช็คค่า boolean ตรงๆ
+      setFormData(roomData);
       if (roomData.color !== undefined) {
         setSelectedColor(roomData.color);
       }
@@ -27,7 +26,7 @@ function SettingRoomGeneral() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-
+    setFormData((prev) => ({ ...prev, [name]: value }));
     updateRoomLocal(id, { [name]: value });
   };
 
@@ -46,9 +45,9 @@ function SettingRoomGeneral() {
             <div className="relative">
               <input
                 type="text"
-                value={roomData?.name || ""}
+                value={formData.name || ""}
                 placeholder="Minimum 12 characters"
-                maxLength={50} // 12 น่าจะน้อยไปสำหรับ max ลองปรับตามสมควร
+                maxLength={12}
                 name="name"
                 onChange={handleChange}
                 className="w-full py-3 px-4 outline-none text-slate-700 rounded-lg border-2 border-gray-200 focus:border-primary pr-12 transition-colors"
@@ -67,7 +66,7 @@ function SettingRoomGeneral() {
             </span>
             <div className="relative">
               <textarea
-                value={roomData?.description || ""}
+                value={formData.description || ""}
                 placeholder="Maximum 150 characters"
                 maxLength={150}
                 name="description"
@@ -123,7 +122,7 @@ function SettingRoomGeneral() {
                   onToggle={(val) =>
                     handleChange({ target: { name: setting.name, value: val } })
                   }
-                  defaultChecked={roomData?.[setting.name]}
+                  defaultChecked={formData[setting.name] || false}
                 />
               </div>
             ))}
@@ -137,7 +136,7 @@ function SettingRoomGeneral() {
           </button>
         </div>
         <div className="w-full hidden md:flex md:w-85 lg:w-95 p-4 md:p-8 border-t md:border-t-0 md:border-l border-gray-200 flex-col items-center justify-start shrink-0">
-          <SettingRoomPreview roomData={roomData} />
+          <SettingRoomPreview roomData={formData} />
         </div>
       </div>
     </>

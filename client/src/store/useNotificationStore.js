@@ -23,7 +23,6 @@ const useNotificationStore = create((set, get) => ({
   },
 
   addNotification: (newNotic) => {
-    //recentRooms unnecessary
 
     set((state) => ({
       notifications: [newNotic, ...state.notifications],
@@ -106,10 +105,6 @@ const useNotificationStore = create((set, get) => ({
       useRoomStore.setState({ myRooms: updatedRooms });
       useRoomStore.setState({ rooms: updatedExplore });
     }
-  },
-
-  getUnreadCount: () => {
-    return get().notifications.filter((n) => !n.isRead).length;
   },
 
   markAllAsRead: async () => {

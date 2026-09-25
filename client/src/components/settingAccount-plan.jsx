@@ -1,21 +1,13 @@
-import { useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
-import { Link } from "react-router-dom";
 import useAuthStore from "../store/useAuthStore";
 import usePlanStore from "../store/usePlanStore";
+import { useOutletContext } from "react-router-dom";
 
 function SettingAccountPlan() {
+  const plans = useOutletContext();
   const user = useAuthStore((state) => state.user);
-  const plans = usePlanStore((state) => state.plans);
-
-  const getPlan = usePlanStore((state) => state.getPlan);
   const upgradePlan = usePlanStore((state) => state.upgradePlan);
-
   const plansReverse = [...plans].reverse();
-
-  useEffect(() => {
-    getPlan();
-  }, []);
 
   const handleSelectPlan = (planId, planName) => {
     if (window.confirm(`do you want to change to the ${planName} plan?`)) {

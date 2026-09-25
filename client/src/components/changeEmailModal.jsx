@@ -6,8 +6,8 @@ function ChangeEmailModal({ isOpen, onClose }) {
   const checkDuplicateEmail = useAuthStore(
     (state) => state.checkDuplicateEmail,
   );
-
   const changeEmail = useAuthStore((state) => state.changeEmail);
+  const [errorMsg, setErrorMsg] = useState("");
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [step, setStep] = useState(1);
   const [localLoading, setLocalLoading] = useState(false); //use instead loading in store
@@ -60,9 +60,10 @@ function ChangeEmailModal({ isOpen, onClose }) {
 
       if (res.success === true) {
         setStep(2);
+      }else {
+        setErrorMsg(res?.message)
       }
     } catch (error) {
-      console.error(error);
     } finally {
       setLocalLoading(false);
     }
@@ -81,7 +82,7 @@ function ChangeEmailModal({ isOpen, onClose }) {
       if (index < 6) newOtp[index] = char;
     });
 
-    // ✅ แก้เป็นแบบนี้ครับ ส่ง Array ที่อัปเดตแล้วเข้าไปเลย
+    // แก้เป็นแบบนี้ครับ ส่ง Array ที่อัปเดตแล้วเข้าไปเลย
     setOtp(newOtp);
 
     const fullOtp = newOtp.join("");
@@ -146,6 +147,11 @@ function ChangeEmailModal({ isOpen, onClose }) {
                     className="text-gray absolute right-3 cursor-pointer"
                   />
                 </div>
+                {errorMsg && 
+                <p className="text-red-400 font-medium">
+                  {errorMsg}
+                </p>
+                }
                 <button
                   type="button"
                   onClick={handleSubmit}

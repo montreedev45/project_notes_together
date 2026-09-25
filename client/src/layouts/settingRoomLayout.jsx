@@ -1,14 +1,29 @@
 import { useEffect } from "react";
-import { Outlet, useParams } from "react-router-dom";
+import { Outlet, useParams , useNavigate} from "react-router-dom";
 import useRoomStore from "../store/useRoomStore";
-import SettingRoomPreview from "../components/SettingRoom-preview";
 import SettingRoomSidebar from "../components/settingRoom-sidebar";
+import useAuthStore from "../store/useAuthStore";
 
 function SettingRoomLayout() {
+  const navigate = useNavigate();
   const { id } = useParams();
   const getMyRooms = useRoomStore((state) => state.getMyRooms);
   const myRooms = useRoomStore((state) => state.myRooms);
   const roomData = myRooms.find((r) => r._id === id);
+  const user = useAuthStore((state) => state.user);
+
+  useEffect(() => {
+    // รอให้ข้อมูลโหลดเสร็จก่อนค่อยเช็ก
+    if (roomData && user) {
+      const ownerId = roomData.owner?._id; 
+      const userId = user._id;
+      const isOwner = ownerId === userId
+
+      if (!isOwner) {
+        navigate(`/notes-together/explore`);
+      }
+    }
+  }, [roomData, user, navigate]);
 
   useEffect(() => {
     getMyRooms();

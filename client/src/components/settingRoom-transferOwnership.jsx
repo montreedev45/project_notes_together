@@ -89,7 +89,7 @@ function SettingRoomTransferOwnership() {
 
       {/* --- Member List --- */}
       {/* เปลี่ยน max-h-120 เป็น max-h-[500px] */}
-      <div className="max-h-125 overflow-y-auto no-scrollbar bg-gray-50 border border-gray-200 rounded-xl p-2 shadow-inner">
+        <div className="max-h-115 overflow-y-auto flex flex-col gap-3 pr-2">
         {filteredMembers.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-8 text-slate-400">
             <Icon icon="mdi:account-search-outline" width="48" className="mb-2 opacity-50" />
@@ -102,12 +102,12 @@ function SettingRoomTransferOwnership() {
             return (
               <div
                 key={member?.user?._id}
-                className="flex flex-wrap sm:flex-nowrap items-center justify-between py-3 px-4 bg-white rounded-lg mb-2 last:mb-0 shadow-sm border border-gray-100 gap-4"
+                className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-4 p-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-blue-100 transition-colors"
               >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="flex items-center gap-4 min-w-50 flex-1">
                   <div
                     style={{ borderColor: member?.user?.avatar || "#e2e8f0" }}
-                    className="flex-none bg-white border-2 w-10 h-10 rounded-full flex items-center justify-center shadow-sm"
+                    className="flex-none bg-white border-2 w-12 h-12 rounded-full flex items-center justify-center relative shadow-sm"
                   >
                     <Icon
                       icon="mdi:account"
@@ -116,11 +116,8 @@ function SettingRoomTransferOwnership() {
                     />
                   </div>
                   <div className="flex flex-col min-w-0">
-                    <span className="font-bold text-sm text-slate-800 truncate">
+                    <span className="font-bold text-base text-slate-800 truncate flex items-center gap-1.5">
                       {member?.user?.username}
-                    </span>
-                    <span className="font-medium text-xs text-slate-500 truncate">
-                      {member?.user?.email}
                     </span>
                   </div>
                 </div>

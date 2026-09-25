@@ -53,7 +53,7 @@ router.get(
       const { roomId, filename } = req.params;
 
       // 1. ใช้ userId จาก authMiddleware ได้เลย ไม่ต้องถอดรหัส JWT ซ้ำ
-      const userId = req.user.id; 
+      const userId = req.user._id; 
 
       // 2. ตรวจสอบสิทธิ์การเข้าห้อง
       const hasAccess = await Room.exists({

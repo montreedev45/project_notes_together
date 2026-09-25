@@ -34,7 +34,7 @@ function SettingAccountSidebar() {
             </li>
           </Link>
 
-          <li className="w-full flex justify-end md:justify-start md:mt-4">
+          <li className="w-full flex justify-end md:justify-start">
             <button
               onClick={() => setIsOpenDeleteAccountModal(true)}
               className="w-full text-left text-red-500 hover:text-red-600 cursor-pointer transition-colors rounded-lg hover:bg-red-100 p-2.5 xl:p-3 capitalize"

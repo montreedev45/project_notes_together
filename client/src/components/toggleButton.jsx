@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
 
-// รับ props: label (ชื่อ), description (คำอธิบาย),
-// และ onToggle (ฟังก์ชันส่งค่ากลับ)
 function Toggle({ label, onToggle, defaultChecked }) {
   const [enabled, setEnabled] = useState(defaultChecked);
   useEffect(() => {

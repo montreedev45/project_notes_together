@@ -1,37 +1,19 @@
 import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
-import { useParams, useOutletContext } from "react-router-dom";
-import SettingRoomPreview from "./SettingRoom-preview";
+import { useOutletContext } from "react-router-dom";
 import useRoomStore from "../store/useRoomStore";
-import useAuthStore from "../store/useAuthStore";
 
 function SettingRoomMember() {
-  const user = useAuthStore((state) => state.user);
-  const users = useAuthStore((state) => state.users);
-  const getUser = useAuthStore((state) => state.getUser);
+  const { roomData } = useOutletContext();
   const updateRole = useRoomStore((state) => state.updateRole);
   const deleteMember = useRoomStore((state) => state.deleteMember);
-  const { roomData } = useOutletContext();
-  const [isCopied, setIsCopied] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
   const [selectedRoles, setSelectedRoles] = useState({});
 
   const roles = ["editor", "viewer", "commenter"];
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(link);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 1000);
-  };
-
-  const handleRoleChange = (userId, role) => {
-    setSelectedRoles((prev) => ({ ...prev, [userId]: role }));
-  };
-
   const handleUpdateRole = (userId, role) => {
     if (window.confirm("Are you sure you want to change this user's role?")) {
       setSelectedRoles((prev) => ({ ...prev, [userId]: role }));
-
       updateRole(roomData?._id, userId, role);
     }
   };
@@ -41,14 +23,6 @@ function SettingRoomMember() {
       deleteMember(roomData?._id, userId);
     }
   };
-
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      getUser(searchTerm);
-    }, 500);
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchTerm]);
 
   return (
     <>
@@ -60,7 +34,7 @@ function SettingRoomMember() {
           </span>
         </div>
 
-        <div className="max-h-150 overflow-y-auto no-scrollbar flex flex-col gap-3 pr-2">
+        <div className="max-h-115 overflow-y-auto flex flex-col gap-3 pr-2">
           {roomData?.members?.map((m) => {
             const isRoomOwner = m?.user?._id === roomData?.owner?._id;
 
@@ -79,7 +53,6 @@ function SettingRoomMember() {
                       style={{ color: m?.user?.avatar }}
                       width="28"
                     />
-                    <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 border-2 border-white rounded-full bg-green-500"></span>
                   </div>
 
                   <div className="flex flex-col min-w-0">

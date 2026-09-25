@@ -36,7 +36,7 @@ function JoinRoomModal({ isOpen, onClose }) {
     }
 
     if (fullCode.length === 6) {
-      const res = await joinRoom(fullCode);
+      const res = await joinRoom({code:fullCode});
 
       if (!res || !res.success || !res.data) {
         console.log("Join failed:", res);
@@ -81,7 +81,7 @@ function JoinRoomModal({ isOpen, onClose }) {
 
     if (fullCode.length === 6) {
       try {
-        const res = await joinRoom(fullCode);
+        const res = await joinRoom({code:fullCode});
         const roomId = res?._id || res?.data?._id;
         const userId = user?._id;
 

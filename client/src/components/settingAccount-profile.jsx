@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Icon } from "@iconify/react";
 import ColorPicker from "./colorPicker";
-import Toggle from "./toggleButton";
 import ChangePasswordModal from "./changePasswordModal";
 import SaveModal from "./saveModal";
 import ChangeEmailModal from "./changeEmailModal";
@@ -11,7 +10,6 @@ function SettingAccountProfile() {
   const user = useAuthStore((state) => state.user);
   const updateUserProfile = useAuthStore((state) => state.updateUserProfile);
   const [selectedColor, setSelectedColor] = useState(user?.avatar);
-  const [showOnlineStatus, setShowOnlineStatus] = useState(true);
   const [isOpenChangePasswordModal, setIsOpenChangePasswordModal] =
     useState(false);
   const [isOpenSaveModal, setIsOpenSaveModal] = useState(false);
@@ -37,7 +35,7 @@ function SettingAccountProfile() {
 
   const handleSubmit = async (e) => {
     e.stopPropagation();
-    const result = await updateUserProfile(formData);
+    await updateUserProfile(formData);
   };
 
   return (
@@ -53,7 +51,7 @@ function SettingAccountProfile() {
             </span>
           </div>
 
-          {user?.googleId === "google" && (
+          {user?.googleId !== "" && (
             <span className="text-xs text-red-500 font-medium bg-red-50 p-2 rounded">
               Email is managed by Google Sign-In and cannot be modified.
             </span>
@@ -62,7 +60,7 @@ function SettingAccountProfile() {
           <div className="relative">
             <input
               type="text"
-              disabled={user?.googleId === "google"}
+              disabled={user?.googleId !== ""}
               value={formData.username}
               name="username"
               onChange={handleChange}
@@ -80,7 +78,7 @@ function SettingAccountProfile() {
           <span className="text-xl md:text-2xl font-semibold flex items-center gap-3">
             Email
           </span>
-          {user?.googleId === "google" && (
+          {user?.googleId !== "" && (
             <span className="text-xs text-red-500 font-medium bg-red-50 p-2 rounded">
               Email is managed by Google Sign-In and cannot be modified.
             </span>
@@ -95,9 +93,9 @@ function SettingAccountProfile() {
             />
             <button
               onClick={() => setIsOpenChangeEmailModal(true)}
-              disabled={user?.googleId === "google"}
+              disabled={user?.googleId !== ""}
               className={`shrink-0 px-8 py-3 rounded-lg mt-5 md:mt-0 font-semibold transition-colors ${
-                user?.googleId === "google"
+                user?.googleId !== ""
                   ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                   : "bg-gray-200 hover:bg-gray-300 text-gray-500 cursor-pointer active:scale-95"
               }`}

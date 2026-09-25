@@ -1,45 +1,66 @@
 import winston from "winston";
+import { WinstonTransport as AxiomTransport } from '@axiomhq/winston';
 import "winston-daily-rotate-file";
 import path from "path";
 
 const logDir = path.join(process.cwd(), "logs");
+const isProduction = process.env.NODE_ENV === "production";
 
-// ตั้งค่าการหมุนเวียนไฟล์ (แยกไฟล์ตามวัน ลบไฟล์เก่าเกิน 14 วันทิ้งอัตโนมัติ)
-const transportDaily = new winston.transports.DailyRotateFile({
-  filename: `${logDir}/application-%DATE%.log`,
-  datePattern: "YYYY-MM-DD",
-  maxFiles: "14d", // เก็บย้อนหลังแค่ 14 วัน
-});
+// 1. เตรียม Transports พื้นฐาน (Console)
+const transportsList = [
+  new winston.transports.Console({
+    format: winston.format.combine(
+      winston.format.colorize(),
+      winston.format.printf(({ timestamp, level, message, stack }) => {
+        return `${timestamp} ${level}: ${message} ${stack ? `\n${stack}` : ""}`;
+      })
+    ),
+  }),
+];
 
-const transportError = new winston.transports.DailyRotateFile({
-  filename: `${logDir}/error-%DATE%.log`,
-  datePattern: "YYYY-MM-DD",
-  level: "error", // บันทึกเฉพาะ Error เท่านั้น
-  maxFiles: "30d",
-});
+// 2. ถ้าไม่ใช่ Production (รันบนเครื่องตัวเอง) ให้เขียนไฟล์ลงโฟลเดอร์ logs
+if (!isProduction) {
+  transportsList.push(
+    new winston.transports.DailyRotateFile({
+      filename: `${logDir}/application-%DATE%.log`,
+      datePattern: "YYYY-MM-DD",
+      maxFiles: "14d",
+    }),
+    new winston.transports.DailyRotateFile({
+      filename: `${logDir}/error-%DATE%.log`,
+      datePattern: "YYYY-MM-DD",
+      level: "error",
+      maxFiles: "30d",
+    })
+  );
+}
 
-// สร้างตัว Logger
+// 3. ถ้ามีคีย์ Axiom ค่อยผูก Transport (ป้องกัน Error ถ้ารันเครื่อง Local แล้วไม่มี .env)
+if (process.env.AXIOM_DATASET && process.env.AXIOM_TOKEN) {
+  transportsList.push(
+    new AxiomTransport({
+      dataset: process.env.AXIOM_DATASET,
+      token: process.env.AXIOM_TOKEN,
+    })
+  );
+}
+
+// 4. สร้าง Logger
 const logger = winston.createLogger({
   level: "info",
+  // Format หลักสำหรับไฟล์และ Axiom (ส่งเป็น JSON ดีที่สุด)
   format: winston.format.combine(
     winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
-    winston.format.printf(({ timestamp, level, message }) => {
-      return `[${timestamp}] ${level.toUpperCase()}: ${message}`;
-    })
+    winston.format.errors({ stack: true }),
+    winston.format.json()
   ),
-  transports: [
-    transportDaily,
-    transportError,
-    // ให้พ่นออก Terminal ด้วยเวลาเรารันตอน Dev
-    new winston.transports.Console({
-      format: winston.format.colorize({ all: true }),
-    }),
-  ],
+  transports: transportsList,
 });
 
+// 5. ผูกเข้ากับ Morgan
 logger.stream = {
   write: (message) => {
-    // Morgan มักจะแถมการขึ้นบรรทัดใหม่ (\n) มาด้วย เราจึงต้อง .trim() ออกก่อนบันทึก
+    // ลบการขึ้นบรรทัดใหม่ที่ Morgan แถมมาให้
     logger.info(message.trim());
   },
 };

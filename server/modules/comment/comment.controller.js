@@ -31,10 +31,9 @@ export const getComment = async (req, res) => {
       }
     }
 
-    const comments = await Comment.find({ room: roomId }).populate(
-      "sender",
-      "username avatar",
-    );
+    const comments = await Comment.find({ room: roomId })
+      .select("-updatedAt -__v")
+      .populate("sender", "username avatar");
 
     return res.status(200).json({
       message: "Fetch comments successfully",
@@ -85,10 +84,12 @@ export const addComment = async (req, res) => {
       stickerUrl: stickerUrl,
     });
 
-    const populatedComment = await newComment.populate(
-      "sender",
-      "username avatar",
-    );
+    await newComment.populate("sender", "username avatar");
+
+    // แปลงเป็น Object ธรรมดาเพื่อลบฟิลด์ที่ไม่ต้องการ
+    const populatedComment = newComment.toObject();
+    delete populatedComment.updatedAt;
+    delete populatedComment.__v;
 
     sendComment(roomId, populatedComment);
 
@@ -96,7 +97,7 @@ export const addComment = async (req, res) => {
       .status(201)
       .json({ message: "add new comment successfully", populatedComment });
   } catch (error) {
-    console.error("❌ Add comment error:", error); // 🟢 ควร Log error เสมอเพื่อให้ตามหาบั๊กได้ง่าย
+    console.error("Add comment error:", error);
     return res.status(500).json({ message: "add comment failed" });
   }
 };

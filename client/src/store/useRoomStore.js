@@ -2,7 +2,7 @@ import { create } from "zustand";
 import api from "../services/api";
 
 const initialState = {
-  rooms: [], //explore page
+  rooms: [],
   myRooms: [],
   recentRooms: [],
   trashRooms: [],
@@ -75,6 +75,20 @@ const useRoomStore = create((set, get) => ({
     }
   },
 
+  getRoomById: async (roomId) => {
+    try {
+      const res = await api.get(`/rooms/${roomId}`);
+
+      if (res.data.success === true) {
+        return { success: true, message: "successfully", data: res.data.room };
+      }
+
+      return { success: false };
+    } catch (error) {
+      return { success: false, message: error.response.data.message };
+    }
+  },
+
   getRecentRooms: (criteria = "all", searchTerm = "", userId = "") => {
     set((state) => {
       const allRecentRooms = JSON.parse(
@@ -109,7 +123,6 @@ const useRoomStore = create((set, get) => ({
     set({ recentRooms: [] });
   },
 
-  // save recent room
   saveToRecent: (room) => {
     if (!room || !room._id) return; // กันพังถ้าข้อมูลไม่ครบ
 
@@ -159,7 +172,7 @@ const useRoomStore = create((set, get) => ({
     }
   },
 
-  joinRoom: async (code = "", roomId = "") => {
+  joinRoom: async ({ code = "", roomId = "" }) => {
     set({ loading: true });
     try {
       const finalData = {
@@ -170,17 +183,29 @@ const useRoomStore = create((set, get) => ({
       const res = await api.post("/rooms/join", finalData);
 
       if (res?.data) {
-        set((state) => ({
-          myRooms: [res.data, ...state.myRooms],
-          rooms: state.rooms.map((r) =>
-            r._id === res.data._id ? res.data : r,
-          ),
-        }));
+        set((state) => {
+          // 1. เช็กก่อนว่าห้องนี้เคยอยู่ใน myRooms แล้วหรือยัง
+          const isAlreadyInMyRooms = state.myRooms.some(
+            (r) => r._id === res.data._id,
+          );
+
+          return {
+            // 2. ถ้ามีอยู่แล้ว ให้อัปเดตข้อมูลทับของเดิม / ถ้ายังไม่มี ค่อยเพิ่มเข้าไปด้านหน้าสุด
+            myRooms: isAlreadyInMyRooms
+              ? state.myRooms.map((r) =>
+                  r._id === res.data._id ? res.data : r,
+                )
+              : [res.data, ...state.myRooms],
+
+            rooms: state.rooms.map((r) =>
+              r._id === res.data._id ? res.data : r,
+            ),
+            loading: false,
+          };
+        });
 
         useRoomStore.getState().saveToRecent(res.data);
-
-        set({ loading: false });
-        return {data:res.data, success: true};
+        return { data: res.data, success: true };
       }
     } catch (error) {
       set({ loading: false });
@@ -247,10 +272,12 @@ const useRoomStore = create((set, get) => ({
     } catch (error) {}
   },
 
-  getTrashRooms: async (searchTerm = "") => {
+  getTrashRooms: async (criteria = "", searchTerm = "") => {
     set({ loading: true });
     try {
-      const res = await api.get(`/rooms/trash?searchTerm=${searchTerm}`);
+      const res = await api.get(
+        `/rooms/trash?searchTerm=${searchTerm}&criteria=${criteria}`,
+      );
       if (res?.data) {
         set({ trashRooms: res.data, loading: false });
         return { success: true };

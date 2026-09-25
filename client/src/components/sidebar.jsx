@@ -1,21 +1,14 @@
 import { Link } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import useAuthStore from "../store/useAuthStore";
-import useRoomStore from "../store/useRoomStore";
-import { disconnectSocket } from "../socket";
+import { useEffect } from "react";
 
 function Sidebar({ onClose }) {
-  const resetRoomStore = useRoomStore((state) => state.resetRoomStore);
   const logout = useAuthStore((state) => state.logout);
   const user = useAuthStore((state) => state.user);
 
   const handleLogout = async () => {
     try {
-      // 1. ตัดสาย Socket ทันที!
-      disconnectSocket();
-
-      // 2. ล้าง State / Clear Cookie (จะทำให้ user เป็น null)
-      await resetRoomStore();
       await logout();
     } catch (error) {
       console.error("Logout error:", error);

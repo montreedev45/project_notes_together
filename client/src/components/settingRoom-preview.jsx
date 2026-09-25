@@ -2,7 +2,7 @@ import { Icon } from "@iconify/react";
 
 function SettingRoomPreview({ roomData }) {
   return (
-    <div className="flex flex-col items-center gap-4 w-full fixed">
+    <div className="flex flex-col items-center gap-4 w-full">
       <span className="text-lg font-bold text-red-500 uppercase tracking-wider">
         Live Preview
       </span>

@@ -14,7 +14,7 @@ const authMiddleware = async (req, res, next) => {
     const decode = jwt.verify(token, process.env.JWT_SECRET);
 
     // ดึงข้อมูลสดจาก DB (ตัด password ออก)
-    const user = await User.findById(decode.id || decode._id).select(
+    const user = await User.findById(decode._id).select(
       "-password",
     );
 
