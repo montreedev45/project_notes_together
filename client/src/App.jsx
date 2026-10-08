@@ -6,7 +6,7 @@ import Home from "./pages/home";
 import Login from "./pages/login";
 import Register from "./pages/register";
 import Layout from "./layouts/layout";
-import DashboardLayout from "./layouts/dashboardlayout";
+import DashboardLayout from "./layouts/dashboardLayout";
 import Error404 from "./pages/error404";
 import Error500 from "./pages/error500";
 import Dashboard from "./pages/dashboard";
