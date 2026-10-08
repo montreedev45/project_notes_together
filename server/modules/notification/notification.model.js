@@ -14,7 +14,7 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["JOIN", "LEAVE"],
+      enum: ["JOIN", "LEAVE", "TRANSFER_OWNER", "INVITE", "CANCEL_INVITE", "UPDATE_ROLE"],
       required: true,
     },
     roomId: {

@@ -2,26 +2,112 @@ import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import { useOutletContext } from "react-router-dom";
 import useRoomStore from "../store/useRoomStore";
+import toast from "react-hot-toast";
+import statusModal from "./statusModal.jsx";
+import ConfirmModal from "./confirmModal.jsx";
 
 function SettingRoomMember() {
   const { roomData } = useOutletContext();
   const updateRole = useRoomStore((state) => state.updateRole);
   const deleteMember = useRoomStore((state) => state.deleteMember);
   const [selectedRoles, setSelectedRoles] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState({
+    isOpen: false,
+    type: "",
+    userId: null,
+    userName: null,
+    role: null,
+  });
 
   const roles = ["editor", "viewer", "commenter"];
 
-  const handleUpdateRole = (userId, role) => {
-    if (window.confirm("Are you sure you want to change this user's role?")) {
-      setSelectedRoles((prev) => ({ ...prev, [userId]: role }));
-      updateRole(roomData?._id, userId, role);
+  const handleConfirm = () => {
+    if (confirmConfig.type === "DeleteMember") return executeDeleteMember();
+    if (confirmConfig.type === "UpdateRole") return executeUpdateRole();
+  };
+
+  const handleRequestUpdateRole = (userId, userName, role) => {
+    setConfirmConfig({
+      isOpen: true,
+      type: "UpdateRole",
+      userId: userId,
+      userName: userName,
+      role: role,
+    });
+  };
+
+  const executeUpdateRole = async () => {
+    const toastId = toast.loading("Updating role...");
+    const res = await updateRole(
+      roomData?._id,
+      confirmConfig.userId,
+      confirmConfig.role
+    );
+    if (res.success) {
+      setSelectedRoles((prev) => ({
+        ...prev,
+        [confirmConfig.userId]: confirmConfig.role,
+      }));
+      toast.success("Updated role successful", { id: toastId });
+    } else {
+      toast.error(`${res.message || "Update role failed"}`, { id: toastId });
     }
   };
 
-  const handleDeleteMember = (userId) => {
-    if (window.confirm("Are you sure you want to delete this user?")) {
-      deleteMember(roomData?._id, userId);
+  const handleRequestDeleteMember = (userId, userName) => {
+    setConfirmConfig({
+      isOpen: true,
+      type: "DeleteMember",
+      userId: userId,
+      userName: userName,
+      role: null,
+    });
+  };
+
+  const executeDeleteMember = async () => {
+    setLoading(true);
+    const toastId = toast.loading("Deleting member...");
+    const res = await deleteMember(roomData?._id, confirmConfig?.userId);
+    if (res.success) {
+      toast.success("Deleted member successful", { id: toastId });
+      setLoading(false);
+    } else {
+      toast.error(`${res.message || "Delete member failed"}`, { id: toastId });
+      setLoading(false);
     }
+  };
+
+  const getModalText = () => {
+    switch (confirmConfig.type) {
+      case "DeleteMember":
+        return {
+          title: "Confirm delete member",
+          message: `Are you sure you want to delete member: ${confirmConfig.userName}`,
+        };
+      case "UpdateRole":
+        return {
+          title: "Confirm update role",
+          message: `Are you sure you want to update role of ${confirmConfig.userName} to ${confirmConfig.role}`,
+        };
+      default:
+        return {
+          title: "",
+          message: "",
+        };
+    }
+  };
+
+  const { title, message } = getModalText();
+
+  const closeModal = () => {
+    setConfirmConfig({
+      isOpen: false,
+      type: "",
+      userId: null,
+      userName: null,
+      role: null,
+    });
   };
 
   return (
@@ -85,7 +171,11 @@ function SettingRoomMember() {
                           name="permission"
                           value={selectedRoles[m?.user?._id] || m?.role}
                           onChange={(e) =>
-                            handleUpdateRole(m?.user?._id, e.target.value)
+                            handleRequestUpdateRole(
+                              m?.user?._id,
+                              m?.user?.username,
+                              e.target.value,
+                            )
                           }
                           className="cursor-pointer bg-transparent outline-none text-sm font-semibold text-slate-700 w-23.75"
                         >
@@ -102,7 +192,12 @@ function SettingRoomMember() {
                       </div>
 
                       <button
-                        onClick={() => handleDeleteMember(m?.user?._id)}
+                        onClick={() =>
+                          handleRequestDeleteMember(
+                            m?.user?._id,
+                            m?.user?.username,
+                          )
+                        }
                         className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
                         title="Remove member"
                       >
@@ -127,6 +222,14 @@ function SettingRoomMember() {
           )}
         </div>
       </div>
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        onClose={closeModal}
+        onConfirm={handleConfirm}
+        title={title}
+        message={message}
+        isLoading={loading}
+      />
     </>
   );
 }

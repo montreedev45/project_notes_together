@@ -7,6 +7,8 @@ import useRoomStore from "../store/useRoomStore";
 import useModalStore from "../store/useModalStore";
 import { getRelativeTimeEdit } from "../utils/getRelativeTimeEdit";
 import { getSocket } from "../socket";
+import toast from "react-hot-toast";
+import ConfirmModal from "./confirmModal.jsx";
 
 function RoomCard({ data = {} }) {
   const navigate = useNavigate();
@@ -18,15 +20,31 @@ function RoomCard({ data = {} }) {
   const permanentlyDelete = useRoomStore((state) => state.permanentlyDelete);
   const openDeleteModal = useModalStore((state) => state.openDeleteModal);
   const joinRoom = useRoomStore((state) => state.joinRoom);
-
   const relativeTimeFromStore = useRoomStore(
     (state) => state.relativeTime[data._id] || null,
   );
+
   const [displayTime, setDisplayTime] = useState(
     getRelativeTimeEdit(relativeTimeFromStore),
   );
   const [isOpenMenuModal, setIsOpenMenuModal] = useState(false);
   const [isOpenJoinRoomModal, setIsOpenJoinRoomModal] = useState(false);
+  const [roomOnlineCounts, setRoomOnlineCounts] = useState({});
+  const [confirmConfig, setConfirmConfig] = useState({
+    isOpen: false,
+    type: "",
+    roomId: null,
+  });
+
+  const isUnlimited = data?.owner?.plan === "business";
+  const amountMember = data?.members?.length ?? 0;
+  const PLAN_LIMITS = {
+    free: 2,
+    teams: 7,
+    business: Infinity,
+  };
+  const colleagueLimit = PLAN_LIMITS[data?.owner?.plan] ?? 1;
+  const isFull = amountMember >= colleagueLimit;
   const isUrlFromTrash = location.pathname.includes("trash");
 
   const menuRef = useRef(null);
@@ -34,14 +52,10 @@ function RoomCard({ data = {} }) {
 
   const memberData = data?.members?.find((m) => m.user?._id === user?._id);
   const role = memberData?.role || "viewer";
-
   const isAlreadyMember = data?.members?.some(
     (m) => (m.user?._id || m.user) === user?._id,
   );
   const isOwner = data?.owner?._id === user?._id;
-
-  const [roomOnlineCounts, setRoomOnlineCounts] = useState({});
-
   const socket = getSocket();
 
   useEffect(() => {
@@ -57,7 +71,6 @@ function RoomCard({ data = {} }) {
     }
 
     const eventName = `room-online-status:${data._id}`;
-
     const handleStatusChange = (res) => {
       const { roomId, count, activeUsers } = res;
       setRoomOnlineCounts((prev) => ({
@@ -73,7 +86,6 @@ function RoomCard({ data = {} }) {
   }, [socket, data._id]);
 
   //relative time
-
   useEffect(() => {
     setDisplayTime(getRelativeTimeEdit(relativeTimeFromStore));
 
@@ -106,14 +118,10 @@ function RoomCard({ data = {} }) {
     };
   }, [isOpenMenuModal]);
 
-  const handleClickRoom = async(e) => {
+  const handleClickRoom = async (e) => {
     if (data?.isDeleted === true) {
-      if (
-        window.confirm("This room deleted, Do you want to restore this room ?")
-      ) {
-        restoreRoom(data?._id);
-        setIsOpenMenuModal(false);
-      }
+      handleRequestRestore();
+      setIsOpenMenuModal(false);
       return;
     }
 
@@ -131,16 +139,33 @@ function RoomCard({ data = {} }) {
       setIsOpenMenuModal(false);
     } else {
       // ถ้าเป็น Public หรือเป็นสมาชิกอยู่แล้ว ให้เข้า Editor ได้เลย
-      const res = await joinRoom({roomId: data?._id});
-      navigate(`/notes-together/${data._id}/${role}`);
+      const toastId = toast.loading("Joining room...");
+      const res = await joinRoom({ roomId: data?._id });
+
+      if (res.success) {
+        toast.success("Joined room successful", { id: toastId });
+        navigate(`/notes-together/${data._id}/${role}`);
+      } else {
+        toast.error(`${res.message || "Join room failed"}`, { id: toastId });
+        navigate(`/notes-together/explore`);
+      }
     }
   };
 
-  const handleLeaveRoom = (e) => {
-    e.stopPropagation();
+  const handleClose = () => {
+    setConfirmConfig({ isOpen: false, type: "", roomId: null });
+  };
 
+  const handleRequestLeaveRoom = (roomId) => {
+    setConfirmConfig({ isOpen: true, type: "Leave", roomId: roomId });
+  };
+
+  const executeLeaveRoom = async () => {
+    const toastId = toast.loading("Leaving room...");
     if (data?.owner?._id === user?._id) {
-      return alert("Owner cannot leave. Please delete the room instead.");
+      toast.error("Owner cannot leave. Please delete the room instead.", {
+        id: toastId,
+      });
     }
 
     const isAlreadyMember = data?.members?.some(
@@ -148,12 +173,20 @@ function RoomCard({ data = {} }) {
     );
 
     if (isAlreadyMember) {
-      if (window.confirm(`Are you sure you want to leave "${data.name}"?`)) {
-        leaveRoom(data?._id, user._id);
+      const res = await leaveRoom(data?._id, user._id);
+      if (res.success) {
+        toast.success("Leave room successful", { id: toastId });
+        setIsOpenMenuModal(false);
+      } else {
+        toast.error(`${res.message || "Leave room failed"}`, {
+          id: toastId,
+        });
         setIsOpenMenuModal(false);
       }
     } else {
-      alert("you not member this room");
+      toast.error("You are not member this room.", {
+        id: toastId,
+      });
     }
   };
 
@@ -168,19 +201,53 @@ function RoomCard({ data = {} }) {
     setIsOpenMenuModal(false);
   };
 
-  const handleRestore = (e) => {
-    e.stopPropagation();
-
-    restoreRoom(data?._id);
-    setIsOpenMenuModal(false);
+  const executeRestore = async () => {
+    const toastId = toast.loading("Restoring room...");
+    const res = await restoreRoom(data?._id);
+    if (res.success) {
+      toast.success("Restored room successful", { id: toastId });
+      navigate(`/notes-together/myroom`);
+      setIsOpenMenuModal(false);
+    } else {
+      toast.error(`${res.message || "Restore room failed"}`, { id: toastId });
+      setIsOpenMenuModal(false);
+    }
   };
 
-  const handleDeleteForever = (e) => {
-    e.stopPropagation();
-    if (window.confirm("Are you sure? once deleted, it cannot be retore")) {
-      permanentlyDelete(data?._id);
+  const handleRequestPermanentlyDelete = (roomId) => {
+    setConfirmConfig({
+      isOpen: true,
+      type: "PermanentlyDelete",
+      roomId: roomId,
+    });
+  };
+
+  const executePermanentlyDelete = async () => {
+    const toastId = toast.loading("Permanently deleting...");
+    try {
+      const res = await permanentlyDelete(data?._id);
+      if (res.success) {
+        toast.success("Permanently deleted successfully", { id: toastId });
+      } else {
+        toast.error(res.message || "Permanently delete failed", {
+          id: toastId,
+        });
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error("Network error. Please try again.", { id: toastId });
+    } finally {
+      setIsOpenMenuModal(false);
+      handleClose();
     }
-    setIsOpenMenuModal(false);
+  };
+
+  const handleRequestRestore = (roomId) => {
+    setConfirmConfig({
+      isOpen: true,
+      type: "Restore",
+      roomId: roomId,
+    });
   };
 
   const handleSettingRoom = () => {
@@ -192,6 +259,41 @@ function RoomCard({ data = {} }) {
       navigate(`/notes-together/${data._id}/setting-room/general`);
     }
   };
+
+  const handleConfirm = () => {
+    if (confirmConfig.type === "Leave") return executeLeaveRoom();
+    if (confirmConfig.type === "PermanentlyDelete")
+      return executePermanentlyDelete();
+    if (confirmConfig.type === "Restore") return executeRestore();
+  };
+
+  const getModalText = () => {
+    switch (confirmConfig.type) {
+      case "Leave":
+        return {
+          title: "Confirm leave room",
+          message: `Are you sure you want to leave room ${data?.name}?`,
+        };
+      case "PermanentlyDelete":
+        return {
+          title: "Confirm delete forever room",
+          message: `Are you sure you want to delete forever room ${data?.name}?`,
+        };
+      case "Restore":
+        return {
+          title: "Confirm restore room",
+          message: `Are you sure you want to restore room ${data?.name}?`,
+        };
+
+      default:
+        return {
+          title: "",
+          message: "",
+        };
+    }
+  };
+
+  const { title, message } = getModalText();
 
   return (
     <>
@@ -231,12 +333,16 @@ function RoomCard({ data = {} }) {
                   <ul className="relative z-10 flex flex-col gap-0.5">
                     {isUrlFromTrash ? (
                       <>
-                        <li onClick={handleRestore}>
+                        <li onClick={() => handleRequestRestore(data?._id)}>
                           <span className="block px-3 py-2 text-slate-600 font-medium rounded-md text-sm hover:bg-green-50 hover:text-green-600 cursor-pointer transition-colors">
                             Restore
                           </span>
                         </li>
-                        <li onClick={handleDeleteForever}>
+                        <li
+                          onClick={() =>
+                            handleRequestPermanentlyDelete(data?._id)
+                          }
+                        >
                           <span className="block px-3 py-2 text-red-500 font-medium rounded-md text-sm hover:bg-red-50 hover:text-red-600 cursor-pointer transition-colors">
                             Delete Forever
                           </span>
@@ -265,7 +371,7 @@ function RoomCard({ data = {} }) {
                           </li>
                         )}
                         {isAlreadyMember && !isOwner && (
-                          <li onClick={handleLeaveRoom}>
+                          <li onClick={() => handleRequestLeaveRoom(data?._id)}>
                             <span className="block px-3 py-2 text-slate-600 font-medium rounded-md text-sm hover:bg-gray-100 hover:text-slate-900 cursor-pointer transition-colors">
                               Leave Room
                             </span>
@@ -288,15 +394,33 @@ function RoomCard({ data = {} }) {
         </div>
 
         <div className="mt-3 mb-2 flex flex-col grow">
-          <span className="text-xl font-bold flex items-center text-slate-800 truncate">
-            {data.name}
-            {data?.owner?._id === user?._id && (
-              <Icon
-                icon="mdi:star"
-                className="text-yellow-400 ms-1 shrink-0"
-                width={20}
-              />
-            )}
+          <span className="text-xl font-bold flex items-center justify-between text-slate-800 truncate">
+            <span className="flex justify-center items-center">
+              {data.name}
+              {data?.owner?._id === user?._id && (
+                <Icon
+                  icon="mdi:star"
+                  className="text-yellow-400 ms-1 shrink-0"
+                  width={20}
+                />
+              )}
+            </span>
+            <div className={`mt-2 flex items-center text-sm text-gray-500`}>
+              <span
+                className={`flex items-center gap-1 ${isFull ? "text-red-500" : ""}`}
+              >
+                <Icon icon="mdi:people" />
+                {amountMember} /
+                {isUnlimited ? (
+                  <Icon
+                    icon="mdi:infinity"
+                    className="text-lg inline-block ml-1"
+                  />
+                ) : (
+                  `${colleagueLimit}`
+                )}
+              </span>
+            </div>{" "}
           </span>
 
           <p className="text-slate-500 mt-1 text-sm wrap-break-word line-clamp-2">
@@ -356,6 +480,14 @@ function RoomCard({ data = {} }) {
           onClose={() => setIsOpenJoinRoomModal(false)}
         />
       )}
+
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        onClose={handleClose}
+        onConfirm={handleConfirm}
+        title={title}
+        message={message}
+      />
     </>
   );
 }

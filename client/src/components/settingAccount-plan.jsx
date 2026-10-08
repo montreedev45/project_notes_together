@@ -2,6 +2,9 @@ import { Icon } from "@iconify/react";
 import useAuthStore from "../store/useAuthStore";
 import usePlanStore from "../store/usePlanStore";
 import { useOutletContext } from "react-router-dom";
+import ConfirmModal from "./confirmModal";
+import toast from "react-hot-toast";
+import { useState } from "react";
 
 function SettingAccountPlan() {
   const plans = useOutletContext();
@@ -9,10 +12,41 @@ function SettingAccountPlan() {
   const upgradePlan = usePlanStore((state) => state.upgradePlan);
   const plansReverse = [...plans].reverse();
 
-  const handleSelectPlan = (planId, planName) => {
-    if (window.confirm(`do you want to change to the ${planName} plan?`)) {
-      upgradePlan(planId);
+  const [isConfirmModal, setIsConfirmModal] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleRequestChangePlan = (planId, planName) => {
+    setSelectedPlan({planId, planName})
+    setIsConfirmModal(true);
+  };
+
+  const executeChangePlan = async () => {
+    if (!selectedPlan) return; // ป้องกันบั๊กกรณีข้อมูลเป้าหมายหายไป
+
+    setIsLoading(true);
+    const toastId = toast.loading("Updating plan...");
+    try {
+      const res = await upgradePlan(selectedPlan?.planId)
+
+      if (res.success) {
+        toast.success("Updated plan successfully", { id: toastId });
+        setIsConfirmModal(false);
+        setSelectedPlan(null);
+      } else {
+        toast.error(res.message || "Update plan failed", { id: toastId });
+        setIsConfirmModal(false);
+      }
+    } catch (error) {
+      toast.error("Network error", { id: toastId });
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const handleCloseModal = () => {
+    setIsConfirmModal(false);
+    setSelectedPlan(null);
   };
 
   return (
@@ -37,7 +71,7 @@ function SettingAccountPlan() {
               </div>
 
               <button
-                onClick={() => handleSelectPlan(p._id, p.plan)}
+                onClick={() => handleRequestChangePlan(p._id, p.plan)}
                 disabled={user.plan === p.plan}
                 className={`mt-2 mb-6 py-3 rounded-xl font-semibold w-full text-center transition-all ${
                   user.plan === p.plan
@@ -67,6 +101,14 @@ function SettingAccountPlan() {
           ))}
         </div>
       </div>
+      <ConfirmModal
+        isOpen={isConfirmModal}
+        onClose={handleCloseModal}
+        onConfirm={executeChangePlan}
+        title="Confirm Change Plan"
+        message={`Are you sure you want to change your plan to ${selectedPlan?.planName}?`}
+        isLoading={isLoading}
+      />
     </>
   );
 }

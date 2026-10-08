@@ -18,12 +18,15 @@ import {
   updateCodeRoom,
   updateLinkShareRoom,
   invitedUsers,
+  cancelInvitedUsers,
   transferOwnership,
-  permanentlyDeleteAll
+  permanentlyDeleteAll,
+  declineInvite,
+  acceptInvite
 } from "./room.controller.js";
 import { validate } from "../../middleware/validateZod.js";
 import { apiLimiter, writeLimiter } from "../../middleware/rateLimiter.js";
-import { createRoomSchema, deleteMemberSchema, getAllRoomsSchema, getRoomByIdSchema, getRoomsSchema, getTrashRoomsSchema, invitedUsersSchema, joinLinkSchema, joinRoomSchema, leaveRoomSchema, permanentlyDeleteSchema, restoreRoomSchema, softDeleteSchema, transferOwnershipSchema, updateCodeRoomSchema, updatedRoomSchema, updateLinkShareRoomSchema, updateRoleSchema } from "./room.schema.js";
+import { acceptInvitedSchema, cancelInviteUsersSchema, createRoomSchema, declineInvitedSchema, deleteMemberSchema, getAllRoomsSchema, getRoomByIdSchema, getRoomsSchema, getTrashRoomsSchema, invitedUsersSchema, joinLinkSchema, joinRoomSchema, leaveRoomSchema, permanentlyDeleteSchema, restoreRoomSchema, softDeleteSchema, transferOwnershipSchema, updateCodeRoomSchema, updatedRoomSchema, updateLinkShareRoomSchema, updateRoleSchema } from "./room.schema.js";
 
 const router = express.Router();
 
@@ -40,6 +43,9 @@ router.put("/update-role", authMiddleware, apiLimiter, validate(updateRoleSchema
 router.put("/delete-member", authMiddleware, apiLimiter, validate(deleteMemberSchema), deleteMember)
 router.put("/update-code", authMiddleware, apiLimiter, validate(updateCodeRoomSchema), updateCodeRoom)
 router.post("/invite-colleague", authMiddleware, apiLimiter, validate(invitedUsersSchema), invitedUsers)
+router.post("/cancel-invite-colleague", authMiddleware, apiLimiter, validate(cancelInviteUsersSchema), cancelInvitedUsers)
+router.post("/accept-invite", authMiddleware, apiLimiter, validate(acceptInvitedSchema), acceptInvite)
+router.post("/decline-invite", authMiddleware, apiLimiter, validate(declineInvitedSchema), declineInvite)
 router.post("/transfer-ownership", authMiddleware, apiLimiter, validate(transferOwnershipSchema), transferOwnership)
 router.delete("/permanent-all", authMiddleware, apiLimiter, permanentlyDeleteAll);
 

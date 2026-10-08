@@ -198,6 +198,7 @@ export const updatedRoomSchema = z.object({
             invalid_type_error: "Must be a string",
           })
           .trim()
+          .min(3, "Name must be at least 3 characters")
           .max(12, "Name cannot exceed 12 characters")
           .openapi({ example: "room1" })
           .optional(),
@@ -296,6 +297,31 @@ export const invitedUsersSchema = z.object({
     .object({
       roomId: idSchema("Room id").openapi({ example: "6a910298976db..." }),
       userId: idSchema("User id").openapi({ example: "6a910298976db..." }),
+    })
+    .strict(),
+});
+
+export const cancelInviteUsersSchema = z.object({
+  body: z
+    .object({
+      roomId: idSchema("Room id").openapi({ example: "6a910298976db..." }),
+      userId: idSchema("User id").openapi({ example: "6a910298976db..." }),
+    })
+    .strict(),
+});
+
+export const acceptInvitedSchema = z.object({
+  body: z
+    .object({
+      roomId: idSchema("Room id").openapi({ example: "6a910298976db..." }),
+    })
+    .strict(),
+});
+
+export const declineInvitedSchema = z.object({
+  body: z
+    .object({
+      roomId: idSchema("Room id").openapi({ example: "6a910298976db..." }),
     })
     .strict(),
 });

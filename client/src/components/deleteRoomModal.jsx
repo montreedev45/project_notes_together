@@ -1,8 +1,8 @@
 import { Icon } from "@iconify/react";
-import { useState } from "react";
 import useRoomStore from "../store/useRoomStore";
 import { useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
+import toast from "react-hot-toast";
 
 function DeleteRoomModal({ isOpen, roomId, onClose }) {
   const navigate = useNavigate();
@@ -10,14 +10,28 @@ function DeleteRoomModal({ isOpen, roomId, onClose }) {
 
   const handleDeleteRoom = async (e) => {
     e.stopPropagation();
+    if (!roomId) return;
+
+    const toastId = toast.loading("Moving room to trash...");
     try {
-      if (roomId) {
-        await deleteRoom(roomId);
+      const res = await deleteRoom(roomId);
+
+      if (res.success) {
+        toast.success("Moving room to trash successful", { id: toastId });
         onClose();
         navigate("/notes-together/myroom");
+      } else {
+        toast.error(res.message || "Moving room to trash failed", {
+          id: toastId,
+        });
+        onClose();
       }
     } catch (error) {
       console.error("Failed to delete room:", error);
+      toast.error("Network error. Failed to move room to trash.", {
+        id: toastId,
+      });
+      onClose();
     }
   };
 

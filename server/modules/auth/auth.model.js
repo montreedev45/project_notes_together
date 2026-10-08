@@ -24,7 +24,7 @@ const userSchema = new mongoose.Schema(
     },
     plan: {
       type: String,
-      enum: ["free", "teams", "bussiness"],
+      enum: ["free", "teams", "business"],
       default: "free"
     },
     changeEmailCode: { type: String },

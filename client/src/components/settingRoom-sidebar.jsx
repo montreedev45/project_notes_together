@@ -9,7 +9,7 @@ function SettingRoomSidebar() {
   const [isOpenDeleteRoomModal, setIsOpenDeleteRoomModal] = useState(false);
   return (
     <>
-      <div className="p-4 xl:bg-transparent shrink-0 xl:w-60 border-b xl:border-b-0 border-gray-200">
+      <div className="p-8 xl:bg-transparent shrink-0 xl:w-60 border-b xl:border-b-0 border-gray-200">
         <span className="text-xl xl:text-2xl font-semibold hidden lg:flex items-center gap-2 mb-4">
           <Icon icon="mdi:folder" className="text-slate-800" width="40" />
           Room

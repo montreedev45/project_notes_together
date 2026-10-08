@@ -5,6 +5,8 @@ import ColorPicker from "../components/colorPicker";
 import Toggle from "../components/toggleButton";
 import SettingRoomPreview from "./SettingRoom-preview";
 import useRoomStore from "../store/useRoomStore";
+import toast from "react-hot-toast";
+import StatusModal from "./statusModal";
 
 function SettingRoomGeneral() {
   const { id } = useParams();
@@ -14,6 +16,12 @@ function SettingRoomGeneral() {
   const { roomData } = useOutletContext();
   const [formData, setFormData] = useState({});
   const [selectedColor, setSelectedColor] = useState("");
+  const [modalConfig, setModalConfig] = useState({
+    isOpen: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
 
   useEffect(() => {
     if (roomData) {
@@ -30,8 +38,25 @@ function SettingRoomGeneral() {
     updateRoomLocal(id, { [name]: value });
   };
 
-  const handleUpdate = () => {
-    updateRoom(id, myRooms);
+  const handleUpdate = async () => {
+    const toastId = toast.loading("Saving room...");
+    const res = await updateRoom(id, myRooms);
+
+    if (res.success) {
+      toast.success("Saved room successful", { id: toastId });
+    } else {
+      toast.remove(toastId);
+      setModalConfig({
+        isOpen: true,
+        type: "error",
+        title: "Save failed",
+        message: `${res.message || "Update room failed, Please try again"}`,
+      });
+    }
+  };
+
+  const closeModal = () => {
+    setModalConfig((prev) => ({ ...prev, isOpen: false }));
   };
 
   return (
@@ -139,6 +164,13 @@ function SettingRoomGeneral() {
           <SettingRoomPreview roomData={formData} />
         </div>
       </div>
+      <StatusModal
+        isOpen={modalConfig.isOpen}
+        onClose={closeModal}
+        type={modalConfig.type}
+        title={modalConfig.title}
+        message={modalConfig.message}
+      />
     </>
   );
 }

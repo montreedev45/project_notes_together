@@ -12,5 +12,3 @@ export const getPlan = async (req, res) => {
       .json({ success: false, message: "fetch plan failed" });
   }
 };
-
-

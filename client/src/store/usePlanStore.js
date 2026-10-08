@@ -4,7 +4,6 @@ import useAuthStore from "./useAuthStore";
 
 const usePlanStore = create((set, get) => ({
   plans: [],
-  loading: false,
 
   getPlan: async () => {
     try {
@@ -19,12 +18,17 @@ const usePlanStore = create((set, get) => ({
 
       return { success: false, message: "unexpected response from server" };
     } catch (error) {
-      return { success: false, message: "fetch plans failed" };
+      return {
+        success: false,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Get plan failed",
+      };
     }
   },
 
   upgradePlan: async (planId) => {
-    set({ loading: true });
     try {
       const res = await api.post("/auth/upgrade-plan", { planId });
 
@@ -44,10 +48,13 @@ const usePlanStore = create((set, get) => ({
         message: res.data?.message || "Unexpected response from server",
       };
     } catch (error) {
-      const errorMsg = error.response?.data?.message || "Upgrade plan failed";
-      return { success: false, message: errorMsg };
-    } finally {
-      set({ loading: false });
+      return {
+        success: false,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Update plan failed",
+      };
     }
   },
 }));

@@ -1,12 +1,20 @@
 import { Icon } from "@iconify/react";
 import useAuthStore from "../store/useAuthStore";
+import toast from "react-hot-toast";
 
 function DeleteAccountModal({ isOpen, onClose }) {
-  const user = useAuthStore((state) => state.user);
   const deleteAccount = useAuthStore((state) => state.deleteAccount);
 
-  const handleDelete = () => {
-    deleteAccount();
+  const handleDelete = async () => {
+    const toastId = toast.loading("Deleting account...");
+    const res = await deleteAccount();
+    if (res?.success) {
+      toast.success("Deleted account successful", { id: toastId });
+    } else {
+      toast.error(`${res?.message || "Deleted account failed"}`, {
+        id: toastId,
+      });
+    }
   };
 
   if (!isOpen) return null;
@@ -45,22 +53,22 @@ function DeleteAccountModal({ isOpen, onClose }) {
             <strong className="block text-base mb-1">
               Are you absolutely sure?
             </strong>
-            This action is irreversible. All of your rooms, notes, and personal
-            data will be permanently wiped from our servers immediately.
+            This action cannot be undone. All your rooms, recordings, and
+            personal data will be deleted immediately.
           </div>
         </div>
 
         {/* Footer */}
-        <div className="p-5 flex justify-end gap-3 bg-gray-50 border-t border-gray-200">
+        <div className="p-5 flex justify-end gap-3 bg-white">
           <button
             onClick={onClose}
-            className="px-6 py-2.5 font-semibold text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 active:scale-95 transition-all cursor-pointer shadow-sm"
+            className="cursor-pointer px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 text-slate-800"
           >
             Cancel
           </button>
           <button
             onClick={handleDelete}
-            className="px-6 py-2.5 font-bold text-white bg-red-600 rounded-lg hover:bg-red-700 active:scale-95 transition-all cursor-pointer shadow-sm"
+            className="px-6 py-2.5 font-bold text-white bg-red-600 rounded-lg hover:bg-red-500 active:scale-95 transition-all cursor-pointer shadow-sm"
           >
             Delete Account
           </button>

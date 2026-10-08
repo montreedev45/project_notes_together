@@ -62,6 +62,13 @@ export const sendNotification = (recipientId, data) => {
   }
 };
 
+export const sendNotificationEveryMemberOn = (roomId, data) => {
+  console.log("sendNotificationEveryMemberOn", roomId)
+  if (io) {
+    io.to(roomId.toString()).emit("owner_transferred", data);
+  }
+};
+
 export const sendComment = (roomId, newComment) => {
   if (io) {
     io.to(roomId).emit("received_comment", { newComment });

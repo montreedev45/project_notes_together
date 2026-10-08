@@ -3,15 +3,16 @@ import { Icon } from "@iconify/react";
 import { useOutletContext } from "react-router-dom";
 import useRoomStore from "../store/useRoomStore";
 import useAuthStore from "../store/useAuthStore";
+import toast from "react-hot-toast";
 
 function SettingRoomShare() {
   const users = useAuthStore((state) => state.users);
   const getUser = useAuthStore((state) => state.getUser);
   const clearUsers = useAuthStore((state) => state.clearUsers);
   const updateRoomCode = useRoomStore((state) => state.updateRoomCode);
-  const loading = useRoomStore((state) => state.loading);
   const updateLinkShare = useRoomStore((state) => state.updateLinkShare);
   const invitedUsers = useRoomStore((state) => state.invitedUsers);
+  const cancelInvited = useRoomStore((state) => state.cancelInvited);
   const { roomData } = useOutletContext();
   const [isCopied, setIsCopied] = useState(false);
   const [isCopiedCode, setIsCopiedCode] = useState(false);
@@ -55,13 +56,13 @@ function SettingRoomShare() {
   const handleCopy = () => {
     navigator.clipboard.writeText(link);
     setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 1000);
+    setTimeout(() => setIsCopied(false), 500);
   };
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(roomData?.code);
     setIsCopiedCode(true);
-    setTimeout(() => setIsCopiedCode(false), 1000);
+    setTimeout(() => setIsCopiedCode(false), 500);
   };
 
   const handleRoleChange = (role) => {
@@ -75,23 +76,40 @@ function SettingRoomShare() {
   };
 
   const handleUpdateCodeRoom = async () => {
-    if (loading) return;
-
     setIsChangeCode(true);
     const result = await updateRoomCode(roomData._id);
 
     if (result.success) {
       setTimeout(() => {
         setIsChangeCode(false);
-      }, 1000);
+      }, 100);
     } else {
       setIsChangeCode(false);
-      alert(result.message);
     }
   };
 
-  const handleInvite = (userId) => {
-    invitedUsers(roomData?._id, userId);
+  const handleInvite = async (userId) => {
+    const toastId = toast.loading("Inviting colleague...");
+    const res = await invitedUsers(roomData?._id, userId);
+    if (res.success) {
+      toast.success("Invited colleague successful", { id: toastId });
+    } else {
+      toast.error(`${res.message || "Invite colleague failed"}`, {
+        id: toastId,
+      });
+    }
+  };
+
+  const handleCancelInvite = async (userId) => {
+    const toastId = toast.loading("Canceling invitation...");
+    const res = await cancelInvited(roomData?._id, userId);
+    if (res.success) {
+      toast.success("Cancel Invited colleague successful", { id: toastId });
+    } else {
+      toast.error(`${res.message || "Cancel Invited colleague failed"}`, {
+        id: toastId,
+      });
+    }
   };
 
   return (
@@ -171,9 +189,17 @@ function SettingRoomShare() {
                           Joined
                         </span>
                       ) : isInvited ? (
-                        <span className="text-xs font-semibold text-yellow-600 bg-yellow-50 px-3 py-1.5 rounded-full border border-yellow-100">
-                          Pending
-                        </span>
+                        <div className="flex gap-2">
+                          <span className="text-xs font-semibold text-yellow-600 bg-yellow-50 px-3 py-1.5 rounded-full border border-yellow-100">
+                            Pending
+                          </span>
+                          <button
+                            onClick={() => handleCancelInvite(user?._id)}
+                            className="flex items-center gap-1.5 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 px-4 py-1.5 rounded-full transition-colors active:scale-95 cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        </div>
                       ) : (
                         <button
                           onClick={() => handleInvite(user?._id)}
@@ -198,9 +224,11 @@ function SettingRoomShare() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <h2 className="text-xl font-bold text-slate-800">
               Share Link
-              {selectedAccess === "invited" && <span className="text-red-400 text-xs font-medium">
-                &nbsp; ( user must be invited before they can use this link. )
-              </span>}
+              {selectedAccess === "invited" && (
+                <span className="text-red-400 text-xs font-medium">
+                  &nbsp; ( user must be invited before they can use this link. )
+                </span>
+              )}
             </h2>
 
             {/* Settings Dropdowns */}

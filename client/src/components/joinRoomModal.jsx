@@ -4,11 +4,11 @@ import useRoomStore from "../store/useRoomStore";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import useAuthStore from "../store/useAuthStore";
+import toast from "react-hot-toast";
 
 function JoinRoomModal({ isOpen, onClose }) {
   const navigate = useNavigate();
   const [code, setCode] = useState(new Array(6).fill(""));
-
   const [status, setStatus] = useState("loading");
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -30,31 +30,32 @@ function JoinRoomModal({ isOpen, onClose }) {
     setCode(newCode);
 
     const fullCode = newCode.join("");
-
     if (element.nextSibling && element.value !== "") {
       element.nextSibling.focus();
     }
 
     if (fullCode.length === 6) {
-      const res = await joinRoom({code:fullCode});
-
-      if (!res || !res.success || !res.data) {
-        console.log("Join failed:", res);
-        onClose();
-        return; 
+      const toastId = toast.loading("Joining room...");
+      const res = await joinRoom({ code: fullCode });
+      if (!res.success) {
+        toast.error(`${res.message || "Join room failed"}`, { id: toastId });
+        return;
       }
 
       const roomId = res?._id || res?.data?._id;
       const userId = user?._id;
 
-      const matchedMember = res.data.members.find(
-        (m) => m?.user?._id === userId || m?._id === userId,
-      );
+      const matchedMember = res.data.members.find((m) => {
+        const currentId = m?.user?._id || m?.user;
+        return currentId === userId;
+      });
 
       if (res.success === true) {
+        toast.success("Joined room successful", { id: toastId });
         onClose();
         navigate(`/notes-together/${roomId}/${matchedMember.role}`);
-      }else{
+      } else {
+        toast.error(`${res.message || "Joined room failed"}`, { id: toastId });
         onClose();
       }
     }
@@ -80,34 +81,27 @@ function JoinRoomModal({ isOpen, onClose }) {
     document.getElementById(`code-${nextIndex}`)?.focus();
 
     if (fullCode.length === 6) {
-      try {
-        const res = await joinRoom({code:fullCode});
-        const roomId = res?._id || res?.data?._id;
-        const userId = user?._id;
+      const toastId = toast.loading("Joining room...");
+      const res = await joinRoom({ code: fullCode });
+      if (!res.success) {
+        toast.error(`${res.message || "Join room failed"}`, { id: toastId });
+        return;
+      }
 
-        const matchedMember = res.data.members.find(
-          (m) => m?.user?._id === userId || m?._id === userId,
-        );
+      const roomId = res?._id || res?.data?._id;
+      const userId = user?._id;
+      const matchedMember = res.data.members.find((m) => {
+        const currentId = m?.user?._id || m?.user;
+        return currentId === userId;
+      });
 
-        if (res.success === true) {
-          setStatus("success");
-          navigate(`/notes-together/${roomId}/${matchedMember.role}`);
-          onClose();
-        } else {
-          setErrorMsg(res.message);
-          setStatus(res?.status || "error");
-        }
-
-        if (roomId) {
-          onClose();
-          navigate(`/notes-together/${roomId}/${matchedMember.role}`);
-        } else {
-          console.error("Join failed: Invalid Room ID");
-          setErrorMsg(res.message);
-        }
-      } catch (error) {
-        setErrorMsg(error.message);
-        setStatus("error");
+      if (res.success === true) {
+        toast.success("Joined room successful", { id: toastId });
+        onClose();
+        navigate(`/notes-together/${roomId}/${matchedMember?.role}`);
+      } else {
+        toast.error(`${res.message || "Joined room failed"}`, { id: toastId });
+        onClose();
       }
     }
   };
@@ -138,6 +132,7 @@ function JoinRoomModal({ isOpen, onClose }) {
           <div className="flex items-center justify-center gap-3">
             {code.map((data, index) => (
               <input
+                autoComplete="off"
                 key={index}
                 id={`code-${index}`}
                 onPaste={index === 0 ? handlePaste : undefined}

@@ -21,6 +21,8 @@ import { FontFamily } from "@tiptap/extension-font-family";
 import { exportToPDF } from "../utils/exportToPdf";
 import { LimitPageHeight } from "../utils/limitPageHeight";
 import useNoteStore from "../store/useNoteStore";
+import useNotificationStore from "../store/useNotificationStore";
+import toast from "react-hot-toast";
 
 function Editor() {
   const { roomId, role } = useParams();
@@ -266,6 +268,9 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
   const addCommentFromSocket = useCommentStore(
     (state) => state.addCommentFromSocket,
   );
+  const addNotification = useNotificationStore(
+    (state) => state.addNotification,
+  );
   const users = useAuthStore((state) => state.users);
   const getUser = useAuthStore((state) => state.getUser);
   const clearUsers = useAuthStore((state) => state.clearUsers);
@@ -282,6 +287,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
   );
   const updateLinkShare = useRoomStore((state) => state.updateLinkShare);
   const invitedUsers = useRoomStore((state) => state.invitedUsers);
+  const cancelInvited = useRoomStore((state) => state.cancelInvited);
   const updateRoomCode = useRoomStore((state) => state.updateRoomCode);
 
   const [isOpenShareModal, setIsOpenShareModal] = useState(false);
@@ -464,16 +470,36 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
     }
   };
 
-  const handleInvite = (userId) => {
-    invitedUsers(room?._id, userId);
+  const handleInvite = async (userId) => {
+    const toastId = toast.loading("Inviting colleague...");
+    const res = await invitedUsers(room?._id, userId);
+    if (res.success) {
+      toast.success("Invited colleague successful", { id: toastId });
+    } else {
+      toast.error(`${res.message || "Invite colleague failed"}`, {
+        id: toastId,
+      });
+    }
+  };
+
+  const handleCancelInvite = async (userId) => {
+    const toastId = toast.loading("Canceling invitation...");
+    const res = await cancelInvited(room?._id, userId);
+    if (res.success) {
+      toast.success("Cancel Invited colleague successful", { id: toastId });
+    } else {
+      toast.error(`${res.message || "Cancel Invited colleague failed"}`, {
+        id: toastId,
+      });
+    }
   };
 
   const handleExport = () => {
     const fileName = `${room.name ?? "note"}.pdf`;
-    exportToPDF("note-content-container", fileName);
+    exportToPDF("paper-container", fileName);
   };
 
-  // 🛠️ 1. สร้าง Custom Font Size Extension ขึ้นมาเองแบบง่าย ๆ
+  // 1. สร้าง Custom Font Size Extension ขึ้นมาเองแบบง่าย ๆ
   const FontSize = Extension.create({
     name: "fontSize",
 
@@ -640,11 +666,16 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
       }
     });
 
+    socket.on("owner_transferred", (data) => {
+      addNotification(data);
+    });
+
     return () => {
       socket.off("user_typing");
       socket.off("user_stop_typing");
       socket.off("received_comment");
       socket.off("role_updated");
+      socket.off("owner_transferred");
     };
   }, [room?._id, user?._id]);
 
@@ -701,7 +732,63 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
       ],
       editorProps: {
         attributes: {
-          class: "tiptap focus:outline-none",
+          class:
+            "tiptap focus:outline-none prose prose-slate max-w-none p-8 sm:p-16 md:p-24",
+        },
+        handleScrollToSelection: () => {
+          // การ return true เป็นการบอก Tiptap ว่า "เราจัดการการเลื่อนจอเองแล้ว นายไม่ต้องทำอะไร"
+          // ผลคือ: กระดาษจะถูกล็อกตายตัว ไม่มีการเลื่อนขึ้นลงอัตโนมัติอีกต่อไป
+          return true;
+        },
+        handleKeyDown: (view, event) => {
+          const editorDom = view.dom;
+          // ดึงกรอบกระดาษ A4 มาเป็นตัวอ้างอิง
+          const paperContainer = document.getElementById("paper-container");
+          if (!paperContainer) return false;
+
+          // textHeight คือความสูงข้อความจริงๆ | paperHeight คือความสูงกระดาษ A4
+          const textHeight = editorDom.clientHeight;
+          const paperHeight = paperContainer.clientHeight;
+
+          // เผื่อระยะเบรก: ถ้ากด Enter เผื่อไว้ 30px (1 บรรทัด) ถ้าพิมพ์ปกติไม่เผื่อ
+          const buffer = event.key === "Enter" ? 30 : 0;
+
+          // เงื่อนไขใหม่: ถ้าข้อความสูงทะลุกระดาษ = เต็ม!
+          const isFull = textHeight > paperHeight - buffer;
+
+          const allowedKeys = [
+            "Backspace",
+            "Delete",
+            "ArrowUp",
+            "ArrowDown",
+            "ArrowLeft",
+            "ArrowRight",
+          ];
+
+          if (
+            isFull &&
+            !allowedKeys.includes(event.key) &&
+            !event.metaKey &&
+            !event.ctrlKey
+          ) {
+            console.log("กระดาษเต็มแล้ว! หยุดการพิมพ์");
+            return true;
+          }
+
+          return false;
+        },
+
+        handlePaste: (view, event, slice) => {
+          const editorDom = view.dom;
+          const paperContainer = document.getElementById("paper-container");
+          if (
+            paperContainer &&
+            editorDom.clientHeight > paperContainer.clientHeight - 5
+          ) {
+            console.log("กระดาษเต็มแล้ว! วางข้อความไม่ได้");
+            return true;
+          }
+          return false;
         },
       },
       editable: false,
@@ -1003,20 +1090,39 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                                             </span>
                                           </div>
                                         </div>
-                                        <div>
-                                          <button
-                                            onClick={() =>
-                                              handleInvite(user?._id)
-                                            }
-                                            disabled={isInvited}
-                                            className={`${isInvited ? "bg-gray-300 cursor-not-allowed" : "bg-blue-400 cursor-pointer hover:bg-blue-500"} flex text-white items-center gap-2 px-5 text-sm py-1 font-semibold rounded-md `}
-                                          >
-                                            <Icon
-                                              icon="mdi:invite"
-                                              width={20}
-                                            />
-                                            Invite
-                                          </button>
+                                        <div className="shrink-0 ml-3">
+                                          {isMember ? (
+                                            <span className="text-xs font-semibold text-green-600 bg-green-50 px-3 py-1.5 rounded-full border border-green-100">
+                                              Joined
+                                            </span>
+                                          ) : isInvited ? (
+                                            <div className="flex gap-2">
+                                              <span className="text-xs font-semibold text-yellow-600 bg-yellow-50 px-3 py-1.5 rounded-full border border-yellow-100">
+                                                Pending
+                                              </span>
+                                              <button
+                                                onClick={() =>
+                                                  handleCancelInvite(user?._id)
+                                                }
+                                                className="flex items-center gap-1.5 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 px-4 py-1.5 rounded-full transition-colors active:scale-95 cursor-pointer"
+                                              >
+                                                Cancel
+                                              </button>
+                                            </div>
+                                          ) : (
+                                            <button
+                                              onClick={() =>
+                                                handleInvite(user?._id)
+                                              }
+                                              className="flex items-center gap-1.5 text-xs font-semibold text-white bg-blue-500 hover:bg-blue-600 px-4 py-1.5 rounded-full transition-colors active:scale-95"
+                                            >
+                                              <Icon
+                                                icon="mdi:invite"
+                                                width="16"
+                                              />
+                                              Invite
+                                            </button>
+                                          )}
                                         </div>
                                       </div>
                                     );
@@ -1287,21 +1393,18 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
           <div className="w-full h-full flex flex-col lg:flex-row justify-center gap-10 bg-slate-50">
             <div className="flex-1 flex justify-center overflow-x-hidden no-scrollbar pb-10 px-2 sm:px-6 pt-4">
               <div
-                id="note-content-container"
-                className="prose prose-slate max-w-none shrink-0 bg-white border border-gray-200 shadow-sm p-4 sm:p-8 md:p-12 wrap-break-word cursor-text flex flex-col"
+                id="paper-container"
+                className="bg-white border border-gray-200 shadow-sm mx-auto overflow-hidden cursor-text flex flex-col"
                 style={{
-                  width: "100%" /* ให้กางเต็มจอเมื่ออยู่บนมือถือ */,
-                  maxWidth:
-                    "210mm" /* ล็อกไม่ให้กว้างเกิน A4 เมื่ออยู่บนจอคอม */,
-                  minHeight: "297mm" /* ล็อกความสูงขั้นต่ำให้เท่า A4 เสมอ */,
+                  width: "100%",
+                  maxWidth: "210mm",
+                  height: "297mm",
                 }}
                 onClick={() => editor?.commands.focus()}
               >
                 <EditorContent
                   editor={editor}
-                  /* บังคับตัว Tiptap ให้ยืดเต็มพื้นที่กระดาษ */
-                  className="flex-1 w-full outline-none"
-                  style={{ minHeight: "100%" }}
+                  className="w-full outline-none" // 🟢 เพิ่ม h-full และ overflow-hidden
                 />
               </div>
             </div>

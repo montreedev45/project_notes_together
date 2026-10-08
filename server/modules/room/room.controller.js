@@ -1,7 +1,11 @@
 import Room from "./room.model.js";
 import Notification from "../notification/notification.model.js";
 import generateCode from "../../utils/generateCode.js";
-import { sendNotification, roleUpdated } from "../../sockets/socket.manage.js";
+import {
+  sendNotificationEveryMemberOn,
+  sendNotification,
+  roleUpdated,
+} from "../../sockets/socket.manage.js";
 import crypto from "crypto";
 import Plan from "../plan/plan.model.js";
 
@@ -19,7 +23,25 @@ export const createRoom = async (req, res) => {
     if (currentOwnerRoomCount >= roomLimit) {
       return res.status(403).json({
         success: false,
-        message: `your package allows a maximum of ${roomLimit} rooms. please upgrade your plan.`, // แก้คำผิดเล็กน้อย (lease -> please)
+        message: `your package allows a maximum of ${roomLimit} rooms. please upgrade your plan.`,
+      });
+    }
+
+    const userJoinedRoomsCount = await Room.countDocuments({
+      "members.user": userId,
+      isDeleted: false,
+    });
+
+    const userPlanDetails = await Plan.findOne({
+      plan: userPlan,
+    }).lean();
+
+    const userRoomLimit = userPlanDetails?.roomLimit ?? 3;
+
+    // ปฏิเสธการเข้าร่วม หากโควตาห้องของผู้ใช้เต็มแล้ว และเขาไม่ใช่เจ้าของห้องนี้
+    if (userJoinedRoomsCount >= userRoomLimit) {
+      return res.status(403).json({
+        message: `Your plan allows you to join a maximum of ${userRoomLimit} rooms. Please upgrade your account to join more.`,
       });
     }
 
@@ -64,7 +86,7 @@ export const createRoom = async (req, res) => {
         "_id name description isPrivate color isOnlineStatus isLastEditTime isPeopleJoinRoom isAllowLinkSharing isAllowCodeSharing owner members",
       )
       .sort({ createdAt: -1 })
-      .populate("owner", "username avatar")
+      .populate("owner", "username avatar plan")
       .populate("members.user", "avatar username");
 
     res.status(201).json(populate);
@@ -98,10 +120,10 @@ export const getMyRooms = async (req, res) => {
 
     const rooms = await Room.find(query)
       .select(
-        "_id name description isPrivate color isOnlineStatus isLastEditTime isPeopleJoinRoom isAllowLinkSharing isAllowCodeSharing owner members code shareLink invitedUsers",
+        "_id name description isPrivate color isOnlineStatus isLastEditTime isPeopleJoinRoom isAllowLinkSharing isAllowCodeSharing isDeleted owner members code shareLink invitedUsers",
       )
       .sort({ createdAt: -1 })
-      .populate("owner", "username avatar")
+      .populate("owner", "username avatar plan")
       .populate("members.user", "avatar username")
       .lean();
 
@@ -155,10 +177,10 @@ export const getAllRooms = async (req, res) => {
 
     const rooms = await Room.find(query)
       .select(
-        "_id name description isPrivate color isOnlineStatus isLastEditTime isPeopleJoinRoom isAllowLinkSharing isAllowCodeSharing owner members",
+        "_id name description isPrivate color isOnlineStatus isLastEditTime isPeopleJoinRoom isAllowLinkSharing isDeleted isAllowCodeSharing owner members",
       )
       .sort({ createdAt: -1 })
-      .populate("owner", "username avatar")
+      .populate("owner", "username avatar plan")
       .populate("members.user", "avatar username");
 
     res.status(200).json(rooms);
@@ -175,9 +197,9 @@ export const getRoomById = async (req, res) => {
 
     const room = await Room.findOne({ _id: roomId, isDeleted: false })
       .select(
-        "_id name description isPrivate color isOnlineStatus isLastEditTime isPeopleJoinRoom isAllowLinkSharing isAllowCodeSharing owner members code shareLink",
+        "_id name description isDeleted isPrivate color isOnlineStatus isLastEditTime isPeopleJoinRoom isAllowLinkSharing isAllowCodeSharing owner members code shareLink",
       )
-      .populate("owner", "username avatar")
+      .populate("owner", "username avatar plan")
       .populate("members.user", "avatar username")
       .lean();
 
@@ -219,16 +241,20 @@ export const getRoomById = async (req, res) => {
 export const joinRoom = async (req, res) => {
   try {
     const { roomId, code } = req.body;
-    const userId = req.user._id;
+    const userId = req.user._id.toString();
     let room;
+
+    const selectFields =
+      "_id name description isPrivate color isOnlineStatus isLastEditTime isPeopleJoinRoom isAllowLinkSharing isAllowCodeSharing owner members";
+    const populateQuery = [
+      { path: "owner", select: "username avatar plan" },
+      { path: "members.user", select: "avatar username" },
+    ];
 
     if (code) {
       room = await Room.findOne({ code })
-        .select(
-          "_id name description isPrivate color isOnlineStatus isLastEditTime isPeopleJoinRoom isAllowLinkSharing isAllowCodeSharing owner members",
-        )
-        .populate("owner", "username avatar plan")
-        .populate("members.user", "avatar username");
+        .select(selectFields)
+        .populate(populateQuery);
       if (!room)
         return res.status(404).json({ message: "Invalid invite code" });
       if (!room.isAllowCodeSharing) {
@@ -238,39 +264,27 @@ export const joinRoom = async (req, res) => {
       }
     } else if (roomId) {
       room = await Room.findById(roomId)
-        .select(
-          "_id name description isPrivate color isOnlineStatus isLastEditTime isPeopleJoinRoom isAllowLinkSharing isAllowCodeSharing owner members",
-        )
-        .populate("owner", "username avatar plan")
-        .populate("members.user", "avatar username");
+        .select(selectFields)
+        .populate(populateQuery);
       if (!room) return res.status(404).json({ message: "Room not found" });
-
-      const isAlreadyMember = room.members.some((member) => {
-        const currentMemberId = member.user._id
-          ? member.user._id.toString()
-          : member.user.toString();
-        return currentMemberId === userId.toString();
-      });
-
-      if (room.isPrivate && !isAlreadyMember) {
-        return res.status(403).json({
-          message: "This room is private. Please use an invite code.",
-        });
-      }
     } else {
       return res
         .status(400)
         .json({ message: "Please provide a Room ID or Code" });
     }
 
-    // ใช้ .some() เพื่อความรวดเร็วในการเช็กสมาชิก
-    const alreadyMember = room.members.some(
-      (m) => m.user.toString() === userId.toString(),
-    );
+    const ownerId = room.owner._id.toString();
+    const isOwner = ownerId === userId;
+
+    const isAlreadyMember = room.members.some((member) => {
+      const currentMemberId = member.user?._id
+        ? member.user._id.toString()
+        : member.user?.toString();
+      return currentMemberId === userId;
+    });
 
     // ฟังก์ชันช่วยเหลือสำหรับจัดรูปแบบข้อมูลก่อนส่งกลับ
-    const formatRoomResponse = async (roomDoc) => {
-      await roomDoc.populate("members.user", "avatar username");
+    const formatRoomResponse = (roomDoc) => {
       const roomData = roomDoc.toObject();
       delete roomData.code;
       delete roomData.shareLink;
@@ -279,45 +293,68 @@ export const joinRoom = async (req, res) => {
       return roomData;
     };
 
-    if (alreadyMember) {
-      return res.status(200).json(await formatRoomResponse(room));
+    // หากเป็นสมาชิกอยู่แล้ว คืนค่าสำเร็จได้เลย
+    if (isAlreadyMember) {
+      return res.status(200).json(formatRoomResponse(room));
     }
 
-    const ownerPlan = room.owner?.plan || "free";
-    const planDetails = await Plan.findOne({ plan: ownerPlan }).lean(); // ใช้ .lean() เพราะแค่อ่านค่า
-    const colleagueLimit = planDetails.colleagueLimit ?? 1;
+    if (roomId && room.isPrivate && !isAlreadyMember && !isOwner) {
+      return res
+        .status(403)
+        .json({ message: "This room is private. Please use an invite code." });
+    }
 
-    if (room.members.length - 1 >= colleagueLimit) {
-      if (room.owner._id.toString() === userId.toString()) {
-        return res.status(403).json({
-          message: `Your package allows a maximum of ${colleagueLimit} colleagues. Please upgrade your plan.`,
-        });
-      }
+    // ตรวจสอบ Plan Limit
+    // นับจำนวนเพื่อนร่วมงาน (Colleagues) จริงๆ โดยไม่นับเจ้าของห้อง
+    const colleaguesCount = room.members.filter((member) => {
+      const memberId = member.user?._id
+        ? member.user._id.toString()
+        : member.user?.toString();
+      return memberId !== ownerId;
+    }).length;
+
+    const ownerPlan = room.owner?.plan || "free";
+    const planDetails = await Plan.findOne({ plan: ownerPlan }).lean();
+    const colleagueLimit = planDetails?.colleagueLimit ?? 1;
+
+    // ถ้าคนที่กำลังจะเข้า ไม่ใช่เจ้าของห้อง และโควตาเพื่อนร่วมงานเต็มแล้ว ให้ปฏิเสธ
+    if (!isOwner && colleaguesCount >= colleagueLimit) {
       return res.status(403).json({
         message: `This room allows a maximum of ${colleagueLimit} colleagues. Please contact the room owner.`,
       });
     }
 
-    // check member
-    const isAlreadyMember = room.members.some((member) => {
-      // ดึง ID ออกมา ไม่ว่ามันจะเป็น Object (ถูก populate มา) หรือเป็น ObjectId ธรรมดา
-      const currentMemberId = member.user._id
-        ? member.user._id.toString()
-        : member.user.toString();
-
-      return currentMemberId === userId.toString();
+    const userJoinedRoomsCount = await Room.countDocuments({
+      "members.user": userId,
+      isDeleted: false,
     });
 
-    if (!isAlreadyMember) {
-      room.members.push({ user: userId, role: "viewer" });
-      await room.save();
+    // ดึงข้อมูล Plan Limit ของตัวผู้ใช้เอง (สมมติว่า req.user มีฟิลด์ plan)
+    const currentUserPlan = req.user.plan || "free";
+    const userPlanDetails = await Plan.findOne({
+      plan: currentUserPlan,
+    }).lean();
+    // ดึงค่า roomLimit (ควรตั้งชื่อฟิลด์ใน Database ให้ตรงกับโควตานี้)
+    const userRoomLimit = userPlanDetails?.roomLimit ?? 3;
+
+    // ปฏิเสธการเข้าร่วม หากโควตาห้องของผู้ใช้เต็มแล้ว และเขาไม่ใช่เจ้าของห้องนี้
+    if (!isOwner && userJoinedRoomsCount >= userRoomLimit) {
+      return res.status(403).json({
+        message: `Your current plan allows you to join a maximum of ${userRoomLimit} rooms. Please upgrade your account to join more.`,
+      });
     }
 
-    // ส่งการแจ้งเตือน (เฉพาะกรณีที่ไม่ใช่เจ้าของห้องเข้าร่วมเอง)
-    if (room.owner._id.toString() !== userId.toString()) {
+    room.members.push({
+      user: req.user._id,
+      role: "viewer",
+    });
+    await room.save();
+
+    // ส่งแจ้งเตือน (เฉพาะคนอื่นเข้า)
+    if (!isOwner) {
       const newNotice = await Notification.create({
         recipient: room.owner._id,
-        sender: userId,
+        sender: req.user._id,
         type: "JOIN",
         roomId: room._id,
         roomName: room.name,
@@ -325,16 +362,14 @@ export const joinRoom = async (req, res) => {
       });
 
       await newNotice.populate("sender", "username avatar");
-
-      // แปลงเป็น Object ธรรมดาเพื่อลบฟิลด์ที่ไม่ต้องการ
       const populatedNotice = newNotice.toObject();
       delete populatedNotice.updatedAt;
       delete populatedNotice.__v;
 
-      sendNotification(room.owner._id.toString(), populatedNotice);
+      sendNotification(ownerId, populatedNotice);
     }
 
-    return res.status(200).json(await formatRoomResponse(room));
+    return res.status(200).json(formatRoomResponse(room));
   } catch (error) {
     console.error("Join room error:", error);
     return res.status(500).json({ message: "Join room failed" });
@@ -407,7 +442,7 @@ export const updateRole = async (req, res) => {
         "_id name description isPrivate color isOnlineStatus isLastEditTime isPeopleJoinRoom isAllowLinkSharing isAllowCodeSharing owner members",
       )
       .sort({ createdAt: -1 })
-      .populate("owner", "username avatar")
+      .populate("owner", "username avatar plan")
       .populate("members.user", "avatar username");
 
     if (!updatedRoom) {
@@ -418,6 +453,31 @@ export const updateRole = async (req, res) => {
     }
 
     roleUpdated(roomId, memberId, role);
+
+    const newNotice = await Notification.create({
+      recipient: memberId,
+      sender: currentUserId,
+      type: "UPDATE_ROLE",
+      roomId: updatedRoom._id,
+      roomName: updatedRoom.name,
+      message: `you to ${role} in room: ${updatedRoom.name}`,
+    });
+
+    await newNotice.populate([
+      { path: "sender", select: "username avatar plan" },
+      { path: "recipient", select: "username avatar plan" },
+    ]);
+
+    const populatedNotice = (data) => {
+      const plainData = data.toObject ? data.toObject() : { ...data };
+      delete data.updatedAt;
+      delete data.__v;
+      return plainData;
+    };
+
+    const cleanNotic = populatedNotice(newNotice);
+
+    sendNotification(memberId, cleanNotic);
 
     res.json(updatedRoom);
   } catch (error) {
@@ -455,7 +515,7 @@ export const softDelete = async (req, res) => {
       .select(
         "_id name description isPrivate color isOnlineStatus isLastEditTime isPeopleJoinRoom isAllowLinkSharing isAllowCodeSharing owner members",
       )
-      .populate("owner", "username avatar")
+      .populate("owner", "username avatar plan")
       .populate("members.user", "avatar username");
 
     return res.status(200).json(roomUpdated);
@@ -484,10 +544,10 @@ export const getTrashRooms = async (req, res) => {
 
     const trashRooms = await Room.find(query)
       .select(
-        "_id name description isPrivate color isOnlineStatus isLastEditTime isPeopleJoinRoom isAllowLinkSharing isAllowCodeSharing owner members",
+        "_id name description isDeleted isPrivate color isOnlineStatus isLastEditTime isPeopleJoinRoom isAllowLinkSharing isAllowCodeSharing owner members",
       )
       .sort({ createdAt: -1 })
-      .populate("owner", "username avatar")
+      .populate("owner", "username avatar plan")
       .populate("members.user", "avatar username");
 
     res.status(200).json(trashRooms);
@@ -503,30 +563,55 @@ export const restoreRoom = async (req, res) => {
     const roomId = req.params.roomId;
     const userId = req.user._id;
 
-    const restoredRoom = await Room.findOneAndUpdate(
-      {
-        _id: roomId,
-        owner: userId,
-      },
+    // 1. ค้นหาห้องในถังขยะก่อน (ยังไม่อัปเดต) เพื่อยืนยันสิทธิ์
+    const roomToRestore = await Room.findOne({
+      _id: roomId,
+      owner: userId,
+      isDeleted: true,
+    });
+
+    if (!roomToRestore) {
+      return res.status(404).json({
+        message:
+          "Room not found in trash or you are not authorized to restore it.",
+      });
+    }
+
+    // 2. ดึง Plan และ Limit ของผู้ใช้ (ใช้โค้ดชุดเดียวกับตอน Join Room)
+    const currentUserPlan = req.user.plan || "free";
+    const userPlanDetails = await Plan.findOne({
+      plan: currentUserPlan,
+    }).lean();
+    const userRoomLimit = userPlanDetails?.roomLimit ?? 3;
+
+    // 3. นับจำนวนห้องแบบ Active ที่ผู้ใช้นี้มีชื่ออยู่
+    const activeRoomsCount = await Room.countDocuments({
+      "members.user": userId,
+      isDeleted: false,
+    });
+
+    // 4. บล็อกการ Restore หากโควตาเต็มแล้ว
+    if (activeRoomsCount >= userRoomLimit) {
+      return res.status(403).json({
+        message: `Cannot restore room. Your current plan allows a maximum of ${userRoomLimit} active rooms. Please upgrade or delete another active room first.`,
+      });
+    }
+
+    // 5. โควตาผ่าน ดำเนินการ Restore และ Populate ข้อมูล
+    const restoredRoom = await Room.findByIdAndUpdate(
+      roomId,
       { isDeleted: false },
-      { returnDocument: "after" },
+      { returnDocument: "after" }, // Mongoose ใช้ { new: true } เทียบเท่า returnDocument: "after"
     )
       .select(
         "_id name description isPrivate color isOnlineStatus isLastEditTime isPeopleJoinRoom isAllowLinkSharing isAllowCodeSharing owner members",
       )
-      .sort({ createdAt: -1 })
-      .populate("owner", "username avatar")
+      .populate("owner", "username avatar plan")
       .populate("members.user", "avatar username");
-
-    if (!restoredRoom) {
-      return res
-        .status(404)
-        .json({ message: "Room not found or unauthorized to restore" });
-    }
 
     return res.status(200).json(restoredRoom);
   } catch (error) {
-    console.error("Restore room error:", error); // ควร log error ไว้ดูเสมอ
+    console.error("Restore room error:", error);
     return res.status(500).json({ message: "Restore room failed" });
   }
 };
@@ -624,7 +709,7 @@ export const updateRoom = async (req, res) => {
       .select(
         "_id name description isPrivate color isOnlineStatus isLastEditTime isPeopleJoinRoom isAllowLinkSharing isAllowCodeSharing owner members",
       )
-      .populate("owner", "username avatar")
+      .populate("owner", "username avatar plan")
       .populate("members.user", "avatar username");
 
     if (!updatedRoom) {
@@ -696,7 +781,7 @@ export const deleteMember = async (req, res) => {
 export const joinLink = async (req, res) => {
   try {
     const { shareLinkToken, role } = req.params;
-    const userId = req.user._id;
+    const userId = req.user._id.toString();
 
     const room = await Room.findOne({
       "shareLink.role": role,
@@ -715,25 +800,73 @@ export const joinLink = async (req, res) => {
       return res.status(410).json({ message: "The share link has expired." });
     }
 
-    const ownerPlan = room.owner?.plan;
-    const planDetails = await Plan.findOne({ plan: ownerPlan });
-    const colleagueLimit = planDetails.colleagueLimit ?? 1;
+    const ownerId = room.owner._id.toString();
+    const isOwner = ownerId === userId;
 
-    const isMember = room.members.some(
-      (m) => m.user?._id.toString() === userId.toString(),
-    );
+    // ตรวจสอบสมาชิก
+    const isAlreadyMember = room.members.some((member) => {
+      const currentMemberId = member.user?._id
+        ? member.user._id.toString()
+        : member.user?.toString();
+      return currentMemberId === userId;
+    });
 
-    if (isMember) {
-      return res.status(200).json(room);
+    // ฟังก์ชันช่วยเหลือสำหรับจัดรูปแบบข้อมูล
+    const formatRoomResponse = (roomDoc) => {
+      const roomData = roomDoc.toObject ? roomDoc.toObject() : roomDoc;
+      delete roomData.code;
+      delete roomData.shareLink;
+      delete roomData.__v;
+      delete roomData.updatedAt;
+      return roomData;
+    };
+
+    if (isAlreadyMember) {
+      return res.status(200).json(formatRoomResponse(room));
     }
 
-    // ตรวจสอบสิทธิ์การเข้าถึงตามกรณี (anyone VS invited)
+    // 1. ตรวจสอบโควตาเพื่อนร่วมงานของเจ้าของห้อง (ไม่นับ owner)
+    const colleaguesCount = room.members.filter((member) => {
+      const memberId = member.user?._id
+        ? member.user._id.toString()
+        : member.user?.toString();
+      return memberId !== ownerId;
+    }).length;
+
+    const ownerPlan = room.owner?.plan || "free";
+    const planDetails = await Plan.findOne({ plan: ownerPlan }).lean();
+    const colleagueLimit = planDetails?.colleagueLimit ?? 1;
+
+    if (!isOwner && colleaguesCount >= colleagueLimit) {
+      return res.status(403).json({
+        message: `This room allows a maximum of ${colleagueLimit} colleagues. Please contact the room owner.`,
+      });
+    }
+
+    // 2. ตรวจสอบโควตาแพ็กเกจของคนที่กำลังจะเข้า (กรอง isDeleted: false)
+    const userJoinedRoomsCount = await Room.countDocuments({
+      "members.user": userId,
+      isDeleted: false,
+    });
+
+    const currentUserPlan = req.user.plan || "free";
+    const userPlanDetails = await Plan.findOne({
+      plan: currentUserPlan,
+    }).lean();
+    const userRoomLimit = userPlanDetails?.roomLimit ?? 3;
+
+    if (!isOwner && userJoinedRoomsCount >= userRoomLimit) {
+      return res.status(403).json({
+        message: `Your current plan allows you to join a maximum of ${userRoomLimit} rooms. Please upgrade your account to join more.`,
+      });
+    }
+
+    // 3. ตรวจสอบสิทธิ์ Private (invited)
     if (room.shareLink.access === "invited") {
       const isInvited = room.invitedUsers?.some(
-        (id) => id.toString() === userId.toString(),
+        (id) => id.toString() === userId,
       );
-
-      if (!isInvited && room.owner._id.toString() !== userId.toString()) {
+      if (!isInvited && !isOwner) {
         return res.status(403).json({
           message:
             "Access denied. You must be invited by the owner to join this room.",
@@ -741,23 +874,12 @@ export const joinLink = async (req, res) => {
       }
     }
 
-    if (room.members.length - 1 >= colleagueLimit) {
-      if (room.owner._id.toString() === userId.toString()) {
-        return res.status(403).json({
-          message: `Your package allows a maximum of ${colleagueLimit} colleagues. Please upgrade your plan.`,
-        });
-      }
-
-      return res.status(403).json({
-        message: `This room allows a maximum of ${colleagueLimit} colleagues. Please contact the room owner.`,
-      });
-    }
-
-    // บันทึกสมาชิกใหม่
+    // 4. บันทึกสมาชิกใหม่
     const assignedRole = room.shareLink.role || "viewer";
     room.members.push({ user: userId, role: assignedRole });
     await room.save();
 
+    // ดึงข้อมูลใหม่เพื่อคืนค่าพร้อม Avatar
     const joinedRoom = await Room.findById(room._id)
       .select(
         "_id name description isPrivate color isOnlineStatus isLastEditTime isPeopleJoinRoom isAllowLinkSharing isAllowCodeSharing owner members",
@@ -765,26 +887,26 @@ export const joinLink = async (req, res) => {
       .populate("owner", "username avatar plan")
       .populate("members.user", "avatar username");
 
-    // สร้าง Notification และส่ง Socket... (โค้ดส่วนล่างถูกต้องดีแล้วครับ)
-    const newNotice = await Notification.create({
-      recipient: room.owner._id.toString(),
-      sender: req.user._id,
-      type: "JOIN",
-      roomId: room._id,
-      roomName: room.name,
-      message: `room : ${room.name}`,
-    });
+    // 5. แจ้งเตือน
+    if (!isOwner) {
+      const newNotice = await Notification.create({
+        recipient: ownerId,
+        sender: userId,
+        type: "JOIN",
+        roomId: room._id,
+        roomName: room.name,
+        message: `room : ${room.name}`,
+      });
+      const populatedNotice = await newNotice.populate(
+        "sender",
+        "username avatar",
+      );
+      sendNotification(ownerId, populatedNotice);
+    }
 
-    const populatedNotice = await newNotice.populate(
-      "sender",
-      "username avatar",
-    );
-    const ownerId = room.owner._id.toString();
-    sendNotification(ownerId, populatedNotice);
-
-    return res.status(200).json(joinedRoom);
+    return res.status(200).json(formatRoomResponse(joinedRoom));
   } catch (error) {
-    console.error(error);
+    console.error("Join link error:", error);
     return res.status(500).json({ message: "Join link failed" });
   }
 };
@@ -827,6 +949,33 @@ export const invitedUsers = async (req, res) => {
       { returnDocument: "after" },
     );
 
+    const newNotice = await Notification.create({
+      recipient: userId,
+      sender: currentUserId,
+      type: "INVITE",
+      roomId: roomCheck._id,
+      roomName: roomCheck.name,
+      message: `you to room: ${roomCheck.name}`,
+    });
+
+    await newNotice.populate([
+      { path: "sender", select: "username avatar plan" },
+      { path: "recipient", select: "username avatar plan" },
+    ]);
+
+    const populatedNotice = (data) => {
+      const plainData = data.toObject ? data.toObject() : { ...data };
+      delete data.updatedAt;
+      delete data.__v;
+      return plainData;
+    };
+
+    const cleanNotic = populatedNotice(newNotice);
+
+    sendNotification(userId, cleanNotic);
+        console.log("invitedUsers", updatedRoom.invitedUsers)
+
+
     return res.status(200).json({
       message: "Invite colleague successfully",
       invitedUsers: updatedRoom.invitedUsers,
@@ -834,6 +983,221 @@ export const invitedUsers = async (req, res) => {
   } catch (error) {
     console.error("Invite User Error:", error);
     return res.status(500).json({ message: "Invite colleague failed" });
+  }
+};
+
+// cancel invite colleague
+export const cancelInvitedUsers = async (req, res) => {
+  try {
+    const { roomId, userId } = req.body;
+    const currentUserId = req.user._id;
+
+    if (String(userId) === String(currentUserId)) {
+      return res
+        .status(400)
+        .json({ message: "You cannot cancel invite yourself" });
+    }
+
+    const roomCheck = await Room.findById(roomId);
+    if (!roomCheck) {
+      return res.status(404).json({ message: "Room not found" });
+    }
+
+    if (String(roomCheck.owner) !== String(currentUserId)) {
+      return res.status(403).json({
+        message:
+          "You do not have the right to cancel invite other users to this room.",
+      });
+    }
+
+    const isInvited = roomCheck.invitedUsers.some(
+      (id) => String(id) === String(userId),
+    );
+
+    if (!isInvited) {
+      return res
+        .status(400)
+        .json({ message: "This user is not currently invited to this room." });
+    }
+
+    const isAlreadyMember = roomCheck.members.some(
+      (member) => String(member.user) === String(userId),
+    );
+
+    if (isAlreadyMember) {
+      return res
+        .status(400)
+        .json({ message: "Cannot cancel. User has already joined the room." });
+    }
+
+    const updatedRoom = await Room.findByIdAndUpdate(
+      roomId,
+      { $pull: { invitedUsers: userId } },
+      { returnDocument: "after" },
+    );
+
+    const newNotice = await Notification.create({
+      recipient: userId,
+      sender: currentUserId,
+      type: "CANCEL_INVITE",
+      roomId: roomCheck._id,
+      roomName: roomCheck.name,
+      message: `you to room: ${roomCheck.name}`,
+    });
+
+    await newNotice.populate([
+      { path: "sender", select: "username avatar plan" },
+      { path: "recipient", select: "username avatar plan" },
+    ]);
+
+    const populatedNotice = (data) => {
+      const plainData = data.toObject ? data.toObject() : { ...data };
+      delete data.updatedAt;
+      delete data.__v;
+      return plainData;
+    };
+
+    const cleanNotic = populatedNotice(newNotice);
+
+    sendNotification(userId, cleanNotic);
+
+    return res.status(200).json({
+      message: "Cancel Invite colleague successfully",
+      invitedUsers: updatedRoom.invitedUsers,
+    });
+  } catch (error) {
+    console.error("Cancel Invite User Error:", error);
+    return res.status(500).json({ message: "Cancel Invite colleague failed" });
+  }
+};
+
+// accept invite
+export const acceptInvite = async (req, res) => {
+  const userId = req.user._id.toString();
+  const { roomId } = req.body;
+
+  try {
+    const room = await Room.findById(roomId).populate("owner", "plan");
+    if (!room) return res.status(404).json({ message: "Room not found" });
+
+    const isInvited = room.invitedUsers.some((m) => m.toString() === userId);
+    if (!isInvited) {
+      return res
+        .status(403)
+        .json({ message: "You are not invited to this room" });
+    }
+
+    const isAlreadyMember = room.members.some(
+      (m) => m.user?.toString() === userId,
+    );
+    if (isAlreadyMember) {
+      // ถ้าเป็นสมาชิกอยู่แล้ว แค่ลบชื่อออกจากคำเชิญอย่างเดียว
+      await Room.findByIdAndUpdate(room._id, {
+        $pull: { invitedUsers: userId },
+      });
+      return res.status(400).json({ message: "You are already a member" });
+    }
+
+    const ownerId = room.owner._id.toString();
+    const isOwner = ownerId === userId;
+    const colleaguesCount = room.members.filter(
+      (m) => m.user?.toString() !== ownerId,
+    ).length;
+
+    const ownerPlan = room.owner?.plan || "free";
+    const planDetails = await Plan.findOne({ plan: ownerPlan }).lean();
+    const colleagueLimit = planDetails?.colleagueLimit ?? 1;
+
+    if (colleaguesCount >= colleagueLimit) {
+      return res.status(403).json({
+        message: `This room has reached its maximum limit of ${colleagueLimit} colleagues.`,
+      });
+    }
+
+    // ทำการอัปเดตข้อมูล (เอาชื่อออกจาก Invite และเพิ่มเข้า Members)
+    const updatedRoom = await Room.findByIdAndUpdate(
+      room._id,
+      {
+        $pull: { invitedUsers: userId },
+        $push: { members: { user: userId, role: "viewer" } }, // ใช้ $push ปลอดภัยกว่า
+      },
+      { returnDocument: "after" },
+    )
+      .populate("owner", "username avatar plan")
+      .populate("members.user", "avatar username");
+
+    const cleanRoom = updatedRoom.toObject();
+    delete cleanRoom.code;
+    delete cleanRoom.shareLink;
+    delete cleanRoom.__v;
+    delete cleanRoom.createdAt;
+    delete cleanRoom.updatedAt;
+
+    if (!isOwner) {
+      const newNotice = await Notification.create({
+        recipient: room.owner._id,
+        sender: userId,
+        type: "JOIN",
+        roomId: room._id,
+        roomName: room.name,
+        message: `room: ${room.name}`,
+      });
+
+      await newNotice.populate("sender", "username avatar");
+      const populatedNotice = newNotice.toObject();
+      delete populatedNotice.updatedAt;
+      delete populatedNotice.__v;
+
+      sendNotification(ownerId, populatedNotice);
+    }
+
+    return res.status(200).json({
+      message: "Accept invite successful",
+      updatedRoom: cleanRoom,
+    });
+  } catch (error) {
+    console.error("Accept Invite Error:", error);
+    return res.status(500).json({ message: "Accept Invite failed" });
+  }
+};
+
+// decline invite
+export const declineInvite = async (req, res) => {
+  const userId = req.user._id.toString();
+  const { roomId } = req.body;
+
+  try {
+    const room = await Room.findById(roomId);
+    if (!room) return res.status(404).json({ message: "Room not found" });
+
+    const isInvited = room.invitedUsers.some((m) => m.toString() === userId);
+    if (!isInvited) {
+      return res
+        .status(403)
+        .json({ message: "You are not invited to this room" });
+    }
+
+    const isAlreadyMember = room.members.some(
+      (m) => m.user?.toString() === userId,
+    );
+
+    if (isAlreadyMember) {
+      await Room.findByIdAndUpdate(room._id, {
+        $pull: { invitedUsers: userId },
+      });
+      return res.status(400).json({ message: "You are already a member" });
+    }
+
+    await Room.findByIdAndUpdate(room._id, {
+      $pull: { invitedUsers: userId },
+    });
+
+    return res.status(200).json({
+      message: "Decline invite successful",
+    });
+  } catch (error) {
+    console.error("Decline Invite Error:", error);
+    return res.status(500).json({ message: "Decline Invite failed" });
   }
 };
 
@@ -853,7 +1217,7 @@ export const transferOwnership = async (req, res) => {
       .select(
         "_id name description isPrivate color isOnlineStatus isLastEditTime isPeopleJoinRoom isAllowLinkSharing isAllowCodeSharing owner members",
       )
-      .populate("owner", "username avatar")
+      .populate("owner", "username avatar plan")
       .populate("members.user", "username avatar");
 
     if (!room) return res.status(404).json({ message: "room not found" });
@@ -876,30 +1240,45 @@ export const transferOwnership = async (req, res) => {
 
     // อัปเดตสิทธิ์ (สมมติให้เจ้าของใหม่มี role: "owner" และเจ้าของเดิมมี role: "editor")
     room.members = room.members.map((m) => {
-      if (String(m.user) === String(newOwnerId)) return { ...m, role: "owner" };
-      if (String(m.user) === String(userId)) return { ...m, role: "editor" };
+      if (String(m.user?._id) === String(newOwnerId))
+        return { ...m, role: "owner" };
+      if (String(m.user?._id) === String(userId))
+        return { ...m, role: "editor" };
       return m;
     });
 
     room.owner = newOwnerId;
     await room.save();
 
-    // const newNotice = await Notification.create({
-    //   recipient: room.owner, // ส่งถึงเจ้าของห้อง
-    //   sender: req.user._id, // คนที่กด Join
-    //   type: "JOIN",
-    //   roomId: room._id,
-    //   roomName: room.name,
-    //   message: `${req.user.username} joined your room: ${room.name}`,
-    // });
+    const newNotice = await Notification.create({
+      recipient: newOwnerId,
+      sender: userId,
+      type: "TRANSFER_OWNER",
+      roomId: room._id,
+      roomName: room.name,
+      message: `room: ${room.name} to you`,
+    });
 
-    // // 🚩 2. Populate ข้อมูล sender เพื่อส่งไปกับ Socket (ให้เห็นชื่อและรูปทันที)
-    // const populatedNotice = await newNotice.populate(
-    //   "sender",
-    //   "username avatar email",
-    // );
+    await newNotice.populate([
+      { path: "sender", select: "username avatar plan" },
+      { path: "recipient", select: "username avatar plan" },
+    ]);
 
-    // sendNotification(room.owner.toString(), populatedNotice);
+    const populatedNotice = (data) => {
+      const plainData = data.toObject ? data.toObject() : { ...data };
+      delete data.updatedAt;
+      delete data.__v;
+      return plainData;
+    };
+
+    const cleanNotic = populatedNotice(newNotice);
+    const roomBroadcastData = {
+      ...cleanNotic,
+      message: `room: ${cleanNotic.roomName} to ${cleanNotic.recipient.username}`,
+    };
+
+    sendNotification(newOwnerId, cleanNotic);
+    sendNotificationEveryMemberOn(room._id.toString(), roomBroadcastData);
 
     return res.status(200).json({
       success: true,

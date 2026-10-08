@@ -70,11 +70,11 @@ export const createHocuspocus = (io) => {
 
         // 3. ค้นหาข้อมูลสมาชิกของผู้ใช้คนนี้ในห้อง
         const memberData = room.members.find(
-          (m) => m.user.toString() === userId.toString(),
+          (m) => (m.user.toString() || m.user?._id.toString()) === userId.toString(),
         );
 
         // 4. เช็กสิทธิ์การเข้าถึง (เป็นสมาชิก หรือ เป็นห้องสาธารณะ)
-        const isPublicRoom = room.isPublic === true;
+        const isPublicRoom = room.isPrivate === false;
 
         if (!memberData && !isPublicRoom) {
           throw new Error("Forbidden: คุณไม่มีสิทธิ์เข้าถึงห้องนี้");

@@ -30,6 +30,7 @@ import { connectSocket, disconnectSocket } from "./socket";
 import useNotificationStore from "./store/useNotificationStore";
 import SettingRoomTransferOwnership from "./components/settingRoom-transferOwnership";
 import SettingAccountPlan from "./components/settingAccount-plan";
+import { Toaster } from "react-hot-toast";
 
 function App() {
   const { deleteModal, closeDeleteModal } = useModalStore();
@@ -93,8 +94,8 @@ function App() {
 
   if (!isInitialized) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-primary"></div>
+      <div className="flex h-screen items-center justify-center select-none pointer-events-none">
+        <div className="animate-spin rounded-full h-15 w-15 border-t-3 border-primary"></div>
       </div>
     );
   }
@@ -158,6 +159,20 @@ function App() {
         isOpen={deleteModal.isOpen}
         roomId={deleteModal.roomId}
         onClose={closeDeleteModal}
+      />
+
+      <Toaster
+        position="top-center"
+        containerClassName="select-none pointer-events-none"
+        toastOptions={{
+          duration: 3000,
+          success: {
+            style: { background: "#ecfdf5", color: "#065f46" },
+          },
+          error: {
+            style: { background: "#fef2f2", color: "#991b1b" },
+          },
+        }}
       />
     </>
   );

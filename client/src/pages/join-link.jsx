@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import useRoomStore from "../store/useRoomStore";
+import toast from "react-hot-toast";
 
 function JoinLink() {
   const joinLink = useRoomStore((state) => state.joinLink);
@@ -14,19 +15,25 @@ function JoinLink() {
     const executeJoin = async () => {
       if (shareLinkToken && role && !hasJoin.current) {
         hasJoin.current = true;
+        const toastId = toast.loading("Joining room...");
 
         try {
           const res = await joinLink(shareLinkToken, role);
           if (res.success === true && res.data?._id) {
+            toast.success("Joined room successful", { id: toastId });
             setStatus("success");
             navigate(`/notes-together/${res.data._id}/${role}`, {
               replace: true,
             });
           } else {
-            setErrorMsg(res?.message)
+            toast.error(`${res.message || "Joine room failed"}`, {
+              id: toastId,
+            });
+            setErrorMsg(res?.message);
             setStatus(res?.status);
           }
         } catch (error) {
+          toast.error("Joine room failed", { id: toastId });
           setStatus("error");
         }
       }
@@ -35,7 +42,7 @@ function JoinLink() {
     executeJoin();
   }, [shareLinkToken, role, joinLink, navigate]);
 
-  if (status === 403 || status === "403") {
+  if (status === 403 || status === "403" || status === 410) {
     return (
       <div className="flex flex-col justify-center items-center h-screen gap-4">
         <h1 className="text-lg font-semibold text-red-500">
@@ -52,11 +59,11 @@ function JoinLink() {
   }
 
   if (status === "error" || status === 404 || status === "404") {
-    console.log("status", status);
     return (
       <div className="flex flex-col justify-center items-center h-screen gap-4">
         <p className="text-gray-600">
-          An error occurred. The room or sharing link you are looking for was not found.
+          An error occurred. The room or sharing link you are looking for was
+          not found.
         </p>
         <button
           onClick={() => navigate("/notes-together/explore")}
@@ -72,9 +79,7 @@ function JoinLink() {
     <div className="flex justify-center items-center h-screen">
       <div className="text-center">
         <span className="loading loading-spinner loading-lg mb-4 text-blue-500"></span>
-        <p className="animate-pulse text-gray-500">
-          going to the room...
-        </p>
+        <p className="animate-pulse text-gray-500">going to the room...</p>
       </div>
     </div>
   );

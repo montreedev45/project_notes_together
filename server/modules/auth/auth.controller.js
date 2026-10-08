@@ -74,7 +74,7 @@ export const register = async (req, res) => {
         email: user.email,
         avatar: user.avatar,
         plan: user.plan,
-        googleId: user.googleId
+        googleId: user.googleId,
       },
     });
   } catch (error) {
@@ -125,11 +125,11 @@ export const login = async (req, res) => {
         email: user.email,
         avatar: user.avatar,
         plan: user.plan,
-        googleId: user.googleId
+        googleId: user.googleId,
       },
     });
   } catch (error) {
-    res.status(500).json({ message: error });
+    res.status(500).json({ message: "server error" });
   }
 };
 
@@ -354,7 +354,8 @@ export const checkDuplicateEmail = async (req, res) => {
     if (!user) return res.status(400).json({ message: "User not found" });
 
     const isMatch = await bcrypt.compare(currentPassword, user.password);
-    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+    if (!isMatch)
+      return res.status(400).json({ message: "Invalid credentials" });
 
     // เช็กว่าอีเมลใหม่ซ้ำกับใครไหม (ใช้ .lean() และ select เฉพาะ isDeleted เพื่อความเร็วในการ Query)
     const checkEmail = await User.findOne({ email: newEmail })
@@ -458,7 +459,7 @@ export const changeEmail = async (req, res) => {
         email: user.email,
         avatar: user.avatar,
         plan: user.plan,
-        googleId: user.googleId
+        googleId: user.googleId,
       },
     });
   } catch (error) {
@@ -576,19 +577,24 @@ export const deleteAccount = async (req, res) => {
 
 export const googleLoginController = async (req, res) => {
   try {
-    const { access_token } = req.body; 
+    const { access_token } = req.body;
 
     if (!access_token) {
       return res.status(400).json({ message: "Google Token is required" });
     }
 
     // 1. นำ Access Token ไปเรียก API เพื่อดึงข้อมูลโปรไฟล์จาก Google โดยตรง
-    const googleResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-      headers: { Authorization: `Bearer ${access_token}` }
-    });
+    const googleResponse = await fetch(
+      "https://www.googleapis.com/oauth2/v3/userinfo",
+      {
+        headers: { Authorization: `Bearer ${access_token}` },
+      },
+    );
 
     if (!googleResponse.ok) {
-      return res.status(401).json({ message: "Invalid or expired Google Access Token" });
+      return res
+        .status(401)
+        .json({ message: "Invalid or expired Google Access Token" });
     }
 
     const payload = await googleResponse.json();
@@ -629,7 +635,7 @@ export const googleLoginController = async (req, res) => {
         email: user.email,
         avatar: user.avatar,
         plan: user.plan,
-        googleId: user.googleId
+        googleId: user.googleId,
       },
     });
   } catch (error) {
@@ -675,7 +681,7 @@ export const upgradePlan = async (req, res) => {
         email: upgradedPlan.email,
         avatar: upgradedPlan.avatar,
         plan: upgradedPlan.plan,
-        googleId: upgradedPlan.googleId
+        googleId: upgradedPlan.googleId,
       },
     });
   } catch (error) {

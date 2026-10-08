@@ -1,6 +1,7 @@
 import useAuthStore from "../store/useAuthStore";
 import { useNavigate } from "react-router-dom";
 import { useGoogleLogin } from "@react-oauth/google";
+import toast from "react-hot-toast";
 
 function GoogleAuthButton() {
   const navigate = useNavigate();
@@ -10,9 +11,13 @@ function GoogleAuthButton() {
     onSuccess: async (codeResponse) => {
       // เมื่อใช้ Hook ข้อมูลที่ได้จะเป็น Access Token
       try {
+        const toastId = toast.loading("Logging in...");
         const res = await googleLogin(codeResponse.access_token);
         if (res.success) {
+          toast.success("Login successfully", { id: toastId });
           navigate("/notes-together/explore");
+        } else {
+          toast.error(`${result.message || "Login failed"}`, { id: toastId });
         }
       } catch (error) {
         console.error("Google Sign-In Error:", error);
@@ -22,7 +27,7 @@ function GoogleAuthButton() {
   });
 
   return (
-    <div className="flex justify-center my-4">
+    <div className="flex justify-center my-4 outline-0">
       <button
         onClick={() => loginWithGoogle()}
         className="flex items-center justify-center w-full max-w-sm px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"

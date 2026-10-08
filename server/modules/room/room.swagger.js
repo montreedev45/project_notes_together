@@ -1,6 +1,9 @@
 import { success, z } from "zod";
 import {
+  acceptInvitedSchema,
+  cancelInviteUsersSchema,
   createRoomSchema,
+  declineInvitedSchema,
   deleteMemberSchema,
   getAllRoomsSchema,
   getRoomByIdSchema,
@@ -36,6 +39,9 @@ export const setupRoomSwagger = (registry) => {
   registry.register("Room_DeleteMember", deleteMemberSchema);
   registry.register("Room_JoinLink", joinLinkSchema);
   registry.register("Room_InviteColleague", invitedUsersSchema);
+  registry.register("Room_CancelColleague", cancelInviteUsersSchema);
+  registry.register("Room_InviteColleague", acceptInvitedSchema);
+  registry.register("Room_InviteColleague", declineInvitedSchema);
   registry.register("Room_TransferOwnership", transferOwnershipSchema);
   registry.register("Room_UpdateCodeRoom", updateCodeRoomSchema);
   registry.register("Room_UpdateLinkShareRoom", updateLinkShareRoomSchema)
@@ -1039,6 +1045,108 @@ export const setupRoomSwagger = (registry) => {
               message: z
                 .string()
                 .openapi({ example: "Invite colleague successfully" }),
+              invitedUsers: z.array(z.unknown()).openapi({
+                example: ["6a910298976db70f...", "6a910298976db70f... "],
+              }),
+            }),
+          },
+        },
+      },
+    },
+  });
+
+  // cancel invite cooleague
+  registry.registerPath({
+    method: "post",
+    path: "/api/rooms/cancel-invite-colleague",
+    tags: ["Room"],
+    summary: "Cancel Invite colleague",
+    description: "Cancel Invite colleague (not join room)",
+    request: {
+      body: {
+        content: {
+          "application/json": {
+            schema: cancelInviteUsersSchema.shape.body,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: z.object({
+              message: z
+                .string()
+                .openapi({ example: "Cancel Invite colleague successfully" }),
+              invitedUsers: z.array(z.unknown()).openapi({
+                example: ["6a910298976db70f...", "6a910298976db70f... "],
+              }),
+            }),
+          },
+        },
+      },
+    },
+  });
+
+  // accept invite
+  registry.registerPath({
+    method: "post",
+    path: "/api/rooms/accept-invite",
+    tags: ["Room"],
+    summary: "Accept Invite colleague",
+    description: "Accept Invite colleague",
+    request: {
+      body: {
+        content: {
+          "application/json": {
+            schema: acceptInvitedSchema.shape.body,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: z.object({
+              message: z
+                .string()
+                .openapi({ example: "Accept Invite colleague successfully" }),
+              invitedUsers: z.array(z.unknown()).openapi({
+                example: ["6a910298976db70f...", "6a910298976db70f... "],
+              }),
+            }),
+          },
+        },
+      },
+    },
+  });
+
+  // decline invite
+  registry.registerPath({
+    method: "post",
+    path: "/api/rooms/decline-invite",
+    tags: ["Room"],
+    summary: "Decline Invite colleague",
+    description: "Decline Invite colleague",
+    request: {
+      body: {
+        content: {
+          "application/json": {
+            schema: declineInvitedSchema.shape.body,
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            schema: z.object({
+              message: z
+                .string()
+                .openapi({ example: "Decline Invite colleague successfully" }),
               invitedUsers: z.array(z.unknown()).openapi({
                 example: ["6a910298976db70f...", "6a910298976db70f... "],
               }),

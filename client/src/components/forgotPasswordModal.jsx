@@ -5,11 +5,8 @@ import useAuthStore from "../store/useAuthStore";
 function ForgotPasswordModal({ isOpen, onClose }) {
   const forgotPassword = useAuthStore((state) => state.forgotPassword);
   const [email, setEmail] = useState("");
-
   const [isSent, setIsSent] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-
-  if (!isOpen) return null;
 
   const handleClose = () => {
     setEmail("");
@@ -27,8 +24,12 @@ function ForgotPasswordModal({ isOpen, onClose }) {
     try {
       const res = await forgotPassword(email);
 
-      if(res?.message?.includes("Google")){
+      if(!res.success){
         setErrorMsg(res.message || "");
+
+        if (res?.message?.includes("Google")) {
+          setErrorMsg(res.message || "");
+        }
       }
 
       setIsSent(true);
@@ -38,9 +39,17 @@ function ForgotPasswordModal({ isOpen, onClose }) {
     }
   };
 
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-70 md:max-w-100 overflow-hidden transform transition-all">
+    <div
+      className="select-none fixed inset-0 z-100 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      onClick={handleClose}
+    >
+      <div
+        className="bg-white w-full max-w-md rounded-2xl overflow-hidden animate-in fade-in zoom-in duration-200 shadow-2xl ring-1 ring-slate-900/5"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex justify-between items-center p-6 border-b border-gray-100">
           <h2 className="text-xl font-bold text-gray-800">Forgot Password</h2>
           <button
@@ -89,9 +98,7 @@ function ForgotPasswordModal({ isOpen, onClose }) {
                   <h3 className="text-lg font-bold text-gray-800 mb-2">
                     warning
                   </h3>
-                  <p className="text-red-600 text-sm">
-                    {errorMsg}
-                  </p>
+                  <p className="text-red-600 text-sm">{errorMsg}</p>
                 </div>
               </>
             )
@@ -112,11 +119,11 @@ function ForgotPasswordModal({ isOpen, onClose }) {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-primary transition-colors text-gray-700"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-primary transition-colors text-gray-400"
                 />
                 <button
                   type="submit"
-                  className="w-full py-3 button-primary rounded-lg font-semibold hover:scale-[1.02] active:scale-95 transition-transform"
+                  className="cursor-pointer w-full py-3 button-primary rounded-lg font-semibold hover:scale-[1.02] active:scale-95 transition-transform"
                 >
                   Send Reset Link
                 </button>

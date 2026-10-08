@@ -12,121 +12,149 @@ const useAuthStore = create((set) => ({
   isInitialized: false, //use when check that Have finished process yet?
 
   login: async (formData) => {
-    set({ loading: true });
     try {
       if (!formData?.email?.trim() || !formData?.password?.trim()) {
-        set({ loading: false });
         return { success: false, message: "Please fill in all fields" };
       }
 
       const res = await api.post("/auth/login", formData);
 
       if (res?.data?.user && res.status === 200) {
-
         set({
-          user: res.data.user,
+          user: res?.data?.user,
           isAuthenticated: true,
-          loading: false,
         });
-
         return { success: true };
       }
 
-      set({ loading: false });
       return { success: false, message: "Unexpected response from server" };
     } catch (error) {
-      set({ loading: false });
       return {
         success: false,
-        message: error?.response?.data?.message || "Login failed",
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Login failed",
       };
     }
   },
 
   register: async (formData) => {
-    set({ loading: true });
-
     try {
-      const res = await api.post("/auth/register", formData)
+      if (
+        !formData?.username?.trim() ||
+        !formData?.email?.trim() ||
+        !formData?.password?.trim() ||
+        !formData?.confirmPassword?.trim()
+      ) {
+        return { success: false, message: "Please fill in all fields" };
+      }
+
+      if (formData?.password !== formData?.confirmPassword) {
+        return {
+          success: false,
+          message: "Please try again: password is not match",
+        };
+      }
+
+      const res = await api.post("/auth/register", formData);
 
       if (res?.data?.user && res.status === 201) {
-        set({ user: res.data.user, isAuthenticated: true, loading: false });
-
+        set({ user: res.data.user, isAuthenticated: true });
         return { success: true };
       }
 
-      set({ loading: false });
       return { success: false, message: "Unexpected response from server" };
     } catch (error) {
-      set({ loading: false });
       return {
         success: false,
-        message: error?.response?.data?.message || "register failed",
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Register failed",
       };
     }
   },
 
   updateUserProfile: async (updatedData) => {
     try {
-      const response = await api.put('auth/profile', updatedData);
-      const { user } = response.data;
+      const res = await api.put("auth/profile", updatedData);
+      const { user } = res.data;
 
-      localStorage.setItem('user', JSON.stringify(user));
+      if (res?.data?.user && res?.status === 200) {
+        localStorage.setItem("user", JSON.stringify(user));
+        set({ user: user });
+        return { success: true };
+      }
 
-      set({ user: user  });
-
-      return { success: true };
+      return { success: false, message: "Unexpected response from server" };
     } catch (error) {
-      throw error.response?.data?.message || 'Update failed';
+      return {
+        success: false,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Update failed",
+      };
     }
   },
 
   changePassword: async (formData) => {
     try {
       const res = await api.put("/auth/change-password", formData);
-
-      if (res?.data) {
+      if (res?.data && res?.status === 200) {
         return { success: true };
       }
 
       return { success: false, message: "Unexpected response from server" };
     } catch (error) {
-      return { success: false, message: error.response.data.message };
+      return {
+        success: false,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Update failed",
+      };
     }
   },
 
-  forgotPassword: async(currentEmail) =>{
-    set({loading: true})
+  forgotPassword: async (currentEmail) => {
     try {
-      const res = await api.post("/auth/forgot-password", {currentEmail})
+      const res = await api.post("/auth/forgot-password", { currentEmail });
 
-      if(res.data.success === true){
-        set({loading: false})
-        return {success: res.data.success, message: res.data.message}
+      if (res.data.success === true) {
+        return { success: res.data.success, message: res.data.message };
       }
 
-      set({loading: false})
-      return {success: false, message: res.data.message}
+      return { success: false, message: "Unexpected response from server" };
     } catch (error) {
-      set({loading: false})
-      return {success: false, message: error.response.data.message}
+      return {
+        success: false,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Forgot password failed",
+      };
     }
   },
 
-  resetPassword: async(formData) => {
-    set({loading: true})
+  resetPassword: async (formData) => {
     try {
-      const res = await api.post("/auth/reset-password", formData) 
+      const res = await api.post("/auth/reset-password", formData);
 
-      if(res?.status === 200){
-        return {success: true}
+      if (res?.status === 200) {
+        return { success: true };
       }
-      
-      return { success: false, message: res.data.message }
+
+      return { success: false, message: "Unexpected response from server" };
     } catch (error) {
-      return {success: false, message: error.response.data.message}
-    } finally{
-      set({loading: false})
+      return {
+        success: false,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Reset password failed",
+      };
     }
   },
 
@@ -137,45 +165,56 @@ const useAuthStore = create((set) => ({
         localStorage.setItem("temporalyToken", res.data.temporalyToken);
         return { success: true };
       }
-      return { success: false };
+      return { success: false, message: "Unexpected response from server" };
     } catch (error) {
-      return { success: false, message: error.response.data.message };
+      return {
+        success: false,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Register failed",
+      };
     }
   },
 
   changeEmail: async (formData) => {
-    set({ loading: true });
     try {
       const res = await api.post("/auth/change-email", formData);
-
       if (res?.data?.user && res?.status === 200) {
-        set({ user: res.data.user, loading: false });
+        set({ user: res.data.user });
         return { success: true };
       }
 
-      set({ loading: false });
-      return { success: false };
+      return { success: false, message: "Unexpected response from server" };
     } catch (error) {
-      set({ loading: false });
-      return { success: false };
+      return {
+        success: false,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Register failed",
+      };
     }
   },
 
   deleteAccount: async () => {
-    set({ loading: true });
     try {
       const res = await api.delete("/auth/delete-account");
 
       if (res?.data) {
-        set({ loading: false, user: null, isAuthenticated: false });
+        set({ user: null, isAuthenticated: false });
         return { success: true };
       }
 
-      set({ loading: false });
       return { success: false, message: "Unexpected response from server" };
     } catch (error) {
-      set({ loading: false });
-      return { success: false };
+      return {
+        success: false,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Delete account failed",
+      };
     }
   },
 
@@ -195,10 +234,9 @@ const useAuthStore = create((set) => ({
 
   googleLogin: async (access_token) => {
     try {
-      const res = await api.post('/auth/google', { access_token });
+      const res = await api.post("/auth/google", { access_token });
       // บันทึก Token / User Info เข้า Zustand Store
       if (res?.data?.user && res?.status === 200) {
-
         set({
           user: res.data.user,
           isAuthenticated: true,
@@ -209,44 +247,44 @@ const useAuthStore = create((set) => ({
 
       return { success: false, message: "Login failed" };
     } catch (error) {
-      console.error('Google Login Error:', error.response?.data || error.message);
-      throw error;
-    } finally {
-      loading: false;
+      return {
+        success: false,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Google login failed",
+      };
     }
   },
 
   setUser: (userData) => {
-    set({user: userData})
+    set({ user: userData });
   },
 
-  clearUsers: ()=> set({ users: []}),
-  
-  logout: async() => {
-    try {
-      const res = await api.post("/auth/logout")
-      if(res.status === 200){
+  clearUsers: () => set({ users: [] }),
 
+  logout: async () => {
+    try {
+      const res = await api.post("/auth/logout");
+      if (res.status === 200) {
         localStorage.removeItem("newEmail");
         localStorage.removeItem("recent-rooms");
         localStorage.removeItem("temporalyToken");
         localStorage.removeItem("verificationCode");
         set({ user: null, isAuthenticated: false, loading: false });
 
-        useRoomStore.getState().resetRoomStore()
+        useRoomStore.getState().resetRoomStore();
         disconnectSocket();
-        return {success: true}
+        return { success: true };
       }
     } catch (error) {
-      console.log("error", error)
+      console.log("error", error);
     }
-    
   },
 
   checkAuth: async () => {
     try {
       const res = await api.get("/auth/verify");
-
       set({
         user: res.data.user,
         isAuthenticated: true,

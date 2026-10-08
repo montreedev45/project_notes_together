@@ -4,28 +4,29 @@ import api from "../services/api";
 const useCommentStore = create((set) => ({
   comments: [],
   stickers: [],
-  loading: false,
 
   getComment: async (roomId) => {
-    set({ loading: true });
     try {
       const res = await api.get("/comments", { params: { roomId } });
 
       if (res.status === 200) {
-        set({ comments: res.data.comments, loading: false });
+        set({ comments: res.data.comments });
         return { success: true };
       }
 
-      set({ loading: false });
       return { success: false, message: "unexpected response from server" };
     } catch (error) {
-      set({ loading: false });
-      return { success: false, message: "fetch comment failed" };
+      return {
+        success: false,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Get comment failed",
+      };
     }
   },
 
   addCommentFromMe: async (roomId, type, content) => {
-    set({ loading: true });
     try {
       const payload = {
         roomId: roomId,
@@ -41,18 +42,22 @@ const useCommentStore = create((set) => ({
           const isAlreadyExists = state.comments.some(
             (c) => c._id === incomingComment?._id,
           );
-          if (isAlreadyExists) return { loading: false };
+          if (isAlreadyExists) return state;
 
           return {
             comments: [...state.comments, incomingComment],
-            loading: false,
           };
         });
         return { success: true };
       }
     } catch (error) {
-      set({ loading: false });
-      return { success: false };
+      return {
+        success: false,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Add comment failed",
+      };
     }
   },
 
@@ -74,21 +79,24 @@ const useCommentStore = create((set) => ({
   },
 
   getAllSticker: async () => {
-    set({ loading: true });
     try {
       const res = await api.get("/comments/stickers/all");
 
       if (res.status === 200) {
-        set({ stickers: res?.data?.stickers, loading: false });
+        set({ stickers: res?.data?.stickers });
 
         return { success: true };
       }
 
-      set({ loading: false });
       return { success: false, message: "unexpected response from server" };
     } catch (error) {
-      set({ loading: false });
-      return { success: false, message: "fetch stickers failed" };
+      return {
+        success: false,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Get all sticker failed",
+      };
     }
   },
 }));

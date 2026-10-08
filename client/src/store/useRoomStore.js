@@ -34,43 +34,43 @@ const useRoomStore = create((set, get) => ({
   loading: false,
 
   getMyRooms: async (criteria = "all", searchTerm = "") => {
-    set({ loading: true });
     try {
       const res = await api.post("/rooms/my-rooms", { criteria, searchTerm });
 
       if (res?.data) {
-        set({ myRooms: res.data, loading: false });
+        set({ myRooms: res.data });
         return { success: true };
       }
 
-      set({ loading: false });
       return { success: false, message: "Unexpected response from server" };
     } catch (error) {
-      set({ loading: false });
       return {
         success: false,
-        message: "Fetch rooms failed",
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Get myrooms failed",
       };
     }
   },
 
   getAllRooms: async (criteria = "all", searchTerm = "") => {
-    set({ loading: true });
     try {
       const res = await api.post("/rooms/all-rooms", { criteria, searchTerm });
 
       if (res?.data) {
-        set({ rooms: res.data, loading: false });
+        set({ rooms: res.data });
         return { success: true };
       }
 
-      set({ loading: false });
       return { success: false, message: "Unexpected response from server" };
     } catch (error) {
-      set({ loading: false });
       return {
         success: false,
-        message: "Fetch rooms failed",
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Get all rooms failed",
       };
     }
   },
@@ -150,30 +150,29 @@ const useRoomStore = create((set, get) => ({
   },
 
   createRoom: async (data) => {
-    set({ loading: true });
-
     try {
       const res = await api.post("/rooms", data);
-
       if (res?.data) {
         set((state) => ({
           rooms: [res.data, ...state.rooms],
           myRooms: [res.data, ...state.myRooms],
-          loading: false,
         }));
         return { success: true };
       }
 
-      set({ loading: false });
-      return { success: false, message: res.data };
+      return { success: false, message: "unexpected response from server" };
     } catch (error) {
-      set({ loading: false });
-      return { success: false, message: error.response.data.message };
+      return {
+        success: false,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Create room failed",
+      };
     }
   },
 
   joinRoom: async ({ code = "", roomId = "" }) => {
-    set({ loading: true });
     try {
       const finalData = {
         code: code,
@@ -181,7 +180,6 @@ const useRoomStore = create((set, get) => ({
       };
 
       const res = await api.post("/rooms/join", finalData);
-
       if (res?.data) {
         set((state) => {
           // 1. เช็กก่อนว่าห้องนี้เคยอยู่ใน myRooms แล้วหรือยัง
@@ -200,7 +198,6 @@ const useRoomStore = create((set, get) => ({
             rooms: state.rooms.map((r) =>
               r._id === res.data._id ? res.data : r,
             ),
-            loading: false,
           };
         });
 
@@ -208,17 +205,18 @@ const useRoomStore = create((set, get) => ({
         return { data: res.data, success: true };
       }
     } catch (error) {
-      set({ loading: false });
       return {
         success: false,
-        message: error.response.data.message,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Create room failed",
         status: error.response?.status, // ส่ง 403 กลับไป
       };
     }
   },
 
   leaveRoom: async (roomId, userId) => {
-    set({ loadaing: true });
     try {
       const res = await api.post("/rooms/leave", { roomId });
 
@@ -233,16 +231,19 @@ const useRoomStore = create((set, get) => ({
                 }
               : r,
           ),
-          loadaing: false,
         }));
         return { success: true };
       }
 
-      set({ loading: false });
       return { success: false, message: "Unexpected response from server" };
     } catch (error) {
-      set({ loadaing: false });
-      return { success: false, message: "leave room failed" };
+      return {
+        success: false,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Leave room failed",
+      };
     }
   },
 
@@ -269,25 +270,36 @@ const useRoomStore = create((set, get) => ({
       }
 
       return { success: false, message: "unexpected response from server" };
-    } catch (error) {}
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Delete room failed",
+      };
+    }
   },
 
   getTrashRooms: async (criteria = "", searchTerm = "") => {
-    set({ loading: true });
     try {
       const res = await api.get(
         `/rooms/trash?searchTerm=${searchTerm}&criteria=${criteria}`,
       );
       if (res?.data) {
-        set({ trashRooms: res.data, loading: false });
+        set({ trashRooms: res.data });
         return { success: true };
       }
 
-      set({ loading: false });
       return { success: false, message: "unexpected response from server" };
     } catch (error) {
-      set({ loading: false });
-      return { success: false, message: "fetch trash rooms failed" };
+      return {
+        success: false,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Get trash room failed",
+      };
     }
   },
 
@@ -300,22 +312,43 @@ const useRoomStore = create((set, get) => ({
           myRooms: [res.data, ...state.myRooms],
           trashRooms: state.trashRooms.filter((r) => r._id !== roomId),
         }));
+        return { success: true };
       }
+
+      return { success: false };
     } catch (error) {
-      return { success: false, message: "restore room failed" };
+      return {
+        success: false,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Restore room failed",
+      };
     }
   },
 
   permanentlyDelete: async (roomId) => {
     try {
       const res = await api.delete(`/rooms/permanent/${roomId}`);
-      set((state) => ({
-        rooms: state.rooms.filter((r) => r._id !== roomId),
-        myRooms: state.rooms.filter((r) => r._id !== roomId),
-        trashRooms: state.trashRooms.filter((r) => r._id !== roomId),
-      }));
+      if (res.status === 200) {
+        set((state) => ({
+          rooms: state.rooms.filter((r) => r._id !== roomId),
+          myRooms: state.rooms.filter((r) => r._id !== roomId),
+          trashRooms: state.trashRooms.filter((r) => r._id !== roomId),
+        }));
+        return { success: true };
+      }
+
+      return { success: false };
     } catch (error) {
-      return { success: false, message: "restore room failed" };
+      return {
+        success: false,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) ||
+          "Permanently delete room failed",
+      };
     }
   },
 
@@ -341,10 +374,8 @@ const useRoomStore = create((set, get) => ({
   },
 
   updateRoom: async (roomId, newData) => {
-    set({ loading: true });
     try {
       const targetRoom = newData.find((r) => r._id === roomId) || {};
-
       // กรองเฉพาะคีย์ที่ตรงกับ ALLOWED_KEYS
       const sanitizedData = Object.keys(targetRoom)
         .filter((key) => ALLOWED_KEYS.includes(key))
@@ -371,7 +402,6 @@ const useRoomStore = create((set, get) => ({
           recentRooms: state.recentRooms.map((r) =>
             r._id === roomId ? { ...r, ...res.data } : r,
           ),
-          loading: false,
         }));
 
         const latestRecent = get().recentRooms;
@@ -381,16 +411,19 @@ const useRoomStore = create((set, get) => ({
         return { success: true };
       }
 
-      set({ loading: false });
       return { success: false, message: "Unexpected response from server" };
     } catch (error) {
-      set({ loading: false });
-      return { success: false, message: "Updated room failed" };
+      return {
+        success: false,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Update room failed",
+      };
     }
   },
 
   updateRole: async (roomId, memberId, role) => {
-    set({ loadaing: true });
     try {
       const finalData = {
         roomId,
@@ -412,21 +445,23 @@ const useRoomStore = create((set, get) => ({
           recentRooms: state.recentRooms.map((r) =>
             r._id === roomId ? { ...r, ...res.data } : r,
           ),
-          loading: false,
         }));
         return { success: true };
       }
 
-      set({ loading: false });
       return { success: false, message: "Unexpected response from server" };
     } catch (error) {
-      set({ loading: false });
-      return { success: false, message: "Update role failed" };
+      return {
+        success: false,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Update role failed",
+      };
     }
   },
 
   deleteMember: async (roomId, memberId) => {
-    set({ loading: true });
     try {
       const finalData = {
         roomId,
@@ -443,7 +478,6 @@ const useRoomStore = create((set, get) => ({
           recentRooms: state.recentRooms.map((r) =>
             r._id === roomId ? res.data : r,
           ),
-          loading: false,
         }));
 
         const latestRecent = get().recentRooms;
@@ -452,16 +486,19 @@ const useRoomStore = create((set, get) => ({
         return { success: true };
       }
 
-      set({ loading: false });
       return { success: false, message: "Unexpected response from server" };
     } catch (error) {
-      set({ loadaing: false });
-      return { success: false, message: "Delete member failed" };
+      return {
+        success: false,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Delete member failed",
+      };
     }
   },
 
   joinLink: async (shareLinkToken, role) => {
-    set({ loading: true });
     try {
       const res = await api.get(`/rooms/join-link/${shareLinkToken}/${role}`);
 
@@ -477,7 +514,6 @@ const useRoomStore = create((set, get) => ({
           recentRooms: state.recentRooms.map((r) =>
             r._id === shareLinkToken ? { ...r, members: res.data.members } : r,
           ),
-          loading: false,
         }));
 
         const latestRecent = get().recentRooms;
@@ -489,23 +525,21 @@ const useRoomStore = create((set, get) => ({
         };
       }
 
-      set({ loading: false });
       return {
         success: false,
         status: "error",
         message: "Unexpected response from server",
       };
     } catch (error) {
-      set({ loading: false });
-
       const backendStatus = error.response?.status || "error";
-      const backendMessage =
-        error.response?.data?.message || "Join link failed";
 
       return {
         success: false,
         status: backendStatus,
-        message: backendMessage,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Join link failed",
       };
     }
   },
@@ -515,8 +549,6 @@ const useRoomStore = create((set, get) => ({
   },
 
   updateRoomCode: async (roomId) => {
-    set({ loading: true });
-
     try {
       const res = await api.put("/rooms/update-code", { roomId });
       if (res.status === 200 && res.data.newCode) {
@@ -531,7 +563,6 @@ const useRoomStore = create((set, get) => ({
           recentRooms: state.recentRooms.map((r) =>
             r._id === roomId ? { ...r, code: res?.data?.newCode } : r,
           ),
-          loading: false,
         }));
         return {
           success: true,
@@ -540,17 +571,19 @@ const useRoomStore = create((set, get) => ({
         };
       }
 
-      set({ loading: false });
-
       return { success: false, message: "unexpected response from server" };
     } catch (error) {
-      set({ loading: false });
-      return { success: false, message: "update code room failed" };
+      return {
+        success: false,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Update code failed",
+      };
     }
   },
 
   updateLinkShare: async (roomId, role, access) => {
-    set({ loading: true });
     try {
       const res = await api.put(`/rooms/update-link-share/${roomId}`, {
         role,
@@ -568,7 +601,6 @@ const useRoomStore = create((set, get) => ({
           recentRooms: state.recentRooms.map((r) =>
             r._id === roomId ? { ...r, shareLink: res?.data } : r,
           ),
-          loading: false,
         }));
         return {
           success: true,
@@ -576,19 +608,65 @@ const useRoomStore = create((set, get) => ({
         };
       }
 
-      set({ loading: false });
-
       return { success: false, message: "unexpected response from server" };
     } catch (error) {
-      set({ loading: false });
-      return { success: false, message: "update link share room failed" };
+      return {
+        success: false,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Update link failed",
+      };
     }
   },
 
   invitedUsers: async (roomId, userId) => {
-    set({ loading: true });
     try {
       const res = await api.post("/rooms/invite-colleague", { roomId, userId });
+      if (res.status === 200 && res.data.invitedUsers) {
+        set((state) => ({
+          ...state,
+          rooms: state.rooms.map((r) =>
+            
+            r._id === roomId
+              ? { ...r, invitedUsers: res.data.invitedUsers }
+              : r,
+          ),
+          myRooms: state.myRooms.map((r) =>
+            r._id === roomId
+              ? { ...r, invitedUsers: res.data.invitedUsers }
+              : r,
+          ),
+          recentRooms: state.recentRooms.map((r) =>
+            r._id === roomId
+              ? { ...r, invitedUsers: res.data.invitedUsers }
+              : r,
+          ),
+        }));
+        return {
+          success: true,
+          message: "invite colleague in room successfully",
+        };
+      }
+
+      return { success: false, message: "unexpected response from server" };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Invite colleague failed",
+      };
+    }
+  },
+
+  cancelInvited: async (roomId, userId) => {
+    try {
+      const res = await api.post("/rooms/cancel-invite-colleague", {
+        roomId,
+        userId,
+      });
       if (res.status === 200 && res.data.invitedUsers) {
         set((state) => ({
           ...state,
@@ -607,25 +685,108 @@ const useRoomStore = create((set, get) => ({
               ? { ...r, invitedUsers: res.data.invitedUsers }
               : r,
           ),
-          loading: false,
         }));
         return {
           success: true,
-          message: "invite colleague in room successfully",
+          message: "Cancel invite colleague in room successfully",
         };
       }
 
-      set({ loading: false });
-
       return { success: false, message: "unexpected response from server" };
     } catch (error) {
-      set({ loading: false });
-      return { success: false, message: "invite colleague in room failed" };
+      return {
+        success: false,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) ||
+          "Cancel Invite colleague failed",
+      };
+    }
+  },
+
+  acceptInvited: async (roomId) => {
+    try {
+      const res = await api.post("/rooms/accept-invite", { roomId });
+      if (res.data.updatedRoom && res.status === 200) {
+        const newRoom = res.data.updatedRoom;
+
+        set((state) => {
+          // 1. จัดการฝั่ง rooms (อัปเดตถ้ามีอยู่แล้ว)
+          const updatedRooms = state.rooms.map(
+            (r) => (r._id === newRoom._id ? newRoom : r), // เซฟทับด้วย Object ห้องใหม่ทั้งก้อน ป้องกันข้อมูลหาย
+          );
+
+          // 2. จัดการฝั่ง myRooms (เช็กว่ามีห้องนี้อยู่แล้วหรือยัง)
+          const isAlreadyInMyRooms = state.myRooms.some(
+            (r) => r._id === newRoom._id,
+          );
+
+          let updatedMyRooms;
+          if (isAlreadyInMyRooms) {
+            // ถ้าบังเอิญมีอยู่แล้ว ให้อัปเดตข้อมูลทับไป
+            updatedMyRooms = state.myRooms.map((r) =>
+              r._id === newRoom._id ? newRoom : r,
+            );
+          } else {
+            // ถ้ายังไม่มี (กรณีปกติของการเพิ่งรับเชิญ) ให้ดันห้องใหม่เข้าไปอยู่บนสุด
+            updatedMyRooms = [newRoom, ...state.myRooms];
+          }
+
+          return {
+            ...state,
+            rooms: updatedRooms,
+            myRooms: updatedMyRooms,
+          };
+        });
+
+        return {
+          success: true,
+          message: "Accept invite successful",
+        };
+      }
+
+      return {
+        success: false,
+        message: "Unexpected response from server",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ")
+            : error?.response?.data?.message) || "Accept Invite failed",
+      };
+    }
+  },
+
+  declineInvited: async (roomId) => {
+    try {
+      const res = await api.post("/rooms/decline-invite", {roomId})
+      if(res.status === 200){
+
+        return {
+          success: true,
+          message:"Decline invite successful"
+        }
+      }
+      return {
+        success: false,
+        message: "Unexpected response from server"
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ")
+            : error?.response?.data?.message) || "Decline Invite failed",
+      };
     }
   },
 
   transferOwnership: async (roomId, newOwnerId) => {
-    set({ loading: true });
     try {
       const res = await api.post("/rooms/transfer-ownership", {
         roomId,
@@ -644,16 +805,20 @@ const useRoomStore = create((set, get) => ({
           recentRooms: state.recentRooms.map((r) =>
             r._id === roomId ? updatedRoom : r,
           ),
-          loading: false,
         }));
 
         return { success: true, data: updatedRoom };
       }
-      set({ loading: false });
       return { success: false };
     } catch (error) {
-      set({ loading: false });
-      return { success: false, status: error.response?.status };
+      return {
+        success: false,
+        status: error.response?.status,
+        message:
+          (error?.response?.data?.message === "Validation Error"
+            ? error?.response?.data?.errors?.map((m) => m.message).join(", ") // แปลง Array เป็น String ด้วยคอมม่า
+            : error?.response?.data?.message) || "Transfer ownership failed",
+      };
     }
   },
 

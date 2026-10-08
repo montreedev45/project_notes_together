@@ -51,7 +51,7 @@ function Explore() {
 
           <button
             onClick={() => setIsOpenJoinRoomModal(true)}
-            className="button-primary flex-1 lg:flex-none flex justify-center items-center rounded-lg font-semibold bg-third text-secondary hover:scale-[1.02] active:scale-95 transition-transform cursor-pointer border-2 gap-2 py-2 px-4"
+            className="button-primary flex-1 lg:flex-none flex justify-center items-center rounded-lg font-semibold bg-green-400 text-white hover:scale-[1.02] active:scale-95 transition-transform cursor-pointer  gap-2 py-2 px-4"
           >
             <Icon icon="fa:chain" width="16" className="md:w-5" />
             <span>Join Room</span>
@@ -63,14 +63,14 @@ function Explore() {
             <Icon
               icon="mdi:search"
               width="24"
-              className="absolute left-3 text-secondary cursor-pointer"
+              className="absolute left-3 text-gray-300 cursor-pointer"
             />
             <input
               type="text"
               placeholder="Search room name"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="py-2.5 ps-10 pr-4 rounded-lg outline-none font-medium text-secondary border-2 border-gray-300 focus:border-primary w-full lg:max-w-120 transition-colors"
+              className="py-1.5 ps-10 pr-4 rounded-lg outline-none font-medium text-secondary border-2 border-gray-300 focus:border-primary w-full lg:max-w-120 transition-colors"
             />
           </div>
 
@@ -126,7 +126,7 @@ function Explore() {
         </div>
       </div>
 
-      <div className="bg-third mt-6 flex-1 overflow-y-auto no-scrollbar rounded-2xl p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 content-start justify-items-center">
+      <div className="bg-third mt-6 flex-1 overflow-y-auto no-scrollbar rounded-2xl p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 content-start justify-items-center">
         {sortedRooms.map((room) => (
           <RoomCard key={room._id} data={room} />
         ))}

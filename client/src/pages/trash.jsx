@@ -66,14 +66,14 @@ function Trash() {
               <Icon
                 icon="mdi:search"
                 width="24"
-                className="absolute left-3 text-secondary cursor-pointer"
+                className="absolute left-3 text-gray-300 cursor-pointer"
               />
               <input
                 type="text"
                 placeholder="Search room name"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="py-2.5 ps-10 pr-4 rounded-lg outline-none font-medium text-secondary border-2 border-gray-300 focus:border-primary w-full lg:max-w-120 transition-colors"
+                className="py-1.5 ps-10 pr-4 rounded-lg outline-none font-medium text-secondary border-2 border-gray-300 focus:border-primary w-full lg:max-w-120 transition-colors"
               />
             </div>
 
@@ -129,7 +129,7 @@ function Trash() {
           </div>
         </div>
 
-        <div className="bg-third mt-6 flex-1 overflow-y-auto no-scrollbar rounded-2xl p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 content-start justify-items-center">
+        <div className="bg-third mt-6 flex-1 overflow-y-auto no-scrollbar rounded-2xl p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 content-start justify-items-center">
           {sortedRooms.map((room) => (
             <RoomCard key={room._id} data={room} />
           ))}
