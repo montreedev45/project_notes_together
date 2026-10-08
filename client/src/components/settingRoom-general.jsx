@@ -3,7 +3,7 @@ import { Icon } from "@iconify/react";
 import { useParams, useOutletContext } from "react-router-dom";
 import ColorPicker from "../components/colorPicker";
 import Toggle from "../components/toggleButton";
-import SettingRoomPreview from "./SettingRoom-preview";
+import SettingRoomPreview from "./settingRoom-preview";
 import useRoomStore from "../store/useRoomStore";
 import toast from "react-hot-toast";
 import StatusModal from "./statusModal";
