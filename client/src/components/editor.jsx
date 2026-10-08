@@ -18,7 +18,7 @@ import { Extension } from "@tiptap/core";
 import { Color } from "@tiptap/extension-color";
 import { Image } from "@tiptap/extension-image";
 import { FontFamily } from "@tiptap/extension-font-family";
-import { exportToPDF } from "../utils/exportToPdf";
+import { exportToPDF } from "../utils/exportToPDF";
 import { LimitPageHeight } from "../utils/limitPageHeight";
 import useNoteStore from "../store/useNoteStore";
 import useNotificationStore from "../store/useNotificationStore";
