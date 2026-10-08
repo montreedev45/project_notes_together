@@ -1,5 +1,4 @@
 import dotenv from "dotenv";
-// ต้องเรียก dotenv.config() ก่อน Import app.js เสมอ
 dotenv.config();
 
 import http from "http";
@@ -11,8 +10,10 @@ import { createHocuspocus } from "./hocuspocus-server.js";
 import { startDailyJobs } from "./cron/jobs.js";
 import logger from "./utils/logger.js";
 
+// 1. สร้าง HTTP Server แกนกลาง
 const server = http.createServer(app);
 
+// 2. ผูก Socket.io เข้ากับแกนกลาง (Socket.io จะจอง Path: /socket.io/ โดยอัตโนมัติ)
 const io = new Server(server, {
   cors: {
     origin: process.env.CLIENT_URL || "http://localhost:5173",
@@ -24,23 +25,28 @@ const io = new Server(server, {
 
 setSocket(io);
 
-const PORT = process.env.SERVER_PORT || 5000;
+const PORT = process.env.PORT || process.env.SERVER_PORT || 5000;
 
-// รอให้ DB เชื่อมต่อสำเร็จก่อนเปิดรับ Request ทุกช่องทาง
 const startServer = async () => {
   try {
-    // 1. รอให้ ฐานข้อมูลเชื่อมต่อสำเร็จ 100% ก่อน
     await connectDB();
-    
     startDailyJobs();
     
-    // 2. ปลุก Hocuspocus ให้พร้อมรับ WebSocket (ปลอดภัยแล้วเพราะ DB พร้อม)
+    // 3. สร้าง Hocuspocus Instance (ห้ามใช้ .listen() เด็ดขาด เพราะจะเป็นการเปิดพอร์ตใหม่แยกต่างหาก)
     const hocuspocusServer = createHocuspocus(io);
-    hocuspocusServer.listen();
 
-    // 3. เปิดรับ HTTP Request ฝั่ง Express เป็นลำดับสุดท้าย
+    // 4. สกัดกั้นและแยกเส้นทาง WebSocket (Multiplexing)
+    server.on("upgrade", (request, socket, head) => {
+      // โยน Traffic ให้ Hocuspocus จัดการ "เฉพาะ" เมื่อไม่ใช่ Path ของ Socket.io
+      // (ฝั่ง Client ของ Tiptap/Hocuspocus ต้องเชื่อมมาที่ URL ปกติ เช่น ws://your-api.com)
+      if (!request.url.startsWith("/socket.io/")) {
+        hocuspocusServer.handleConnection(request, socket, head);
+      }
+    });
+
+    // 5. เปิดรับ Request ทั้งหมดบนพอร์ตเดียว (HTTP, Socket.io, Hocuspocus)
     server.listen(PORT, () => {
-      console.log(`Server is running on http://localhost:${PORT}`);
+      console.log(`Server & WebSockets are running on port ${PORT}`);
     });
     
   } catch (error) {
