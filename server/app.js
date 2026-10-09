@@ -24,6 +24,8 @@ import logger from "./utils/logger.js";
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 // รูปแบบ: Method URL Status Code เวลาที่ใช้(ms)
 app.use(
   morgan(":method :url :status :res[content-length] - :response-time ms", {
