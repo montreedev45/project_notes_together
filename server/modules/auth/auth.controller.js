@@ -63,8 +63,8 @@ export const register = async (req, res) => {
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-      maxAge: 7 * 24 * 60 * 1000,
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     return res.status(201).json({
@@ -112,9 +112,9 @@ export const login = async (req, res) => {
     // attach token in cookie
     const token = generateToken(user);
     res.cookie("token", token, {
-      httpOnly: true, // ป้องกัน JavaScript ฝั่ง Frontend อ่านค่า (กัน XSS)
-      secure: process.env.NODE_ENV === "production", // ส่งเฉพาะ HTTPS เท่านั้น (ใน dev ใช้ false ได้)
-      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
