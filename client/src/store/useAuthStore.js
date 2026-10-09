@@ -20,6 +20,7 @@ const useAuthStore = create((set) => ({
       const res = await api.post("/auth/login", formData);
 
       if (res?.data?.user && res.status === 200) {
+        localStorage.setItem("token", res.data.token);
         set({
           user: res?.data?.user,
           isAuthenticated: true,
@@ -60,6 +61,7 @@ const useAuthStore = create((set) => ({
       const res = await api.post("/auth/register", formData);
 
       if (res?.data?.user && res.status === 201) {
+        localStorage.setItem("token", res.data.token);
         set({ user: res.data.user, isAuthenticated: true });
         return { success: true };
       }
@@ -267,6 +269,7 @@ const useAuthStore = create((set) => ({
     try {
       const res = await api.post("/auth/logout");
       if (res.status === 200) {
+        localStorage.removeItem("token");
         localStorage.removeItem("newEmail");
         localStorage.removeItem("recent-rooms");
         localStorage.removeItem("temporalyToken");
