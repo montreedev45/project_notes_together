@@ -52,7 +52,7 @@ function SettingRoomTransferOwnership() {
     if (res.success) {
 
       toast.success("Transfer ownership successful", { id: toastId });
-      navigate("/notes-together/myroom");
+      navigate("/myroom");
     } else {
       toast.error(`${res.message || "Transfer ownership failed"}`, {
         id: toastId,

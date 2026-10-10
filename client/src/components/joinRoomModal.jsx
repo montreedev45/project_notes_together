@@ -53,7 +53,7 @@ function JoinRoomModal({ isOpen, onClose }) {
       if (res.success === true) {
         toast.success("Joined room successful", { id: toastId });
         onClose();
-        navigate(`/notes-together/${roomId}/${matchedMember.role}`);
+        navigate(`/${roomId}/${matchedMember.role}`);
       } else {
         toast.error(`${res.message || "Joined room failed"}`, { id: toastId });
         onClose();
@@ -98,7 +98,7 @@ function JoinRoomModal({ isOpen, onClose }) {
       if (res.success === true) {
         toast.success("Joined room successful", { id: toastId });
         onClose();
-        navigate(`/notes-together/${roomId}/${matchedMember?.role}`);
+        navigate(`/${roomId}/${matchedMember?.role}`);
       } else {
         toast.error(`${res.message || "Joined room failed"}`, { id: toastId });
         onClose();

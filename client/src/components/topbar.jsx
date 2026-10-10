@@ -52,7 +52,7 @@ function Topbar({ isOpen, onToggleSidebar }) {
         <div className="relative flex justify-end items-center w-full gap-2 md:gap-4">
           <div className="me-5 cursor-pointer hover:scale-105 transition-transform">
             <Link
-              to={`/notes-together/${user?._id}/setting-account`}
+              to={`/${user?._id}/setting-account`}
               className="flex items-center gap-3 "
             >
               <div className="flex flex-col min-w-0 leading-tight">

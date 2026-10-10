@@ -4,11 +4,17 @@ import { HocuspocusProvider } from "@hocuspocus/provider";
 export const createYjs = (roomId, onReady) => {
   const ydoc = new Y.Doc();
   let isFirstSync = true; // ใช้ปักธงกั้นประตูไว้
+  const token = localStorage.getItem("token");
+  console.log("token", token);
+
+  const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:5000";
+  const wsUrl = serverUrl.replace(/^http/, "ws");
 
   const provider = new HocuspocusProvider({
-    url: "ws://localhost:1234",
+    url: wsUrl,
     name: roomId,
     document: ydoc,
+    token: token,
 
     onAuthenticationFailed: () => {
       console.error(
@@ -23,9 +29,7 @@ export const createYjs = (roomId, onReady) => {
     },
 
     onDisconnect: () => {
-      console.log(
-        "ขาดการเชื่อมต่อกับเซิร์ฟเวอร์ กำลังพยายามเชื่อมต่อใหม่...",
-      );
+      console.log("ขาดการเชื่อมต่อกับเซิร์ฟเวอร์ กำลังพยายามเชื่อมต่อใหม่...");
       // ตรงนี้คุณอาจจะสั่งโชว์ Toast Notification หรือ Banner เตือนผู้ใช้ว่า "ออฟไลน์" ได้
     },
   });

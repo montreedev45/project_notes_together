@@ -144,10 +144,10 @@ function RoomCard({ data = {} }) {
 
       if (res.success) {
         toast.success("Joined room successful", { id: toastId });
-        navigate(`/notes-together/${data._id}/${role}`);
+        navigate(`/${data._id}/${role}`);
       } else {
         toast.error(`${res.message || "Join room failed"}`, { id: toastId });
-        navigate(`/notes-together/explore`);
+        navigate(`/explore`);
       }
     }
   };
@@ -206,7 +206,7 @@ function RoomCard({ data = {} }) {
     const res = await restoreRoom(data?._id);
     if (res.success) {
       toast.success("Restored room successful", { id: toastId });
-      navigate(`/notes-together/myroom`);
+      navigate(`/myroom`);
       setIsOpenMenuModal(false);
     } else {
       toast.error(`${res.message || "Restore room failed"}`, { id: toastId });
@@ -256,7 +256,7 @@ function RoomCard({ data = {} }) {
     if (!isAlreadyMember) {
       alert(`Only owner room can access setting page.`);
     } else {
-      navigate(`/notes-together/${data._id}/setting-room/general`);
+      navigate(`/${data._id}/setting-room/general`);
     }
   };
 

@@ -112,7 +112,7 @@ function App() {
 
         {/* private */}
         <Route element={<ProtectedRoute />}>
-          <Route path="/notes-together" element={<DashboardLayout />}>
+          <Route path="/" element={<DashboardLayout />}>
             {/* 1. Static Routes (หน้าคงที่) */}
             <Route index element={<Explore />} />
             <Route path="explore" element={<Explore />} />
@@ -147,7 +147,7 @@ function App() {
             </Route>
 
             {/* 4. Editor (Dynamic สุด ย้ายมาไว้ล่างสุด) */}
-            {/* URL: /notes-together/room123/editor */}
+            {/* URL: /room123/editor */}
             <Route path=":roomId/:role" element={<Editor />} />
           </Route>
         </Route>

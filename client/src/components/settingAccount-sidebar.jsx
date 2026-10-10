@@ -17,7 +17,7 @@ function SettingAccountSidebar() {
         </span>
         <ul className="flex flex-row md:flex-col gap-2 overflow-x-auto no-scrollbar text-sm md:text-base text-secondary font-semibold md:border-t-2 md:border-gray-200 md:pt-4">
           <Link
-            to={`/notes-together/${id}/setting-account/profile`}
+            to={`/${id}/setting-account/profile`}
             className="shrink-0"
           >
             <li className="hover:text-black cursor-pointer transition-colors rounded-lg hover:bg-blue-100 p-2 md:p-3 text-center md:text-left capitalize">
@@ -26,7 +26,7 @@ function SettingAccountSidebar() {
           </Link>
 
           <Link
-            to={`/notes-together/${id}/setting-account/plan`}
+            to={`/${id}/setting-account/plan`}
             className="shrink-0"
           >
             <li className="hover:text-black cursor-pointer transition-colors rounded-lg hover:bg-blue-100 p-2 md:p-3 text-center md:text-left capitalize">

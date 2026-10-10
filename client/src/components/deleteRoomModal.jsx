@@ -19,7 +19,7 @@ function DeleteRoomModal({ isOpen, roomId, onClose }) {
       if (res.success) {
         toast.success("Moving room to trash successful", { id: toastId });
         onClose();
-        navigate("/notes-together/myroom");
+        navigate("/myroom");
       } else {
         toast.error(res.message || "Moving room to trash failed", {
           id: toastId,

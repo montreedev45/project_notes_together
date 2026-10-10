@@ -46,24 +46,24 @@ router.post(
 
 router.get(
   "/image/:roomId/:filename",
-  authMiddleware,
+  //authMiddleware,
   apiLimiter,
   async (req, res) => {
     try {
       const { roomId, filename } = req.params;
 
-      // 1. ใช้ userId จาก authMiddleware ได้เลย ไม่ต้องถอดรหัส JWT ซ้ำ
-      const userId = req.user._id; 
+      // // 1. ใช้ userId จาก authMiddleware ได้เลย ไม่ต้องถอดรหัส JWT ซ้ำ
+      // const userId = req.user._id; 
 
-      // 2. ตรวจสอบสิทธิ์การเข้าห้อง
-      const hasAccess = await Room.exists({
-        _id: roomId,
-        "members.user": userId,
-      });
+      // // 2. ตรวจสอบสิทธิ์การเข้าห้อง
+      // const hasAccess = await Room.exists({
+      //   _id: roomId,
+      //   "members.user": userId,
+      // });
 
-      if (!hasAccess) {
-        return res.status(403).send("Forbidden: คุณไม่มีสิทธิ์ดูรูปภาพในห้องนี้");
-      }
+      // if (!hasAccess) {
+      //   return res.status(403).send("Forbidden: คุณไม่มีสิทธิ์ดูรูปภาพในห้องนี้");
+      // }
 
       const cloudinaryUrl = cloudinary.url(`notes_together/${roomId}/${filename}`, {
         type: "authenticated",

@@ -17,7 +17,7 @@ function SettingRoomSidebar() {
 
         <ul className="flex flex-row min-[1024px]:flex-col xl:flex-col gap-2 overflow-x-auto no-scrollbar text-sm text-secondary xl:text-base font-medium xl:border-t-2 xl:border-gray-100 xl:pt-4">
           <Link
-            to={`/notes-together/${id}/setting-room/general`}
+            to={`/${id}/setting-room/general`}
             className="shrink-0"
           >
             <li className="hover:text-black cursor-pointer transition-colors rounded-lg hover:bg-blue-100 p-2 md:p-3 text-center md:text-left capitalize">
@@ -25,7 +25,7 @@ function SettingRoomSidebar() {
             </li>
           </Link>
           <Link
-            to={`/notes-together/${id}/setting-room/member`}
+            to={`/${id}/setting-room/member`}
             className="shrink-0"
           >
             <li className="hover:text-black cursor-pointer transition-colors rounded-lg hover:bg-blue-100 p-2 md:p-3 text-center md:text-left capitalize">
@@ -33,7 +33,7 @@ function SettingRoomSidebar() {
             </li>
           </Link>
           <Link
-            to={`/notes-together/${id}/setting-room/share`}
+            to={`/${id}/setting-room/share`}
             className="shrink-0"
           >
             <li className="hover:text-black cursor-pointer transition-colors rounded-lg hover:bg-blue-100 p-2 md:p-3 text-center md:text-left capitalize">
@@ -41,7 +41,7 @@ function SettingRoomSidebar() {
             </li>
           </Link>
           <Link
-            to={`/notes-together/${id}/setting-room/transfer-ownership`}
+            to={`/${id}/setting-room/transfer-ownership`}
             className="shrink-0"
           >
             <li className="cursor-pointer transition-colors rounded-lg text-yellow-400 hover:bg-yellow-100 p-2 md:p-3 text-center md:text-left capitalize">

@@ -51,7 +51,7 @@ function SettingRoomShare() {
 
   const roles = ["viewer", "editor", "commenter"];
   const access = ["anyone", "invited"];
-  const link = `${import.meta.env.VITE_CLIENT_URL}/notes-together/join-link/${roomData?.shareLink?.token}/${roomData?.shareLink?.role || "viewer"}`;
+  const link = `${import.meta.env.VITE_CLIENT_URL}/join-link/${roomData?.shareLink?.token}/${roomData?.shareLink?.role || "viewer"}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(link);

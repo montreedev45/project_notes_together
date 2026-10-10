@@ -36,7 +36,7 @@ function Register() {
     const toastId = toast.loading("Registering...");
     const result = await register(formData);
     if (result?.success) {
-      navigate("/notes-together/explore");
+      navigate("/explore");
       toast.success("Registration successful", { id: toastId });
     } else {
       toast.error(`${result.message || "Registration failed"}`, {id:toastId})

@@ -80,7 +80,7 @@ function Editor() {
     // หาห้องไม่เจอ
     if (!roomData) {
       console.warn("This room was not found.");
-      navigate("/notes-together/explore", { replace: true });
+      navigate("/explore", { replace: true });
       return;
     }
 
@@ -93,7 +93,7 @@ function Editor() {
     // ถ้าไม่ใช่ Member, Owner และไม่ใช่ Public Room ให้เตะออก
     if (!isMember && !isOwner && !isPublic) {
       console.warn("You do not have permission to access this room.");
-      navigate("/notes-together/explore", { replace: true });
+      navigate("/explore", { replace: true });
     }
   }, [isReady, roomData, user, navigate]);
 
@@ -295,7 +295,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
 
   const roles = ["viewer", "editor", "commenter"];
   const access = ["anyone", "invited"];
-  const link = `${import.meta.env.VITE_CLIENT_URL}/notes-together/join-link/${room?.shareLink?.token}/${room?.shareLink?.role || "viewer"}`;
+  const link = `${import.meta.env.VITE_CLIENT_URL}/join-link/${room?.shareLink?.token}/${room?.shareLink?.role || "viewer"}`;
   const [activeTab, setActiveTab] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -660,7 +660,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
       });
 
       if (targetUserId === user._id) {
-        navigate(`/notes-together/${roomId}/${newRole}`, { replace: true });
+        navigate(`/${roomId}/${newRole}`, { replace: true });
       } else {
         getMyRooms();
       }

@@ -15,7 +15,7 @@ function GoogleAuthButton() {
         const res = await googleLogin(codeResponse.access_token);
         if (res.success) {
           toast.success("Login successfully", { id: toastId });
-          navigate("/notes-together/explore");
+          navigate("/explore");
         } else {
           toast.error(`${result.message || "Login failed"}`, { id: toastId });
         }

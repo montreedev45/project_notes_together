@@ -22,7 +22,7 @@ function JoinLink() {
           if (res.success === true && res.data?._id) {
             toast.success("Joined room successful", { id: toastId });
             setStatus("success");
-            navigate(`/notes-together/${res.data._id}/${role}`, {
+            navigate(`/${res.data._id}/${role}`, {
               replace: true,
             });
           } else {
@@ -49,7 +49,7 @@ function JoinLink() {
           <p>{errorMsg ?? "Access to the room has been denied."}</p>
         </h1>
         <button
-          onClick={() => navigate("/notes-together/explore")}
+          onClick={() => navigate("/explore")}
           className="btn btn-outline cursor-pointer"
         >
           return home
@@ -66,7 +66,7 @@ function JoinLink() {
           not found.
         </p>
         <button
-          onClick={() => navigate("/notes-together/explore")}
+          onClick={() => navigate("/explore")}
           className="btn btn-outline btn-sm"
         >
           return home

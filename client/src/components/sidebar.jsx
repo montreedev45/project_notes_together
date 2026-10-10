@@ -30,7 +30,7 @@ function Sidebar({ onClose }) {
           </li>
           <li className="cursor-pointer hover:text-primary transition-colors">
             <Link
-              to="/notes-together/explore"
+              to="/explore"
               className="flex gap-4 items-center"
               onClick={onClose}
             >
@@ -40,7 +40,7 @@ function Sidebar({ onClose }) {
           </li>
           <li className="cursor-pointer hover:text-primary transition-colors">
             <Link
-              to="/notes-together/myroom"
+              to="/myroom"
               className="flex gap-4 items-center"
             >
               <Icon icon="mdi:home" width="24" />
@@ -49,7 +49,7 @@ function Sidebar({ onClose }) {
           </li>
           <li className="cursor-pointer hover:text-primary transition-colors">
             <Link
-              to="/notes-together/recent"
+              to="/recent"
               className="flex gap-4 items-center"
             >
               <Icon icon="mdi:clock" width="24" />
@@ -58,7 +58,7 @@ function Sidebar({ onClose }) {
           </li>
           <li className="cursor-pointer hover:text-primary transition-colors">
             <Link
-              to="/notes-together/trash"
+              to="/trash"
               className="flex gap-4 items-center"
             >
               <Icon icon="mdi:trash" width="24" />
@@ -71,7 +71,7 @@ function Sidebar({ onClose }) {
       <div className="flex flex-col gap-6">
         <div className="cursor-pointer hover:scale-105 transition-transform">
           <Link
-            to={`/notes-together/${user?._id}/setting-account`}
+            to={`/${user?._id}/setting-account`}
             className="flex items-center gap-3 "
           >
             <div
@@ -97,7 +97,7 @@ function Sidebar({ onClose }) {
 
         <div className="flex flex-col gap-6 font-medium text-sm md:text-lg text-gray-400">
           <Link
-            to={`/notes-together/${user?._id}/setting-account`}
+            to={`/${user?._id}/setting-account`}
             className="flex items-center gap-4 cursor-pointer hover:text-primary transition-colors"
           >
             <Icon icon="mdi:cog" width="30" />

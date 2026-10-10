@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import { Server } from "@hocuspocus/server";
+import { Hocuspocus } from "@hocuspocus/server";
 import { Database } from "@hocuspocus/extension-database";
 import jwt from "jsonwebtoken";
 import Note from "./modules/note/note.model.js";
@@ -45,52 +45,38 @@ const parseCookies = (cookieString) => {
 };
 
 export const createHocuspocus = (io) => {
-  return new Server({
-    port: 1234,
-
+  const server = new Hocuspocus({
     async onAuthenticate(data) {
-      const { request, documentName } = data;
-      const cookieHeader = request.headers.cookie;
+      // 1. รับ Token จาก Parameter ที่ Frontend ส่งมา
+      const { request, documentName, token } = data;
 
-      if (!cookieHeader) throw new Error("Unauthorized: ไม่พบคุกกี้");
-
-      const parsedCookies = parseCookies(cookieHeader);
-      const token = parsedCookies.token;
       if (!token) throw new Error("Unauthorized: ไม่พบ JWT Token");
 
       try {
-        // 1. Verify Token (หากหมดอายุจะโยน Error ไปที่ catch ทันที)
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const userId = decoded._id;
+        const userId = decoded._id || decoded.id; // รองรับ _id หรือ id
         const roomId = documentName;
 
-        // 2. ค้นหาห้องด้วย ID เพียงอย่างเดียว
         const room = await Room.findById(roomId);
         if (!room) throw new Error("Forbidden: ไม่พบห้องนี้");
 
-        // 3. ค้นหาข้อมูลสมาชิกของผู้ใช้คนนี้ในห้อง
         const memberData = room.members.find(
-          (m) => (m.user.toString() || m.user?._id.toString()) === userId.toString(),
+          (m) =>
+            (m.user.toString() || m.user?._id.toString()) === userId.toString(),
         );
 
-        // 4. เช็กสิทธิ์การเข้าถึง (เป็นสมาชิก หรือ เป็นห้องสาธารณะ)
         const isPublicRoom = room.isPrivate === false;
 
         if (!memberData && !isPublicRoom) {
           throw new Error("Forbidden: คุณไม่มีสิทธิ์เข้าถึงห้องนี้");
         }
 
-        // 5. กำหนดสิทธิ์ (Role) อย่างปลอดภัย
-        // ถ้าเป็นสมาชิกให้ใช้ role ตัวเอง, ถ้าเป็นแค่คนนอกเข้าห้อง Public ให้สิทธิ์ "viewer" หรือ "guest"
         const userRole = memberData ? memberData.role : "viewer";
 
-        // 6. คำนวณเวลาที่เหลือเพื่อส่งไปให้ Hook ต่อไป
         const currentTimestamp = Math.floor(Date.now() / 1000);
         const timeLeftInSeconds = decoded.exp - currentTimestamp;
 
-        console.log(
-          `User ${decoded.username} ยืนยันตัวตนผ่าน เข้าห้อง: ${documentName}`,
-        );
+        console.log(`✅ User ยืนยันตัวตนผ่าน เข้าห้อง: ${documentName}`);
 
         return {
           user: decoded,
@@ -212,4 +198,5 @@ export const createHocuspocus = (io) => {
       console.log(`User ${username} ออกจากห้อง ${documentName} แล้ว`);
     },
   });
+  return server
 };

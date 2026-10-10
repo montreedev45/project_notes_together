@@ -9,6 +9,8 @@ import setSocket from "./sockets/socket.manage.js";
 import { createHocuspocus } from "./hocuspocus-server.js";
 import { startDailyJobs } from "./cron/jobs.js";
 import logger from "./utils/logger.js";
+import { WebSocketServer } from "ws";
+const wss = new WebSocketServer({ noServer: true });
 
 // 1. สร้าง HTTP Server แกนกลาง
 const server = http.createServer(app);
@@ -31,16 +33,19 @@ const startServer = async () => {
   try {
     await connectDB();
     startDailyJobs();
-    
+
     // 3. สร้าง Hocuspocus Instance (ห้ามใช้ .listen() เด็ดขาด เพราะจะเป็นการเปิดพอร์ตใหม่แยกต่างหาก)
     const hocuspocusServer = createHocuspocus(io);
 
     // 4. สกัดกั้นและแยกเส้นทาง WebSocket (Multiplexing)
     server.on("upgrade", (request, socket, head) => {
       // โยน Traffic ให้ Hocuspocus จัดการ "เฉพาะ" เมื่อไม่ใช่ Path ของ Socket.io
-      // (ฝั่ง Client ของ Tiptap/Hocuspocus ต้องเชื่อมมาที่ URL ปกติ เช่น ws://your-api.com)
       if (!request.url.startsWith("/socket.io/")) {
-        hocuspocusServer.handleConnection(request, socket, head);
+        // 3. ให้ 'ws' ทำการ Upgrade โปรโตคอลจาก HTTP เป็น WebSocket ให้เสร็จก่อน
+        wss.handleUpgrade(request, socket, head, (ws) => {
+          // จากนั้นค่อยโยน WebSocket (ws) ที่สมบูรณ์แล้ว ให้ Hocuspocus ทำงานต่อ
+          hocuspocusServer.handleConnection(ws, request);
+        });
       }
     });
 
@@ -48,7 +53,6 @@ const startServer = async () => {
     server.listen(PORT, () => {
       console.log(`Server & WebSockets are running on port ${PORT}`);
     });
-    
   } catch (error) {
     console.error("Failed to connect to DB, server not started:", error);
     process.exit(1);

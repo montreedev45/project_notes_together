@@ -20,7 +20,7 @@ function SettingRoomLayout() {
       const isOwner = ownerId === userId
 
       if (!isOwner) {
-        navigate(`/notes-together/explore`);
+        navigate(`/explore`);
       }
     }
   }, [roomData, user, navigate]);

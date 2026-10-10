@@ -43,7 +43,7 @@ function Login() {
     const toastId = toast.loading("Logging in...");
     const result = await login(formData);
     if (result?.success) {
-      navigate("/notes-together/explore");
+      navigate("/explore");
       toast.success("Login successful", { id: toastId });
     } else {
       toast.error(`${result.message || "Login failed"}`, { id: toastId });
