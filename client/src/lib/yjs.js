@@ -5,7 +5,6 @@ export const createYjs = (roomId, onReady) => {
   const ydoc = new Y.Doc();
   let isFirstSync = true; // ใช้ปักธงกั้นประตูไว้
   const token = localStorage.getItem("token");
-  console.log("token", token);
 
   const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:5000";
   const wsUrl = serverUrl.replace(/^http/, "ws");
