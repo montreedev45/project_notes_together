@@ -98,8 +98,12 @@ export const createRoom = async (req, res) => {
 // get my room
 export const getMyRooms = async (req, res) => {
   try {
-    const { criteria, searchTerm } = req.body;
+    const { criteria, searchTerm } = req.query;
     const userId = req.user._id;
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
     let query = {
       $or: [{ "members.user": userId }, { owner: userId }],
@@ -123,9 +127,14 @@ export const getMyRooms = async (req, res) => {
         "_id name description isPrivate color isOnlineStatus isLastEditTime isPeopleJoinRoom isAllowLinkSharing isAllowCodeSharing isDeleted owner members code shareLink invitedUsers",
       )
       .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
       .populate("owner", "username avatar plan")
       .populate("members.user", "avatar username")
       .lean();
+
+    const totalRooms = await Room.countDocuments(query);
+    const totalPages = Math.ceil(totalRooms / limit);
 
     // กรองห้องขยะทิ้ง (Data Integrity Check)
     const validRooms = rooms.map((room) => {
@@ -139,7 +148,16 @@ export const getMyRooms = async (req, res) => {
       return room;
     });
 
-    res.status(200).json(validRooms);
+    res.status(200).json({
+      validRooms,
+      pagination: {
+        currentPage: page,
+        totalPages: totalPages,
+        totalItems: totalRooms,
+        hasNextPage: page < totalPages, // มีหน้าถัดไปไหม (เอาไว้ปิดปุ่ม Next)
+        hasPrevPage: page > 1, // มีหน้าก่อนหน้าไหม (เอาไว้ปิดปุ่ม Prev)
+      },
+    });
   } catch (error) {
     console.error("getMyRooms Error:", error);
     res.status(500).json({ success: false, message: "Fetch rooms failed" });
@@ -149,8 +167,12 @@ export const getMyRooms = async (req, res) => {
 // get all rooms
 export const getAllRooms = async (req, res) => {
   try {
-    const { criteria, searchTerm } = req.body;
+    const { criteria, searchTerm } = req.query;
     const userId = req.user._id;
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
     // 1. เริ่มต้นด้วย Query ว่าง (ค้นหาทุกห้อง)
     let query = { isDeleted: false };
@@ -177,13 +199,28 @@ export const getAllRooms = async (req, res) => {
 
     const rooms = await Room.find(query)
       .select(
-        "_id name description isPrivate color isOnlineStatus isLastEditTime isPeopleJoinRoom isAllowLinkSharing isDeleted isAllowCodeSharing owner members",
+        "_id name description isPrivate color isOnlineStatus isLastEditTime isPeopleJoinRoom isAllowLinkSharing isAllowCodeSharing isDeleted owner members code shareLink invitedUsers",
       )
       .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
       .populate("owner", "username avatar plan")
-      .populate("members.user", "avatar username");
+      .populate("members.user", "avatar username")
+      .lean();
 
-    res.status(200).json(rooms);
+    const totalRooms = await Room.countDocuments(query);
+    const totalPages = Math.ceil(totalRooms / limit);
+
+    res.status(200).json({
+      rooms,
+      pagination: {
+        currentPage: page,
+        totalPages: totalPages,
+        totalItems: totalRooms,
+        hasNextPage: page < totalPages, // มีหน้าถัดไปไหม (เอาไว้ปิดปุ่ม Next)
+        hasPrevPage: page > 1, // มีหน้าก่อนหน้าไหม (เอาไว้ปิดปุ่ม Prev)
+      },
+    });
   } catch (error) {
     res.status(500).json({ message: "Fetch rooms failed" });
   }
@@ -973,8 +1010,6 @@ export const invitedUsers = async (req, res) => {
     const cleanNotic = populatedNotice(newNotice);
 
     sendNotification(userId, cleanNotic);
-        console.log("invitedUsers", updatedRoom.invitedUsers)
-
 
     return res.status(200).json({
       message: "Invite colleague successfully",

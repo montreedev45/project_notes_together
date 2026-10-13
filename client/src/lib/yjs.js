@@ -33,11 +33,11 @@ export const createYjs = (roomId, onReady) => {
     },
   });
 
-  provider.on("status", (e) => console.log("Hocuspocus status:", e.status));
+  //provider.on("status", (e) => console.log("Hocuspocus status:", e.status));
 
   // รอ synced ก่อนค่อย callback
   provider.on("synced", () => {
-    console.log("Hocuspocus Synced");
+    //console.log("Hocuspocus Synced");
 
     // ส่ง callback กลับไปหา React เฉพาะรอบแรกที่เปิดห้องเท่านั้น
     if (isFirstSync) {

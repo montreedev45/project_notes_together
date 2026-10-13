@@ -15,6 +15,7 @@ function Explore() {
 
   const getAllRooms = useRoomStore((state) => state.getAllRooms);
   const rooms = useRoomStore((state) => state.rooms);
+  const pagination = useRoomStore((state) => state.pagination);
 
   const sortedRooms = useMemo(() => {
     if (!Array.isArray(rooms)) return [];
@@ -28,7 +29,7 @@ function Explore() {
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      getAllRooms(activeFilter, searchTerm);
+      getAllRooms(1, 10, activeFilter, searchTerm);
     }, 500);
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm, activeFilter, getAllRooms]);
@@ -131,6 +132,33 @@ function Explore() {
           <RoomCard key={room._id} data={room} />
         ))}
       </div>
+      <div className="flex items-center justify-between mt-8 p-4 bg-slate-50 rounded-lg">
+          {/* ปุ่มกลับหน้าก่อนหน้า */}
+          <button
+            onClick={() => getAllRooms(pagination.currentPage - 1, 10, activeFilter, searchTerm)}
+            disabled={!pagination.hasPrevPage}
+            className="px-4 py-2 bg-white border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100"
+          >
+            Previous
+          </button>
+
+          {/* แสดงสถานะหน้าปัจจุบัน */}
+          <span className="text-sm font-medium text-slate-600">
+            Page {pagination.currentPage} of {pagination.totalPages}
+            <span className="ml-2 text-slate-400">
+              ({pagination.totalItems} rooms)
+            </span>
+          </span>
+
+          {/* ปุ่มไปหน้าถัดไป */}
+          <button
+            onClick={() => getAllRooms(pagination.currentPage + 1, 10, activeFilter, searchTerm)}
+            disabled={!pagination.hasNextPage}
+            className="px-4 py-2 bg-primary text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90"
+          >
+            Next
+          </button>
+        </div>
 
       <CreateRoomModal
         isOpen={isOpenCreateRoomModal}

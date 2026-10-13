@@ -56,7 +56,7 @@ export const createRoomSchema = z.object({
 });
 
 export const getRoomsSchema = z.object({
-  body: z.object({
+  query: z.object({
     criteria: z
       .enum(["all", "owner", "public", "private", "joined"], {
         errorMap: () => ({
@@ -73,11 +73,25 @@ export const getRoomsSchema = z.object({
       .max(20, "Search term cannot exceed 20 characters")
       .openapi({ example: "room1" })
       .optional(),
+
+    page: z
+      .string()
+      .trim()
+      .max(10, "page cannot exceed 10 characters")
+      .openapi({ example: 1 })
+      .optional(),
+
+    limit: z
+      .string()
+      .trim()
+      .max(10, "page cannot exceed 10 characters")
+      .openapi({ example: 10 })
+      .optional(),
   }),
 });
 
 export const getAllRoomsSchema = z.object({
-  body: z.object({
+  query: z.object({
     criteria: z
       .enum(["all", "owner", "public", "private", "joined"], {
         errorMap: () => ({
@@ -93,6 +107,19 @@ export const getAllRoomsSchema = z.object({
       .trim()
       .max(20, "Search term cannot exceed 20 characters")
       .openapi({ example: "room1" })
+      .optional(),
+    page: z
+      .string()
+      .trim()
+      .max(10, "page cannot exceed 10 characters")
+      .openapi({ example: 1 })
+      .optional(),
+
+    limit: z
+      .string()
+      .trim()
+      .max(10, "page cannot exceed 10 characters")
+      .openapi({ example: 10 })
       .optional(),
   }),
 });
@@ -153,7 +180,7 @@ export const softDeleteSchema = z.object({
 export const getTrashRoomsSchema = z.object({
   query: z.object({
     criteria: z
-      .enum(["all","public", "private"], {
+      .enum(["all", "public", "private"], {
         errorMap: () => ({
           message: "Type must be all, owner, public, or private",
         }),

@@ -130,19 +130,13 @@ export const setupRoomSwagger = (registry) => {
 
   // get myroom
   registry.registerPath({
-    method: "post",
+    method: "get",
     path: "/api/rooms/my-rooms",
     tags: ["Room"],
     summary: "Fetch my rooms",
     description: "Fetch my rooms",
     request: {
-      body: {
-        content: {
-          "application/json": {
-            schema: getRoomsSchema.shape.body,
-          },
-        },
-      },
+      query: getRoomsSchema.shape.query,
     },
     responses: {
       200: {
@@ -211,19 +205,13 @@ export const setupRoomSwagger = (registry) => {
 
   // get all room
   registry.registerPath({
-    method: "post",
+    method: "get",
     path: "/api/rooms/all-rooms",
     tags: ["Room"],
     summary: "Get all rooms",
     description: "Get all rooms of user",
     request: {
-      body: {
-        content: {
-          "application/json": {
-            schema: getAllRoomsSchema.shape.body,
-          },
-        },
-      },
+      query: getAllRoomsSchema.shape.query,
     },
     responses: {
       200: {

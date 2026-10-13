@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
 import { getRelativeTime } from "../utils/getRelativeTime.js";
 import useNotificationStore from "../store/useNotificationStore";
@@ -23,6 +23,27 @@ function NotificationModal({ isOpen, onClose }) {
     type: "",
     noticId: null,
   });
+
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // ตรวจสอบว่ามี Ref และจุดที่คลิก ไม่ได้ อยู่ใน Ref นี้
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        onClose(); // เรียกฟังก์ชันปิด
+      }
+    };
+
+    // เปิด Listener เฉพาะตอนที่ Modal เปิดอยู่เท่านั้น
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    // Cleanup ฟังก์ชันเมื่อ Component ถูกทำลายหรือ isOpen เปลี่ยน
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen, onClose]);
 
   const handleRequestDeleteSingle = (noticId) => {
     setConfirmConfig({
@@ -125,7 +146,10 @@ function NotificationModal({ isOpen, onClose }) {
   if (!isOpen) return null;
   return (
     <>
-      <div className="absolute right-0 top-12 z-50 w-[90vw] sm:w-96 bg-white border border-slate-200 rounded-xl shadow-2xl select-none">
+      <div
+        ref={dropdownRef}
+        className="absolute right-0 top-12 z-50 w-[90vw] sm:w-96 bg-white border border-slate-200 rounded-xl shadow-2xl select-none"
+      >
         <div className="relative flex justify-between items-center px-5 py-3 border-b border-gray-200 bg-gray-200 rounded-t-xl z-10">
           <span className="text-lg font-bold text-slate-800 capitalize">
             Notifications

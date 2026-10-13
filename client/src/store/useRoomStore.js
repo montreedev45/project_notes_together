@@ -8,7 +8,13 @@ const initialState = {
   trashRooms: [],
   onlineUsersProvider: [],
   relativeTime: {},
-  loading: false,
+  pagination: {
+    currentPage: 1,
+    totalPages: 0,
+    totalItems: 0,
+    hasNextPage: false,
+    hasPrevPage: false,
+  },
 };
 
 const ALLOWED_KEYS = [
@@ -31,14 +37,32 @@ const useRoomStore = create((set, get) => ({
   trashRooms: [],
   onlineUsersProvider: [],
   relativeTime: {},
-  loading: false,
+  pagination: {
+    currentPage: 1,
+    totalPages: 0,
+    totalItems: 0,
+    hasNextPage: false,
+    hasPrevPage: false,
+  },
 
-  getMyRooms: async (criteria = "all", searchTerm = "") => {
+  getMyRooms: async (
+    page = 1,
+    limit = 10,
+    criteria = "all",
+    searchTerm = "",
+  ) => {
     try {
-      const res = await api.post("/rooms/my-rooms", { criteria, searchTerm });
+      const res = await api.get(`/rooms/my-rooms`, {
+        params: {
+          page,
+          limit,
+          criteria,
+          searchTerm,
+        },
+      });
 
-      if (res?.data) {
-        set({ myRooms: res.data });
+      if (res?.data.validRooms) {
+        set({ myRooms: res.data.validRooms, pagination: res.data.pagination });
         return { success: true };
       }
 
@@ -54,12 +78,24 @@ const useRoomStore = create((set, get) => ({
     }
   },
 
-  getAllRooms: async (criteria = "all", searchTerm = "") => {
+  getAllRooms: async (
+    page = 1,
+    limit = 10,
+    criteria = "all",
+    searchTerm = "",
+  ) => {
     try {
-      const res = await api.post("/rooms/all-rooms", { criteria, searchTerm });
+      const res = await api.get(`/rooms/all-rooms`, {
+        params: {
+          page,
+          limit,
+          criteria,
+          searchTerm,
+        },
+      });
 
-      if (res?.data) {
-        set({ rooms: res.data });
+      if (res?.data?.rooms) {
+        set({ rooms: res.data.rooms, pagination: res.data.pagination });
         return { success: true };
       }
 
@@ -627,7 +663,6 @@ const useRoomStore = create((set, get) => ({
         set((state) => ({
           ...state,
           rooms: state.rooms.map((r) =>
-            
             r._id === roomId
               ? { ...r, invitedUsers: res.data.invitedUsers }
               : r,
@@ -763,18 +798,17 @@ const useRoomStore = create((set, get) => ({
 
   declineInvited: async (roomId) => {
     try {
-      const res = await api.post("/rooms/decline-invite", {roomId})
-      if(res.status === 200){
-
+      const res = await api.post("/rooms/decline-invite", { roomId });
+      if (res.status === 200) {
         return {
           success: true,
-          message:"Decline invite successful"
-        }
+          message: "Decline invite successful",
+        };
       }
       return {
         success: false,
-        message: "Unexpected response from server"
-      }
+        message: "Unexpected response from server",
+      };
     } catch (error) {
       return {
         success: false,

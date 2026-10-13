@@ -265,6 +265,8 @@ function ChatInput({
 function EditorInner({ yjs, user, room, activeUsersList, provider }) {
   const navigate = useNavigate();
   const comments = useCommentStore((state) => state.comments);
+  const [isNewComment, setIsNewComment] = useState(false);
+
   const addCommentFromSocket = useCommentStore(
     (state) => state.addCommentFromSocket,
   );
@@ -341,6 +343,52 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
   const timerRef = useRef(null);
 
   const [activeUsers, setActiveUsers] = useState([]);
+
+  const shareMenuRef = useRef(null);
+  const commentModalRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // ถ้าคลิกนอกกล่อง shareMenuRef ให้สั่งปิด
+      if (
+        shareMenuRef.current &&
+        !shareMenuRef.current.contains(event.target)
+      ) {
+        setIsOpenShareModal(false);
+      }
+    };
+
+    // ดักจับ Event เฉพาะตอนที่เมนูเปิดอยู่
+    if (isOpenShareModal) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    // Cleanup
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpenShareModal]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // ถ้าคลิกจุดอื่นที่ไม่ใช่ในกล่องคอมเมนต์ ให้ปิดกล่อง
+      if (
+        commentModalRef.current &&
+        !commentModalRef.current.contains(event.target)
+      ) {
+        setIsOpenCommentModal(false);
+      }
+    };
+
+    if (isOpenCommentModal) {
+      // ใช้ mousedown เพื่อให้ทำงานทันทีที่กดเมาส์/นิ้วลงไป
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpenCommentModal]);
 
   useEffect(() => {
     if (!provider || !user?.username) return;
@@ -631,6 +679,12 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
     });
 
     socket.on("received_comment", ({ newComment }) => {
+      const isNotMyComment = newComment.sender._id !== user._id;
+
+      // เซ็ต Red dot ก็ต่อเมื่อไม่ใช่ข้อความของเรา และ Modal ปิดอยู่เท่านั้น
+      if (isNotMyComment && !isOpenCommentModal) {
+        setIsNewComment(true);
+      }
       addCommentFromSocket(newComment);
     });
 
@@ -862,7 +916,10 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                 {/* Buttons */}
                 <div className="flex gap-2 items-center relative">
                   <button
-                    onClick={() => setIsOpenShareModal(!isOpenShareModal)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsOpenShareModal(!isOpenShareModal);
+                    }}
                     className="bg-primary hover:bg-blue-600 px-3 py-1.5 flex items-center gap-1.5 rounded-lg text-sm font-bold text-white transition-colors"
                   >
                     <Icon icon="mdi:share-variant" width="18" />
@@ -878,262 +935,272 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
 
                   {/* Share Dropdown (แก้ไขให้ไม่ล้นจอ) */}
                   {isOpenShareModal && (
-                    <div className="absolute top-full right-0 mt-3 w-[320px] sm:w-90 bg-white rounded-xl shadow-2xl border border-gray-200 z-60 flex flex-col overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                      {/* Tabs */}
-                      <div className="flex bg-slate-50 border-b border-gray-200">
-                        {["Link", "Code", "Invite"].map((tab, idx) => (
-                          <button
-                            key={tab}
-                            onClick={() => setActiveTab(idx + 1)}
-                            className={`flex-1 py-3 text-sm font-bold transition-colors ${
-                              activeTab === idx + 1
-                                ? "text-primary border-b-2 border-primary bg-white"
-                                : "text-slate-500 hover:text-slate-700 hover:bg-slate-100"
-                            }`}
-                          >
-                            {tab}
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Tab Content Area (จำกัดความสูงไว้ไม่ให้ยาวเกินไป) */}
-                      <div className="p-4 max-h-100 overflow-y-auto no-scrollbar">
-                        {activeTab === 1 && (
-                          <div className="space-y-4 animate-in fade-in duration-200">
-                            <div className="flex flex-col gap-3 relative mb-1">
-                              <div className="flex justify-between items-center gap-5">
-                                <div className="flex-1 px-2 border border-gray rounded-lg">
-                                  <select
-                                    value={room?.shareLink?.role}
-                                    onChange={(e) =>
-                                      handleRoleChange(e.target.value)
-                                    }
-                                    className={`${isAllowLinkSharing ? "cursor-pointer" : "cursor-not-allowed"} px-2 py-1 outline-0 text-sm font-medium text-secondary`}
-                                    disabled={!isAllowLinkSharing}
-                                  >
-                                    {roles.map((role) => (
-                                      <option key={role} value={role}>
-                                        {role}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                                <div className="px-4 border border-gray rounded-lg">
-                                  <select
-                                    value={room?.shareLink?.access || "anyone"}
-                                    onChange={(e) =>
-                                      handleAccessChange(e.target.value)
-                                    }
-                                    name="people-with-access"
-                                    id=""
-                                    className={`${isAllowLinkSharing ? "cursor-pointer" : "cursor-not-allowed"} ps-1 pe-3 py-1 outline-0 rounded-lg text-sm font-medium text-secondary`}
-                                    disabled={!isAllowLinkSharing}
-                                  >
-                                    {access.map((ac) => (
-                                      <option key={ac} value={ac}>
-                                        {ac === "anyone"
-                                          ? "anyone with link"
-                                          : "only invited people"}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                              </div>
-                              <div className="flex gap-5 items-center">
-                                <input
-                                  type="text"
-                                  readOnly
-                                  onCopy={(e) =>
-                                    isAllowLinkSharing === false &&
-                                    e.preventDefault()
-                                  }
-                                  onCut={(e) =>
-                                    isAllowLinkSharing === false &&
-                                    e.preventDefault()
-                                  }
-                                  onPaste={(e) =>
-                                    isAllowLinkSharing === false &&
-                                    e.preventDefault()
-                                  }
-                                  value={link || ""}
-                                  className={`${isAllowLinkSharing ? "cursor-pointer" : "cursor-not-allowed"} flex-1 py-2 outline-none px-4 text-md rounded-lg border-2 border-gray text-black`}
-                                />
-
-                                <button
-                                  disabled={!isAllowLinkSharing}
-                                  onClick={handleCopy}
-                                  className={`${isAllowLinkSharing ? "bg-blue-500 hover:bg-blue-600 cursor-pointer" : "bg-gray-400 cursor-not-allowed"} text-white px-6 py-2 rounded-lg font-semibold transition-colors`}
-                                >
-                                  {isCopied ? "Copied" : "Copy"}
-                                </button>
-                              </div>
-                              {!isAllowLinkSharing && (
-                                <span className="text-red-600">
-                                  The room owner has disabled sharing via link.
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                        {activeTab === 2 && (
-                          <>
+                    <>
+                      <div
+                        ref={shareMenuRef}
+                        className="absolute top-full right-0 mt-3 w-[320px] sm:w-90 bg-white rounded-xl shadow-2xl border border-gray-200 z-60 flex flex-col overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+                      >
+                        {" "}
+                        {/* Tabs */}
+                        <div className="flex bg-slate-50 border-b border-gray-200">
+                          {["Link", "Code", "Invite"].map((tab, idx) => (
+                            <button
+                              key={tab}
+                              onClick={() => setActiveTab(idx + 1)}
+                              className={`flex-1 py-3 text-sm font-bold transition-colors ${
+                                activeTab === idx + 1
+                                  ? "text-primary border-b-2 border-primary bg-white"
+                                  : "text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+                              }`}
+                            >
+                              {tab}
+                            </button>
+                          ))}
+                        </div>
+                        {/* Tab Content Area (จำกัดความสูงไว้ไม่ให้ยาวเกินไป) */}
+                        <div className="p-4 max-h-100 overflow-y-auto no-scrollbar">
+                          {activeTab === 1 && (
                             <div className="space-y-4 animate-in fade-in duration-200">
-                              <div className="flex flex-col gap-3 relative mb-3">
-                                <input
-                                  type="text"
-                                  readOnly
-                                  onCopy={(e) =>
-                                    isAllowCodeSharing === false &&
-                                    e.preventDefault()
-                                  }
-                                  onCut={(e) =>
-                                    isAllowCodeSharing === false &&
-                                    e.preventDefault()
-                                  }
-                                  onPaste={(e) =>
-                                    isAllowCodeSharing === false &&
-                                    e.preventDefault()
-                                  }
-                                  value={room?.code || ""}
-                                  className={`${isAllowCodeSharing ? "cursor-pointer" : "cursor-not-allowed"} flex-1 py-2 outline-none px-4 text-sm rounded-lg border border-gray text-gray-500`}
-                                />
-
-                                <div className="flex gap-4">
-                                  <button
-                                    disabled={!isAllowCodeSharing}
-                                    onClick={handleCopyCode}
-                                    className={`${isAllowCodeSharing ? "bg-blue-500 hover:bg-blue-600 cursor-pointer" : "bg-gray-400 cursor-not-allowed"} text-white px-6 py-2 rounded-lg font-semibold transition-colors`}
-                                  >
-                                    {isCopiedCode ? "Copied" : "Copy"}
-                                  </button>
-                                  <button
-                                    disabled={!isAllowCodeSharing}
-                                    onClick={handleUpdateCodeRoom}
-                                    className={`flex-1 sm:flex-none px-6 py-2.5 rounded-lg font-bold transition-all active:scale-95 ${
-                                      isAllowCodeSharing
-                                        ? "bg-amber-500 text-white hover:bg-amber-600 shadow-sm"
-                                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                    }`}
-                                  >
-                                    {isChangeCode ? "Changing..." : "Reset"}
-                                  </button>
+                              <div className="flex flex-col gap-3 relative mb-1">
+                                <div className="flex justify-between items-center gap-5">
+                                  <div className="flex-1 px-2 border border-gray rounded-lg">
+                                    <select
+                                      value={room?.shareLink?.role}
+                                      onChange={(e) =>
+                                        handleRoleChange(e.target.value)
+                                      }
+                                      className={`${isAllowLinkSharing ? "cursor-pointer" : "cursor-not-allowed"} px-2 py-1 outline-0 text-sm font-medium text-secondary`}
+                                      disabled={!isAllowLinkSharing}
+                                    >
+                                      {roles.map((role) => (
+                                        <option key={role} value={role}>
+                                          {role}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <div className="px-4 border border-gray rounded-lg">
+                                    <select
+                                      value={
+                                        room?.shareLink?.access || "anyone"
+                                      }
+                                      onChange={(e) =>
+                                        handleAccessChange(e.target.value)
+                                      }
+                                      name="people-with-access"
+                                      id=""
+                                      className={`${isAllowLinkSharing ? "cursor-pointer" : "cursor-not-allowed"} ps-1 pe-3 py-1 outline-0 rounded-lg text-sm font-medium text-secondary`}
+                                      disabled={!isAllowLinkSharing}
+                                    >
+                                      {access.map((ac) => (
+                                        <option key={ac} value={ac}>
+                                          {ac === "anyone"
+                                            ? "anyone with link"
+                                            : "only invited people"}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
                                 </div>
-                              </div>
-                              {!isAllowCodeSharing && (
-                                <span className="text-red-600">
-                                  The room owner has disabled sharing via code.
-                                </span>
-                              )}
-                            </div>
-                          </>
-                        )}
-
-                        {activeTab === 3 && (
-                          <>
-                            <div className="space-y-4 animate-in fade-in duration-200">
-                              <div className="flex flex-col gap-3 relative mb-3">
-                                <div className="bg-white flex items-center rounded-xl relative">
-                                  <Icon
-                                    icon="mdi:search"
-                                    width="20"
-                                    height="20"
-                                    className="absolute left-2 text-secondary"
-                                  />
+                                <div className="flex gap-5 items-center">
                                   <input
                                     type="text"
-                                    value={searchTerm}
-                                    onChange={(e) =>
-                                      setSearchTerm(e.target.value)
+                                    readOnly
+                                    onCopy={(e) =>
+                                      isAllowLinkSharing === false &&
+                                      e.preventDefault()
                                     }
-                                    className="w-full py-1.5 rounded-lg ps-9 outline-0 font-normal text-gray-500 border-2 border-gray text-sm"
+                                    onCut={(e) =>
+                                      isAllowLinkSharing === false &&
+                                      e.preventDefault()
+                                    }
+                                    onPaste={(e) =>
+                                      isAllowLinkSharing === false &&
+                                      e.preventDefault()
+                                    }
+                                    value={link || ""}
+                                    className={`${isAllowLinkSharing ? "cursor-pointer" : "cursor-not-allowed"} flex-1 py-2 outline-none px-4 text-md rounded-lg border-2 border-gray text-black`}
                                   />
-                                </div>
-                                <div className=" max-h-42 overflow-auto no-scrollbar">
-                                  {users.map((user) => {
-                                    const isMember = room?.members?.some(
-                                      (member) =>
-                                        member?.user?._id === user?._id,
-                                    );
 
-                                    const isInvited = room?.invitedUsers?.some(
-                                      (m) => {
-                                        // กรณีที่ 1: m เป็น Object ให้เช็ก m?._id
-                                        // กรณีที่ 2: m เป็น String ID โล่งๆ ให้เอา m มาเทียบตรงๆ ได้เลย
-                                        return (m?._id || m) === user?._id;
-                                      },
-                                    );
-
-                                    return (
-                                      <div
-                                        key={user?._id}
-                                        className="flex items-center justify-between py-2 px-5"
-                                      >
-                                        <div className=" flex items-center gap-3">
-                                          <div
-                                            style={{
-                                              borderColor: user?.avatar,
-                                            }}
-                                            className="flex-none bg-white border-2 w-10 h-10 rounded-full flex items-center justify-center"
-                                          >
-                                            <Icon
-                                              icon="mdi:account"
-                                              style={{ color: user?.avatar }}
-                                              width="30"
-                                            />
-                                          </div>
-                                          <div className="flex flex-col ">
-                                            <span className="font-bold text-sm truncate text-slate-800">
-                                              {user?.username}
-                                            </span>
-                                            <span className="font-normal text-xs text-secondary truncate">
-                                              {user?.email}
-                                            </span>
-                                          </div>
-                                        </div>
-                                        <div className="shrink-0 ml-3">
-                                          {isMember ? (
-                                            <span className="text-xs font-semibold text-green-600 bg-green-50 px-3 py-1.5 rounded-full border border-green-100">
-                                              Joined
-                                            </span>
-                                          ) : isInvited ? (
-                                            <div className="flex gap-2">
-                                              <span className="text-xs font-semibold text-yellow-600 bg-yellow-50 px-3 py-1.5 rounded-full border border-yellow-100">
-                                                Pending
-                                              </span>
-                                              <button
-                                                onClick={() =>
-                                                  handleCancelInvite(user?._id)
-                                                }
-                                                className="flex items-center gap-1.5 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 px-4 py-1.5 rounded-full transition-colors active:scale-95 cursor-pointer"
-                                              >
-                                                Cancel
-                                              </button>
-                                            </div>
-                                          ) : (
-                                            <button
-                                              onClick={() =>
-                                                handleInvite(user?._id)
-                                              }
-                                              className="flex items-center gap-1.5 text-xs font-semibold text-white bg-blue-500 hover:bg-blue-600 px-4 py-1.5 rounded-full transition-colors active:scale-95"
-                                            >
-                                              <Icon
-                                                icon="mdi:invite"
-                                                width="16"
-                                              />
-                                              Invite
-                                            </button>
-                                          )}
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
+                                  <button
+                                    disabled={!isAllowLinkSharing}
+                                    onClick={handleCopy}
+                                    className={`${isAllowLinkSharing ? "bg-blue-500 hover:bg-blue-600 cursor-pointer" : "bg-gray-400 cursor-not-allowed"} text-white px-6 py-2 rounded-lg font-semibold transition-colors`}
+                                  >
+                                    {isCopied ? "Copied" : "Copy"}
+                                  </button>
                                 </div>
+                                {!isAllowLinkSharing && (
+                                  <span className="text-red-600">
+                                    The room owner has disabled sharing via
+                                    link.
+                                  </span>
+                                )}
                               </div>
                             </div>
-                          </>
-                        )}
+                          )}
+                          {activeTab === 2 && (
+                            <>
+                              <div className="space-y-4 animate-in fade-in duration-200">
+                                <div className="flex flex-col gap-3 relative mb-3">
+                                  <input
+                                    type="text"
+                                    readOnly
+                                    onCopy={(e) =>
+                                      isAllowCodeSharing === false &&
+                                      e.preventDefault()
+                                    }
+                                    onCut={(e) =>
+                                      isAllowCodeSharing === false &&
+                                      e.preventDefault()
+                                    }
+                                    onPaste={(e) =>
+                                      isAllowCodeSharing === false &&
+                                      e.preventDefault()
+                                    }
+                                    value={room?.code || ""}
+                                    className={`${isAllowCodeSharing ? "cursor-pointer" : "cursor-not-allowed"} flex-1 py-2 outline-none px-4 text-sm rounded-lg border border-gray text-gray-500`}
+                                  />
+
+                                  <div className="flex gap-4">
+                                    <button
+                                      disabled={!isAllowCodeSharing}
+                                      onClick={handleCopyCode}
+                                      className={`${isAllowCodeSharing ? "bg-blue-500 hover:bg-blue-600 cursor-pointer" : "bg-gray-400 cursor-not-allowed"} text-white px-6 py-2 rounded-lg font-semibold transition-colors`}
+                                    >
+                                      {isCopiedCode ? "Copied" : "Copy"}
+                                    </button>
+                                    <button
+                                      disabled={!isAllowCodeSharing}
+                                      onClick={handleUpdateCodeRoom}
+                                      className={`flex-1 sm:flex-none px-6 py-2.5 rounded-lg font-bold transition-all active:scale-95 ${
+                                        isAllowCodeSharing
+                                          ? "bg-amber-500 text-white hover:bg-amber-600 shadow-sm"
+                                          : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                      }`}
+                                    >
+                                      {isChangeCode ? "Changing..." : "Reset"}
+                                    </button>
+                                  </div>
+                                </div>
+                                {!isAllowCodeSharing && (
+                                  <span className="text-red-600">
+                                    The room owner has disabled sharing via
+                                    code.
+                                  </span>
+                                )}
+                              </div>
+                            </>
+                          )}
+
+                          {activeTab === 3 && (
+                            <>
+                              <div className="space-y-4 animate-in fade-in duration-200">
+                                <div className="flex flex-col gap-3 relative mb-3">
+                                  <div className="bg-white flex items-center rounded-xl relative">
+                                    <Icon
+                                      icon="mdi:search"
+                                      width="20"
+                                      height="20"
+                                      className="absolute left-2 text-secondary"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={searchTerm}
+                                      onChange={(e) =>
+                                        setSearchTerm(e.target.value)
+                                      }
+                                      className="w-full py-1.5 rounded-lg ps-9 outline-0 font-normal text-gray-500 border-2 border-gray text-sm"
+                                    />
+                                  </div>
+                                  <div className=" max-h-42 overflow-auto no-scrollbar">
+                                    {users.map((user) => {
+                                      const isMember = room?.members?.some(
+                                        (member) =>
+                                          member?.user?._id === user?._id,
+                                      );
+
+                                      const isInvited =
+                                        room?.invitedUsers?.some((m) => {
+                                          // กรณีที่ 1: m เป็น Object ให้เช็ก m?._id
+                                          // กรณีที่ 2: m เป็น String ID โล่งๆ ให้เอา m มาเทียบตรงๆ ได้เลย
+                                          return (m?._id || m) === user?._id;
+                                        });
+
+                                      return (
+                                        <div
+                                          key={user?._id}
+                                          className="flex items-center justify-between py-2 px-5"
+                                        >
+                                          <div className=" flex items-center gap-3">
+                                            <div
+                                              style={{
+                                                borderColor: user?.avatar,
+                                              }}
+                                              className="flex-none bg-white border-2 w-10 h-10 rounded-full flex items-center justify-center"
+                                            >
+                                              <Icon
+                                                icon="mdi:account"
+                                                style={{ color: user?.avatar }}
+                                                width="30"
+                                              />
+                                            </div>
+                                            <div className="flex flex-col ">
+                                              <span className="font-bold text-sm truncate text-slate-800">
+                                                {user?.username}
+                                              </span>
+                                              <span className="font-normal text-xs text-secondary truncate">
+                                                {user?.email}
+                                              </span>
+                                            </div>
+                                          </div>
+                                          <div className="shrink-0 ml-3">
+                                            {isMember ? (
+                                              <span className="text-xs font-semibold text-green-600 bg-green-50 px-3 py-1.5 rounded-full border border-green-100">
+                                                Joined
+                                              </span>
+                                            ) : isInvited ? (
+                                              <div className="flex gap-2">
+                                                <span className="text-xs font-semibold text-yellow-600 bg-yellow-50 px-3 py-1.5 rounded-full border border-yellow-100">
+                                                  Pending
+                                                </span>
+                                                <button
+                                                  onClick={() =>
+                                                    handleCancelInvite(
+                                                      user?._id,
+                                                    )
+                                                  }
+                                                  className="flex items-center gap-1.5 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 px-4 py-1.5 rounded-full transition-colors active:scale-95 cursor-pointer"
+                                                >
+                                                  Cancel
+                                                </button>
+                                              </div>
+                                            ) : (
+                                              <button
+                                                onClick={() =>
+                                                  handleInvite(user?._id)
+                                                }
+                                                className="flex items-center gap-1.5 text-xs font-semibold text-white bg-blue-500 hover:bg-blue-600 px-4 py-1.5 rounded-full transition-colors active:scale-95"
+                                              >
+                                                <Icon
+                                                  icon="mdi:invite"
+                                                  width="16"
+                                                />
+                                                Invite
+                                              </button>
+                                            )}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    </>
                   )}
                 </div>
               </div>
@@ -1142,7 +1209,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
               // Tool bar
               <div className="flex justify-center items-center pt-5 pb-10 px-5 bg-gray-50">
                 <div className="flex w-full flex-wrap max-w-7xl items-center gap-1.5 p-2 md:py-5 rounded-xl bg-gray-50 border-gray-200 border-2">
-                  {/* 📝 Group 1: Basic Formatting */}
+                  {/* Group 1: Basic Formatting */}
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => editor.chain().focus().toggleBold().run()}
@@ -1196,7 +1263,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                     </button>
                   </div>
                   <div className="w-px h-6 bg-gray-200 mx-1 hidden sm:block" />
-                  {/* 🔠 Group 2: Typography (Headings, Font, Size) */}
+                  {/* Group 2: Typography (Headings, Font, Size) */}
                   <div className="flex items-center gap-2 w-full sm:w-auto">
                     <select
                       onChange={(e) => {
@@ -1276,7 +1343,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                     </select>
                   </div>
                   <div className="w-px h-6 bg-gray-200 mx-1 hidden md:block" />
-                  {/* 📋 Group 3: Lists & Alignment */}
+                  {/* Group 3: Lists & Alignment */}
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() =>
@@ -1332,7 +1399,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                     </button>
                   </div>
                   <div className="w-px h-6 bg-gray-200 mx-1 hidden lg:block" />
-                  {/* 🎨 Group 4: Inserts & Colors */}
+                  {/* Group 4: Inserts & Colors */}
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => fileInputRef.current.click()}
@@ -1375,7 +1442,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                     </button>
                   </div>
                   <div className="flex-1" /> {/* ดันปุ่มที่เหลือไปทางขวาสุด */}
-                  {/* 🗑️ Group 5: Clear */}
+                  {/* Group 5: Clear */}
                   <button
                     onClick={() =>
                       editor.chain().focus().unsetAllMarks().clearNodes().run()
@@ -1404,13 +1471,18 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
               >
                 <EditorContent
                   editor={editor}
-                  className="w-full outline-none" // 🟢 เพิ่ม h-full และ overflow-hidden
+                  className="w-full outline-none" // เพิ่ม h-full และ overflow-hidden
                 />
               </div>
             </div>
 
             <button
-              onClick={() => setIsOpenCommentModal(!isOpenCommentModal)}
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsNewComment(false);
+                setIsOpenCommentModal(!isOpenCommentModal);
+              }}
               className="cursor-pointer absolute bottom-6 right-6 z-50 bg-primary text-white p-4 rounded-full shadow-xl hover:scale-105 active:scale-95 transition-transform flex items-center justify-center"
             >
               <Icon
@@ -1421,9 +1493,13 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                 }
                 width="24"
               />
+              {isNewComment && !isOpenCommentModal && (
+                <span className="w-3 h-3 absolute top-1 bg-red-500 right-0.5 rounded-full"></span>
+              )}
             </button>
 
             <div
+              ref={commentModalRef}
               className={`
                 /* 1. ควบคุมตำแหน่งให้อยู่ "เหนือ" ปุ่ม (bottom-24 คือเว้นระยะจากขอบล่าง 6rem) */
                 absolute bottom-24 right-6 z-40 

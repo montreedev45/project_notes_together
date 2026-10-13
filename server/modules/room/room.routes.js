@@ -34,8 +34,8 @@ const router = express.Router();
 router.put("/", authMiddleware, apiLimiter, validate(updatedRoomSchema), updateRoom)
 router.post("/", authMiddleware, writeLimiter, validate(createRoomSchema), createRoom);
 router.get("/trash", authMiddleware, apiLimiter, validate(getTrashRoomsSchema), getTrashRooms);
-router.post("/my-rooms", authMiddleware, apiLimiter, validate(getRoomsSchema), getMyRooms);
-router.post("/all-rooms", authMiddleware, apiLimiter, validate(getAllRoomsSchema), getAllRooms);
+router.get("/my-rooms", authMiddleware, apiLimiter, validate(getRoomsSchema), getMyRooms);
+router.get("/all-rooms", authMiddleware, apiLimiter, validate(getAllRoomsSchema), getAllRooms);
 
 router.post("/join", authMiddleware, writeLimiter, validate(joinRoomSchema), joinRoom);
 router.post("/leave", authMiddleware, writeLimiter, validate(leaveRoomSchema), leaveRoom);
