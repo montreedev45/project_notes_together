@@ -14,7 +14,7 @@ function Home() {
             <h1 className="font-bold max-w-80 sm:max-w-lg md:leading-13 text-2xl min-[450px]:text-3xl md:text-5xl">
               Write Notes Together in Real Time
             </h1>
-            <p className="min-w-sm max-w-sm px-10 my-3  text-gray-400 font-medium md:px-1">
+            <p className="min-w-sm max-w-sm px-10 my-3 text-gray-400 font-medium md:px-1">
               Create a shared workspace for your team. Start a room, invite
               collaborators, and edit notes together in real time.
             </p>
@@ -25,11 +25,18 @@ function Home() {
               Create Your First Room
             </Link>
           </div>
-          <div className=" md:block ">
+
+          <div className="w-full flex justify-center md:justify-end md:block">
             <img
               src={image_hero}
               alt="Notes Together Hero"
-              className="w-70 min-[450px]:w-80 md:w-full"
+              /* 1. แก้ LCP: สั่งให้เบราว์เซอร์ให้ความสำคัญสูงสุดกับรูปนี้ โหลดเป็นคิวแรกสุด */
+              fetchPriority="high"
+              /* 2. แก้ CLS: ใส่ขนาดความกว้าง/สูงตั้งต้น (ให้เปลี่ยนตัวเลขนี้เป็นขนาด Pixel จริงของรูปภาพ WebP ของคุณ) */
+              width="645"
+              height="435"
+              /* 3. แก้ CLS & Responsive: ใช้ aspect-ratio จองพื้นที่ และ h-auto ป้องกันรูปเบี้ยว */
+              className="w-70 min-[450px]:w-80 md:w-full h-auto object-contain aspect-4/3"
             />
           </div>
         </div>
@@ -115,8 +122,11 @@ function Home() {
               <div>
                 <img
                   src={image_step_1}
-                  className="hidden h-full shadow-xl lg:block lg:w-100 lg:h-80 lg:p-5"
-                  alt=""
+                  alt="Step 1: Create a shared workspace"
+                  loading="lazy"
+                  width="600"
+                  height="450"
+                  className="hidden h-full shadow-xl lg:block lg:w-100 lg:h-80 lg:p-5 object-contain"
                 />
               </div>
             </div>
@@ -125,8 +135,11 @@ function Home() {
               <div>
                 <img
                   src={image_step_2}
-                  className="hidden lg:block h-full shadow-xl lg:w-100 lg:h-80 lg:p-5"
-                  alt=""
+                  alt="Step 2: Invite others to join"
+                  loading="lazy"
+                  width="600"
+                  height="450"
+                  className="hidden h-full shadow-xl lg:block lg:w-100 lg:h-80 lg:p-5 object-contain"
                 />
               </div>
               <div className="rounded-lg w-70 h-90 p-10 md:w-110 md:h-80 flex justify-center items-center flex-col text-center shadow-xl lg:w-100 lg:h-80 lg:p-5 hover:scale-105 transition-transform">
@@ -165,8 +178,11 @@ function Home() {
               <div>
                 <img
                   src={image_step_3}
-                  className="hidden lg:block h-full shadow-xl lg:w-100 lg:h-80 lg:p-5"
-                  alt=""
+                  alt="Step 3: Edit notes in real time"
+                  loading="lazy"
+                  width="600"
+                  height="450"
+                  className="hidden h-full shadow-xl lg:block lg:w-100 lg:h-80 lg:p-5 object-contain"
                 />
               </div>
             </div>
@@ -294,7 +310,7 @@ function Home() {
           </p>
           <Link
             to="/login"
-              className="button-primary rounded-lg py-3 mt-4 font-medium hover:scale-105 transition-transform cursor-pointer block text-center"
+            className="button-primary rounded-lg py-3 mt-4 font-medium hover:scale-105 transition-transform cursor-pointer block text-center"
           >
             Create Your First Room
           </Link>

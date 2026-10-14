@@ -14,8 +14,11 @@ function Error500() {
         <div className="flex justify-center p-4 md:p-10 w-full md:w-1/2">
           <img
             src={image_hero}
-            alt="500 Internal Server Error"
-            className="w-full max-w-75 md:max-w-125 object-contain"
+            alt="500 Not Found Illustration"
+            fetchPriority="high"
+            width="645"
+            height="435"
+            className="w-full h-auto max-w-75 md:max-w-112.5 object-contain"
           />
         </div>
 

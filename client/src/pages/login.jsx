@@ -62,7 +62,14 @@ function Login() {
       <div className="max-w-300 w-full flex justify-center items-center px-10 min-[400px]:px-15">
         <div className="flex flex-col lg:flex-row px-10 lg:gap-10 md:p-10  items-center justify-center rounded-xl">
           <div className="max-[400px]:hidden">
-            <img src={image_hero} alt="" className="w-80 md:w-110" />
+            <img
+              src={image_hero}
+              alt="Illustration representing the core feature"
+              fetchPriority="high"
+              width="500"
+              height="400"
+              className="w-80 md:w-110 h-auto object-contain"
+            />
           </div>
           <div className="text-center pt-5 md:p-10 w-full md:w-100">
             <form onSubmit={handleSubmit}>

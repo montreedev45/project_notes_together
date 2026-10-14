@@ -9,7 +9,10 @@ function Error404() {
           <img
             src={image_hero}
             alt="404 Not Found Illustration"
-            className="w-full max-w-75 md:max-w-112.5 object-contain"
+            fetchPriority="high"
+            width="645"
+            height="435"
+            className="w-full h-auto max-w-75 md:max-w-112.5 object-contain"
           />
         </div>
 
