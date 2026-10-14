@@ -1,36 +1,56 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useEffect } from "react";
-import Editor from "./components/editor";
-import Profile from "./components/profile";
-import Home from "./pages/home";
-import Login from "./pages/login";
-import Register from "./pages/register";
-import Layout from "./layouts/layout";
-import DashboardLayout from "./layouts/dashboardLayout";
-import Error404 from "./pages/error404";
-import Error500 from "./pages/error500";
-import Dashboard from "./pages/dashboard";
-import SettingRoomLayout from "./layouts/settingRoomLayout";
-import SettingRoomGeneral from "./components/settingRoom-general";
-import SettingRoomMember from "./components/settingRoom-member";
-import SettingRoomShare from "./components/settingRoom-share";
-import Recent from "./pages/recent";
-import Trash from "./pages/trash";
-import SettingAccountLayout from "./layouts/settingAccountLayout";
-import SettingAccountProfile from "./components/settingAccount-profile";
-import Explore from "./pages/explore";
+import { useEffect, lazy, Suspense } from "react";
 import DeleteRoomModal from "./components/deleteRoomModal";
-import ProtectedRoute from "./components/protectedRoute";
 import useModalStore from "./store/useModalStore";
 import useAuthStore from "./store/useAuthStore";
 import useRoomStore from "./store/useRoomStore";
-
-import JoinLink from "./pages/join-link";
-import { connectSocket, disconnectSocket } from "./socket";
 import useNotificationStore from "./store/useNotificationStore";
-import SettingRoomTransferOwnership from "./components/settingRoom-transferOwnership";
-import SettingAccountPlan from "./components/settingAccount-plan";
+
+import { connectSocket, disconnectSocket } from "./socket";
 import { Toaster } from "react-hot-toast";
+
+// กลุ่มนี้คือโครงสร้างหลักและหน้า Landing Page (Home) ต้องโหลดมาพร้อมกับเบราว์เซอร์ทันที
+import Layout from "./layouts/layout";
+import Home from "./pages/home";
+import ProtectedRoute from "./components/protectedRoute";
+
+// Lazy Load (แยกไฟล์ JS ออกไป โหลดเมื่อผู้ใช้กดเปลี่ยนหน้าเท่านั้น)
+const Login = lazy(() => import("./pages/login"));
+const Register = lazy(() => import("./pages/register"));
+
+// กลุ่ม Dashboard & Layouts
+const DashboardLayout = lazy(() => import("./layouts/dashboardLayout"));
+const Explore = lazy(() => import("./pages/explore"));
+const Dashboard = lazy(() => import("./pages/dashboard"));
+const Recent = lazy(() => import("./pages/recent"));
+const Trash = lazy(() => import("./pages/trash"));
+const JoinLink = lazy(() => import("./pages/join-link"));
+
+// กลุ่ม Settings
+const SettingAccountLayout = lazy(
+  () => import("./layouts/settingAccountLayout"),
+);
+const SettingAccountProfile = lazy(
+  () => import("./components/settingAccount-profile"),
+);
+const SettingAccountPlan = lazy(
+  () => import("./components/settingAccount-plan"),
+);
+const SettingRoomLayout = lazy(() => import("./layouts/settingRoomLayout"));
+const SettingRoomGeneral = lazy(
+  () => import("./components/settingRoom-general"),
+);
+const SettingRoomMember = lazy(() => import("./components/settingRoom-member"));
+const SettingRoomShare = lazy(() => import("./components/settingRoom-share"));
+const SettingRoomTransferOwnership = lazy(
+  () => import("./components/settingRoom-transferOwnership"),
+);
+
+const Editor = lazy(() => import("./components/editor"));
+
+// กลุ่ม Error
+const Error404 = lazy(() => import("./pages/error404"));
+const Error500 = lazy(() => import("./pages/error500"));
 
 function App() {
   const { deleteModal, closeDeleteModal } = useModalStore();
@@ -101,60 +121,68 @@ function App() {
   }
   return (
     <>
-      <Routes>
-        {/* public */}
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/sign-up" element={<Register />} />
-          <Route path="/reset-password/:token/:email" element={<Login />} />
-        </Route>
-
-        {/* private */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<DashboardLayout />}>
-            {/* 1. Static Routes (หน้าคงที่) */}
-            <Route index element={<Explore />} />
-            <Route path="explore" element={<Explore />} />
-            <Route path="myroom" element={<Dashboard />} />
-            <Route path="recent" element={<Recent />} />
-            <Route path="trash" element={<Trash />} />
-            <Route
-              path="join-link/:shareLinkToken/:role"
-              element={<JoinLink />}
-            />
-
-            {/* 2. Setting Account (จัดการโปรไฟล์) */}
-            <Route
-              path=":id/setting-account"
-              element={<SettingAccountLayout />}
-            >
-              <Route index element={<SettingAccountProfile />} />
-              <Route path="profile" element={<SettingAccountProfile />} />
-              <Route path="plan" element={<SettingAccountPlan />} />
-            </Route>
-
-            {/* 3. Setting Room (จัดการห้อง - ใช้ :id) */}
-            <Route path=":id/setting-room" element={<SettingRoomLayout />}>
-              <Route index element={<SettingRoomGeneral />} />
-              <Route path="general" element={<SettingRoomGeneral />} />
-              <Route path="member" element={<SettingRoomMember />} />
-              <Route path="share" element={<SettingRoomShare />} />
-              <Route
-                path="transfer-ownership"
-                element={<SettingRoomTransferOwnership />}
-              />
-            </Route>
-
-            {/* 4. Editor (Dynamic สุด ย้ายมาไว้ล่างสุด) */}
-            {/* URL: /room123/editor */}
-            <Route path=":roomId/:role" element={<Editor />} />
+      <Suspense
+        fallback={
+          <div className="flex h-screen w-screen items-center justify-center bg-gray-50">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        }
+      >
+        <Routes>
+          {/* public */}
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/sign-up" element={<Register />} />
+            <Route path="/reset-password/:token/:email" element={<Login />} />
           </Route>
-        </Route>
 
-        <Route path="*" element={<Error404 />} />
-        <Route path="/500" element={<Error500 />} />
-      </Routes>
+          {/* private */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/" element={<DashboardLayout />}>
+              {/* 1. Static Routes (หน้าคงที่) */}
+              <Route index element={<Explore />} />
+              <Route path="explore" element={<Explore />} />
+              <Route path="myroom" element={<Dashboard />} />
+              <Route path="recent" element={<Recent />} />
+              <Route path="trash" element={<Trash />} />
+              <Route
+                path="join-link/:shareLinkToken/:role"
+                element={<JoinLink />}
+              />
+
+              {/* 2. Setting Account (จัดการโปรไฟล์) */}
+              <Route
+                path=":id/setting-account"
+                element={<SettingAccountLayout />}
+              >
+                <Route index element={<SettingAccountProfile />} />
+                <Route path="profile" element={<SettingAccountProfile />} />
+                <Route path="plan" element={<SettingAccountPlan />} />
+              </Route>
+
+              {/* 3. Setting Room (จัดการห้อง - ใช้ :id) */}
+              <Route path=":id/setting-room" element={<SettingRoomLayout />}>
+                <Route index element={<SettingRoomGeneral />} />
+                <Route path="general" element={<SettingRoomGeneral />} />
+                <Route path="member" element={<SettingRoomMember />} />
+                <Route path="share" element={<SettingRoomShare />} />
+                <Route
+                  path="transfer-ownership"
+                  element={<SettingRoomTransferOwnership />}
+                />
+              </Route>
+
+              {/* 4. Editor (Dynamic สุด ย้ายมาไว้ล่างสุด) */}
+              {/* URL: /room123/editor */}
+              <Route path=":roomId/:role" element={<Editor />} />
+            </Route>
+          </Route>
+
+          <Route path="*" element={<Error404 />} />
+          <Route path="/500" element={<Error500 />} />
+        </Routes>
+      </Suspense>
       <DeleteRoomModal
         isOpen={deleteModal.isOpen}
         roomId={deleteModal.roomId}

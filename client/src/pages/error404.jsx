@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import image_hero from "../assets/image_hero.png";
+import image_hero from "../assets/image_hero.webp";
 
 function Error404() {
   return (

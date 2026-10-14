@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Icon } from "@iconify/react";
-import image_hero from "../assets/image_hero.png";
+import image_hero from "../assets/image_hero.webp";
 import ForgotPasswordModal from "../components/forgotPasswordModal.jsx";
 import ResetPasswordModal from "../components/resetPasswordModal.jsx";
 import useAuthStore from "../store/useAuthStore.js";

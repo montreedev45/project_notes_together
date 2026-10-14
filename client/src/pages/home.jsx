@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
 import { Icon } from "@iconify/react";
-import image_hero from "../assets/image_hero.png";
-import image_step_1 from "../assets/notes_together_step1.png";
-import image_step_2 from "../assets/notes_together_step2.png";
-import image_step_3 from "../assets/notes_together_step3.png";
+import image_hero from "../assets/image_hero.webp";
+import image_step_1 from "../assets/notes_together_step1.webp";
+import image_step_2 from "../assets/notes_together_step2.webp";
+import image_step_3 from "../assets/notes_together_step3.webp";
 
 function Home() {
   return (
