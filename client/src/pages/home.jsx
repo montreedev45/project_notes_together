@@ -1,9 +1,13 @@
 import { Link } from "react-router-dom";
 import { Icon } from "@iconify/react";
-import image_hero from "../assets/image_hero.webp";
-import image_step_1 from "../assets/notes_together_step1.webp";
-import image_step_2 from "../assets/notes_together_step2.webp";
-import image_step_3 from "../assets/notes_together_step3.webp";
+import accessPoint from '@iconify-icons/mdi/access-point';
+import peopleAdd from '@iconify-icons/mdi/people-add';
+import share from '@iconify-icons/mdi/share';
+import number1 from '@iconify-icons/mdi/number-1-circle';
+import number2 from '@iconify-icons/mdi/number-2-circle';
+import number3 from '@iconify-icons/mdi/number-3-circle';
+import check from '@iconify-icons/mdi/check-bold';
+
 
 function Home() {
   return (
@@ -28,7 +32,7 @@ function Home() {
 
           <div className="w-full flex justify-center md:justify-end md:block">
             <img
-              src={image_hero}
+              src="/image_hero.webp"
               alt="Notes Together Hero"
               /* 1. แก้ LCP: สั่งให้เบราว์เซอร์ให้ความสำคัญสูงสุดกับรูปนี้ โหลดเป็นคิวแรกสุด */
               fetchPriority="high"
@@ -50,7 +54,7 @@ function Home() {
           <div className="flex flex-col pt-15 items-center justify-between lg:gap-20 gap-30 lg:flex-row">
             <div className="rounded-lg w-70 h-90 p-10 md:w-110 md:h-80 md:p-20 flex justify-center items-center flex-col text-center shadow-xl lg:w-80 lg:h-80 lg:p-5 hover:scale-105 transition-transform">
               <Icon
-                icon="wpf:online"
+                icon={accessPoint}
                 className="text-primary rounded-full my-1 p-2"
                 width="60"
                 height="60"
@@ -64,7 +68,7 @@ function Home() {
             </div>
             <div className="rounded-lg w-70 h-90 p-10 md:w-110 md:h-80 md:p-20 flex justify-center items-center flex-col text-center shadow-xl lg:w-80 lg:h-80 lg:p-5 hover:scale-105 transition-transform">
               <Icon
-                icon="mdi:people-add"
+                icon={peopleAdd}
                 className="text-primary rounded-full my-1 p-2"
                 width="60"
                 height="60"
@@ -78,7 +82,7 @@ function Home() {
             </div>
             <div className="rounded-lg w-70 h-90 p-10 md:w-110 md:h-80 md:p-20 flex justify-center items-center flex-col text-center shadow-xl lg:w-80 lg:h-80 lg:p-5 hover:scale-105 transition-transform">
               <Icon
-                icon="fa6-solid:share"
+                icon={share}
                 className="text-primary rounded-full my-1 p-2"
                 width="60"
                 height="60"
@@ -106,8 +110,8 @@ function Home() {
             <div className="flex justify-center lg:justify-between h-80">
               <div className="rounded-lg w-70 h-90 px-15 md:w-110 md:h-80 flex justify-center items-center flex-col text-center shadow-xl lg:w-100 lg:h-80 lg:p-5 hover:scale-105 transition-transform">
                 <Icon
-                  icon="ph:number-one-bold"
-                  className="text-white bg-primary rounded-full my-2 p-2"
+                  icon={number1}
+                  className="text-primary bg-white rounded-full my-2 "
                   width="60"
                   height="60"
                 />
@@ -121,7 +125,7 @@ function Home() {
               </div>
               <div>
                 <img
-                  src={image_step_1}
+                  src="/notes_together_step1.webp"
                   alt="Step 1: Create a shared workspace"
                   loading="lazy"
                   width="600"
@@ -134,7 +138,7 @@ function Home() {
             <div className=" flex justify-center lg:justify-between h-80">
               <div>
                 <img
-                  src={image_step_2}
+                  src="/notes_together_step2.webp"
                   alt="Step 2: Invite others to join"
                   loading="lazy"
                   width="600"
@@ -144,8 +148,8 @@ function Home() {
               </div>
               <div className="rounded-lg w-70 h-90 p-10 md:w-110 md:h-80 flex justify-center items-center flex-col text-center shadow-xl lg:w-100 lg:h-80 lg:p-5 hover:scale-105 transition-transform">
                 <Icon
-                  icon="ph:number-two-bold"
-                  className="text-white bg-primary rounded-full my-2 p-2"
+                  icon={number2}
+                  className="text-primary bg-white rounded-full my-2 "
                   width="60"
                   height="60"
                 />
@@ -162,8 +166,8 @@ function Home() {
             <div className="flex justify-center lg:justify-between h-80">
               <div className="rounded-lg w-70 h-90 p-10 md:w-110 md:h-80 flex justify-center items-center flex-col text-center shadow-xl lg:w-100 lg:h-80 lg:p-5 hover:scale-105 transition-transform">
                 <Icon
-                  icon="ph:number-three-bold"
-                  className="text-white bg-primary rounded-full my-2 p-2"
+                  icon={number3}
+                  className="text-primary bg-white rounded-full my-2 "
                   width="60"
                   height="60"
                 />
@@ -177,7 +181,7 @@ function Home() {
               </div>
               <div>
                 <img
-                  src={image_step_3}
+                  src="/notes_together_step3.webp"
                   alt="Step 3: Edit notes in real time"
                   loading="lazy"
                   width="600"
@@ -214,7 +218,7 @@ function Home() {
               </Link>
               <div className="flex justify-start pt-5">
                 <Icon
-                  icon="fluent-emoji-high-contrast:check-mark"
+                  icon={check}
                   className="text-primary"
                   width="20"
                   height="20"
@@ -223,7 +227,7 @@ function Home() {
               </div>
               <div className="flex justify-start">
                 <Icon
-                  icon="fluent-emoji-high-contrast:check-mark"
+                  icon={check}
                   className="text-primary"
                   width="20"
                   height="20"
@@ -248,7 +252,7 @@ function Home() {
 
               <div className="flex justify-start pt-5">
                 <Icon
-                  icon="fluent-emoji-high-contrast:check-mark"
+                  icon={check}
                   className="text-primary"
                   width="20"
                   height="20"
@@ -257,7 +261,7 @@ function Home() {
               </div>
               <div className="flex justify-start">
                 <Icon
-                  icon="fluent-emoji-high-contrast:check-mark"
+                  icon={check}
                   className="text-primary"
                   width="20"
                   height="20"
@@ -282,7 +286,7 @@ function Home() {
 
               <div className="flex justify-start pt-5">
                 <Icon
-                  icon="fluent-emoji-high-contrast:check-mark"
+                  icon={check}
                   className="text-primary"
                   width="20"
                   height="20"
@@ -291,7 +295,7 @@ function Home() {
               </div>
               <div className="flex justify-start">
                 <Icon
-                  icon="fluent-emoji-high-contrast:check-mark"
+                  icon={check}
                   className="text-primary"
                   width="20"
                   height="20"

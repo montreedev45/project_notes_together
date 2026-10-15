@@ -1,4 +1,6 @@
 import { Icon } from "@iconify/react";
+import facebook from '@iconify-icons/mdi/facebook';
+import linkedin from '@iconify-icons/mdi/linkedin';
 import { Link } from "react-router-dom";
 import { HashLink } from "react-router-hash-link";
 function Footer() {
@@ -15,31 +17,14 @@ function Footer() {
             </span>
             <div className="flex items-end gap-2 mt-2">
               <Icon
-                icon="fe:facebook"
+                icon={facebook}
                 width="25"
                 height="25"
                 className="text-icon hover:scale-105 hover:text-primary transition-colors cursor-pointer"
               />
+              
               <Icon
-                icon="streamline-logos:tiktok-logo-block"
-                width="24"
-                height="24"
-                className="text-icon hover:text-primary transition-colors cursor-pointer"
-              />
-              <Icon
-                icon="streamline-logos:x-twitter-logo-block"
-                width="24"
-                height="24"
-                className="text-icon hover:text-primary transition-colors cursor-pointer"
-              />
-              <Icon
-                icon="streamline-logos:telegram-logo-1-block"
-                width="24"
-                height="24"
-                className="text-icon hover:text-primary transition-colors cursor-pointer"
-              />
-              <Icon
-                icon="ion:logo-linkedin"
+                icon={linkedin}
                 width="25"
                 height="25"
                 className="text-icon hover:text-primary transition-colors cursor-pointer"

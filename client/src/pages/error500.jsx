@@ -1,5 +1,4 @@
 import { Link, useSearchParams } from "react-router-dom";
-import image_hero from "../assets/image_hero.webp";
 
 function Error500() {
   const [searchParams] = useSearchParams();
@@ -13,7 +12,7 @@ function Error500() {
       <div className="w-full max-w-6xl flex flex-col md:flex-row justify-center items-center gap-8 md:gap-16">
         <div className="flex justify-center p-4 md:p-10 w-full md:w-1/2">
           <img
-            src={image_hero}
+            src="/image_hero.webp"
             alt="500 Not Found Illustration"
             fetchPriority="high"
             width="645"

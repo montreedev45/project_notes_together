@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Icon } from "@iconify/react";
-import image_hero from "../assets/image_hero.webp";
 import ForgotPasswordModal from "../components/forgotPasswordModal.jsx";
 import ResetPasswordModal from "../components/resetPasswordModal.jsx";
 import useAuthStore from "../store/useAuthStore.js";
@@ -63,7 +62,7 @@ function Login() {
         <div className="flex flex-col lg:flex-row px-10 lg:gap-10 md:p-10  items-center justify-center rounded-xl">
           <div className="max-[400px]:hidden">
             <img
-              src={image_hero}
+              src="/image_hero.webp"
               alt="Illustration representing the core feature"
               fetchPriority="high"
               width="500"

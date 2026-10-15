@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
-import image_hero from "../assets/image_hero.webp";
 import useAuthStore from "../store/useAuthStore.js";
 import GoogleAuthButton from "../components/GoogleAuthButton.jsx";
 import toast from "react-hot-toast";
@@ -62,7 +61,7 @@ function Register() {
           <div className="flex flex-col lg:flex-row px-10 lg:gap-10 md:p-10  items-center justify-center rounded-xl">
             <div className="max-[400px]:hidden">
               <img
-                src={image_hero}
+                src="/image_hero.webp"
                 alt="Illustration representing the core feature"
                 fetchPriority="high"
                 width="500"
