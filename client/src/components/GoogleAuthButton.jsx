@@ -17,7 +17,7 @@ function GoogleAuthButton() {
           toast.success("Login successfully", { id: toastId });
           navigate("/explore");
         } else {
-          toast.error(`${result.message || "Login failed"}`, { id: toastId });
+          toast.error(`${res.message || "Login failed"}`, { id: toastId });
         }
       } catch (error) {
         console.error("Google Sign-In Error:", error);

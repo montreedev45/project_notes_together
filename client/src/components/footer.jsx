@@ -1,6 +1,6 @@
 import { Icon } from "@iconify/react";
-import facebook from '@iconify-icons/mdi/facebook';
-import linkedin from '@iconify-icons/mdi/linkedin';
+import facebook from "@iconify-icons/mdi/facebook";
+import linkedin from "@iconify-icons/mdi/linkedin";
 import { Link } from "react-router-dom";
 import { HashLink } from "react-router-hash-link";
 function Footer() {
@@ -10,7 +10,15 @@ function Footer() {
         <div className="max-w-280 w-full flex flex-col justify-center items-center md:items-start gap-10 md:gap-0 md:flex-row mb-15">
           <div className="flex flex-col items-center text-center md:text-start gap-2 md:items-start w-full md:ps-15">
             <Link to="/">
-              <img src="/logo.svg" alt="" className="w-60" />
+              <img
+                src="/logo.svg"
+                alt="Notes Together"
+                /* ระบุสัดส่วนกว้าง/สูง ของโลโก้ (สมมติว่าเป็น 224x60, ให้เปลี่ยนตัวเลขตามขนาดจริงของไฟล์ .svg) */
+                width="60"
+                height="20"
+                /* เพิ่ม h-auto เพื่อป้องกันโลโก้เบี้ยวผิดรูป */
+                className="w-40 md:w-56 h-auto"
+              />
             </Link>
             <span className="text-secondary font-semibold">
               Create and collaborate on notes with your team
@@ -22,7 +30,7 @@ function Footer() {
                 height="25"
                 className="text-icon hover:scale-105 hover:text-primary transition-colors cursor-pointer"
               />
-              
+
               <Icon
                 icon={linkedin}
                 width="25"
