@@ -161,6 +161,7 @@ function ChangeEmailModal({ isOpen, onClose }) {
               <button
                 onClick={handleClose}
                 className="p-1.5 hover:bg-slate-200 rounded-full cursor-pointer transition-colors"
+                aria-label="Close modal"
               >
                 <Icon icon="mdi:close" width="22" className="text-slate-500" />
               </button>

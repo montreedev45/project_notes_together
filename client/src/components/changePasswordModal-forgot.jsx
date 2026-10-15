@@ -13,6 +13,7 @@ function ChangePasswordModalForgot({ isOpen, onClose }) {
           <button
             onClick={onClose}
             className="p-1 hover:bg-slate-100 rounded-full cursor-pointer transition-colors"
+            aria-label="Close modal"
           >
             <Icon icon="mdi:close" width="24" className="text-slate-500" />
           </button>

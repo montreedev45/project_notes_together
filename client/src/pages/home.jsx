@@ -1,13 +1,12 @@
 import { Link } from "react-router-dom";
 import { Icon } from "@iconify/react";
-import accessPoint from '@iconify-icons/mdi/access-point';
-import peopleAdd from '@iconify-icons/mdi/people-add';
-import share from '@iconify-icons/mdi/share';
-import number1 from '@iconify-icons/mdi/number-1-circle';
-import number2 from '@iconify-icons/mdi/number-2-circle';
-import number3 from '@iconify-icons/mdi/number-3-circle';
-import check from '@iconify-icons/mdi/check-bold';
-
+import accessPoint from "@iconify-icons/mdi/access-point";
+import peopleAdd from "@iconify-icons/mdi/people-add";
+import share from "@iconify-icons/mdi/share";
+import number1 from "@iconify-icons/mdi/number-1-circle";
+import number2 from "@iconify-icons/mdi/number-2-circle";
+import number3 from "@iconify-icons/mdi/number-3-circle";
+import check from "@iconify-icons/mdi/check-bold";
 
 function Home() {
   return (
@@ -15,17 +14,18 @@ function Home() {
       <div className="w-full bg-third flex justify-center py-30 min-[450px]:py-50 md:py-45 lg:py-70">
         <div className="w-full max-w-7xl flex flex-col-reverse md:flex-row items-center justify-between px-6 md:px-20 gap-10 md:gap-4">
           <div className="grow justify-center md:items-start items-center flex flex-col text-center md:text-left">
-            <h1 className="font-bold max-w-80 sm:max-w-lg md:leading-13 text-2xl min-[450px]:text-3xl md:text-5xl">
+            <h1 className="font-bold text-gray-800 max-w-80 sm:max-w-lg md:leading-13 text-2xl min-[450px]:text-3xl md:text-5xl">
               Write Notes Together in Real Time
             </h1>
-            <p className="min-w-sm max-w-sm px-10 my-3 text-gray-400 font-medium md:px-1">
+            <p className="min-w-sm max-w-sm px-10 my-3 text-gray-600 font-semibold md:px-1">
               Create a shared workspace for your team. Start a room, invite
               collaborators, and edit notes together in real time.
             </p>
             <Link
               to="/login"
-              className="button-primary rounded-lg py-3 mt-4 font-medium hover:scale-105 transition-transform cursor-pointer block text-center"
+              className="button-primary bg-blue-600 rounded-lg py-3 mt-4 font-bold hover:scale-105 transition-transform cursor-pointer block text-center text-white"
             >
+
               Create Your First Room
             </Link>
           </div>
@@ -59,9 +59,9 @@ function Home() {
                 width="60"
                 height="60"
               />
-              <h5 className="font-semibold text-2xl lg:w-40 text-center">
+              <h3 className="font-semibold text-2xl lg:w-40 text-center">
                 Real-time collaboration
-              </h5>
+              </h3>
               <p className="p-1 pt-3 leading-5 text-gray-400 font-semibold lg:w-65">
                 Edit notes together with live updates from everyone in the room.
               </p>
@@ -73,9 +73,9 @@ function Home() {
                 width="60"
                 height="60"
               />
-              <h5 className="font-semibold text-2xl lg:w-40 text-center">
+              <h3 className="font-semibold text-2xl lg:w-40 text-center">
                 Room based workspace
-              </h5>
+              </h3>
               <p className="p-1 pt-3 leading-5 text-gray-400 font-semibold lg:w-65">
                 Organize notes by rooms for projects, teams, or study sessions.
               </p>
@@ -87,9 +87,9 @@ function Home() {
                 width="60"
                 height="60"
               />
-              <h5 className="font-semibold text-2xl lg:w-40 text-center">
+              <h3 className="font-semibold text-2xl lg:w-40 text-center">
                 Share note with link
-              </h5>
+              </h3>
               <p className="p-1 pt-3 leading-5 text-gray-400 font-semibold lg:w-65">
                 Invite collaborators instantly by sharing a simple room link.
               </p>
@@ -115,9 +115,9 @@ function Home() {
                   width="60"
                   height="60"
                 />
-                <h5 className="font-semibold text-xl md:text-2xl max-w-46">
+                <h3 className="font-semibold text-xl md:text-2xl max-w-46">
                   Create workspace room
-                </h5>
+                </h3>
                 <p className="px-2 min-w-50 pt-3 leading-5 text-gray-400 font-semibold">
                   Start a new room for your project or study session. Each room
                   has its own shared notes.
@@ -153,9 +153,9 @@ function Home() {
                   width="60"
                   height="60"
                 />
-                <h5 className="font-semibold text-2xl w-46">
+                <h3 className="font-semibold text-2xl w-46">
                   Invite others to join
-                </h5>
+                </h3>
                 <p className="px-2 w-65 pt-3 leading-5 text-gray-400 font-semibold">
                   Share the room link with teammates so they can join and
                   collaborate instantly.
@@ -171,9 +171,9 @@ function Home() {
                   width="60"
                   height="60"
                 />
-                <h5 className="font-semibold text-2xl w-46">
+                <h3 className="font-semibold text-2xl w-46">
                   Edit notes in real time
-                </h5>
+                </h3>
                 <p className="px-2 w-65 pt-3 leading-5 text-gray-400 font-semibold">
                   Everyone in the room can write and edit notes at the same time
                   with live updates.
@@ -204,7 +204,7 @@ function Home() {
           </p>
           <div className=" flex justify-between items-center flex-col gap-30 lg:flex-row mt-8 py-10">
             <div className="bg-white w-65 h-90 p-5 md:w-110 md:h-90 lg:w-70 lg:h-90 rounded-lg shadow-xl lg:p-5 hover:scale-105 transition-transform">
-              <span className="py-1 px-4 rounded-lg font-medium text-white bg-primary">
+              <span className="py-1 px-4 rounded-lg font-bold text-white text-xs bg-blue-600 ">
                 Free Plan
               </span>
               <span className="text-black block py-5 font-bold text-3xl">
@@ -212,7 +212,7 @@ function Home() {
               </span>
               <Link
                 to="/login"
-                className="button-primary bg-primary py-2 rounded-md font-medium block w-full text-center cursor-pointer"
+                className="bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md font-bold block w-full text-center cursor-pointer"
               >
                 Get started
               </Link>
@@ -237,7 +237,7 @@ function Home() {
             </div>
 
             <div className="bg-white w-65 h-90 p-5 md:w-110 md:h-90 lg:w-70 lg:h-90 rounded-lg shadow-xl lg:p-5 hover:scale-105 transition-transform">
-              <span className="py-1 px-4 rounded-lg font-medium text-white bg-primary">
+              <span className="py-1 px-4 rounded-lg font-bold text-white text-xs bg-blue-600 ">
                 Teams Plan
               </span>
               <span className="text-black block py-5 font-bold text-3xl">
@@ -245,7 +245,7 @@ function Home() {
               </span>
               <Link
                 to="/login"
-                className="button-primary bg-primary py-2 rounded-md font-medium block text-center w-full cursor-pointer"
+                className="bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md font-bold block w-full text-center cursor-pointer"
               >
                 Get started
               </Link>
@@ -271,7 +271,7 @@ function Home() {
             </div>
 
             <div className="bg-white w-65 h-90 p-5 md:w-110 md:h-90 lg:w-70 lg:h-90 rounded-lg shadow-xl lg:p-5 hover:scale-105 transition-transform">
-              <span className="py-1 px-4 rounded-lg font-medium text-white bg-primary">
+              <span className="py-1 px-4 rounded-lg font-bold text-white text-xs bg-blue-600 ">
                 Business Plan
               </span>
               <span className="text-black block py-5 font-bold text-3xl">
@@ -279,7 +279,7 @@ function Home() {
               </span>
               <Link
                 to="/login"
-                className="button-primary bg-primary py-2 rounded-md font-medium block text-center w-full cursor-pointer"
+                className="bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md font-bold block w-full text-center cursor-pointer"
               >
                 Get started
               </Link>
@@ -314,7 +314,7 @@ function Home() {
           </p>
           <Link
             to="/login"
-            className="button-primary rounded-lg py-3 mt-4 font-medium hover:scale-105 transition-transform cursor-pointer block text-center"
+            className="button-primary bg-blue-700 rounded-lg py-3 mt-4 font-medium hover:scale-105 transition-transform cursor-pointer block text-center text-white"
           >
             Create Your First Room
           </Link>

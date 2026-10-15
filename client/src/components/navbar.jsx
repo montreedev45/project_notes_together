@@ -70,6 +70,7 @@ export default function Navbar() {
         {/* 3. Mobile Hamburger Button (แสดงเฉพาะจอเล็ก) */}
         <div className="block lg:hidden">
           <button
+            aria-label="Hamburger"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="p-2 text-gray-600 hover:text-primary focus:outline-none cursor-pointer"
           >

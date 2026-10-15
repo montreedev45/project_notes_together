@@ -3,6 +3,7 @@ import facebook from "@iconify-icons/mdi/facebook";
 import linkedin from "@iconify-icons/mdi/linkedin";
 import { Link } from "react-router-dom";
 import { HashLink } from "react-router-hash-link";
+
 function Footer() {
   return (
     <>
@@ -13,34 +14,35 @@ function Footer() {
               <img
                 src="/logo.svg"
                 alt="Notes Together"
-                /* ระบุสัดส่วนกว้าง/สูง ของโลโก้ (สมมติว่าเป็น 224x60, ให้เปลี่ยนตัวเลขตามขนาดจริงของไฟล์ .svg) */
-                width="60"
-                height="20"
-                /* เพิ่ม h-auto เพื่อป้องกันโลโก้เบี้ยวผิดรูป */
+                width="224"
+                height="60"
                 className="w-40 md:w-56 h-auto"
               />
             </Link>
-            <span className="text-secondary font-semibold">
+            <span className="text-gray-600 font-semibold">
               Create and collaborate on notes with your team
             </span>
-            <div className="flex items-end gap-2 mt-2">
-              <Icon
-                icon={facebook}
-                width="25"
-                height="25"
-                className="text-icon hover:scale-105 hover:text-primary transition-colors cursor-pointer"
-              />
+            <div className="flex items-end gap-3 mt-2">
+              <a href="#" aria-label="Facebook" className="text-gray-600 hover:text-primary hover:scale-105 transition-all">
+                <Icon
+                  icon={facebook}
+                  width="25"
+                  height="25"
+                />
+              </a>
 
-              <Icon
-                icon={linkedin}
-                width="25"
-                height="25"
-                className="text-icon hover:text-primary transition-colors cursor-pointer"
-              />
+              <a href="#" aria-label="LinkedIn" className="text-gray-600 hover:text-primary hover:scale-105 transition-all">
+                <Icon
+                  icon={linkedin}
+                  width="25"
+                  height="25"
+                />
+              </a>
             </div>
           </div>
-          <div className="text-secondary font-semibold flex flex-col text-center leading-7 min-w-25 w-full max-w-40">
-            <span className="text-black ">Product</span>
+          
+          <div className="text-gray-700 font-semibold flex flex-col text-center leading-7 min-w-25 w-full max-w-40">
+            <span className="text-black font-bold mb-1">Product</span>
             <HashLink
               to="/#feature"
               className="hover:text-primary transition-colors cursor-pointer"
@@ -63,8 +65,9 @@ function Footer() {
               API
             </span>
           </div>
-          <div className="text-secondary font-semibold flex flex-col text-center leading-7 min-w-25 w-full max-w-40">
-            <span className="text-black">Resource</span>
+
+          <div className="text-gray-700 font-semibold flex flex-col text-center leading-7 min-w-25 w-full max-w-40">
+            <span className="text-black font-bold mb-1">Resource</span>
             <span className="hover:text-primary transition-colors cursor-pointer">
               Docs
             </span>
@@ -81,8 +84,9 @@ function Footer() {
               Terms
             </span>
           </div>
-          <div className="text-secondary font-semibold flex flex-col text-center leading-7 min-w-25 w-full max-w-40">
-            <span className="text-black">Company</span>
+
+          <div className="text-gray-700 font-semibold flex flex-col text-center leading-7 min-w-25 w-full max-w-40">
+            <span className="text-black font-bold mb-1">Company</span>
             <span className="hover:text-primary transition-colors cursor-pointer">
               Contact
             </span>
@@ -91,7 +95,8 @@ function Footer() {
             </span>
           </div>
         </div>
-        <span className="text-secondary font-normal block mb-2">
+        
+        <span className="text-gray-600 font-normal block mb-2">
           @2026 Notes Together. all rights reserved
         </span>
       </div>

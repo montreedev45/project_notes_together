@@ -42,6 +42,7 @@ function DeleteAccountModal({ isOpen, onClose }) {
               onClose();
             }}
             className="p-1.5 hover:bg-red-100 rounded-full cursor-pointer transition-colors"
+            aria-label="Close modal"
           >
             <Icon icon="mdi:close" width="22" className="text-red-400" />
           </button>

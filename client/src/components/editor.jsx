@@ -228,6 +228,7 @@ function ChatInput({
                   setIsOpenStickerModal(false);
                 }}
                 className="shrink-0 p-1 w-18 h-18 hover:bg-blue-100 rounded-xl transition-all transform hover:scale-110 cursor-pointer mx-1"
+                aria-label={`"Sticker ${fileName}"`}
               >
                 <img
                   src={`${import.meta.env.VITE_PATH_STICKERS}?nameImg=${fileName.replace(".png", "")}`}
@@ -916,6 +917,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                 {/* Buttons */}
                 <div className="flex gap-2 items-center relative">
                   <button
+                    aria-label="Share"
                     onClick={(e) => {
                       e.stopPropagation();
                       setIsOpenShareModal(!isOpenShareModal);
@@ -926,6 +928,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                     <span className="hidden sm:inline">Share</span>
                   </button>
                   <button
+                    aria-label="Export"
                     onClick={handleExport}
                     className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 flex items-center gap-1.5 rounded-lg text-sm font-bold transition-colors"
                   >
@@ -945,6 +948,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                         <div className="flex bg-slate-50 border-b border-gray-200">
                           {["Link", "Code", "Invite"].map((tab, idx) => (
                             <button
+                              aria-label="Tap"
                               key={tab}
                               onClick={() => setActiveTab(idx + 1)}
                               className={`flex-1 py-3 text-sm font-bold transition-colors ${
@@ -1023,6 +1027,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                                   />
 
                                   <button
+                                    aria-label="Copy"
                                     disabled={!isAllowLinkSharing}
                                     onClick={handleCopy}
                                     className={`${isAllowLinkSharing ? "bg-blue-500 hover:bg-blue-600 cursor-pointer" : "bg-gray-400 cursor-not-allowed"} text-white px-6 py-2 rounded-lg font-semibold transition-colors`}
@@ -1064,6 +1069,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
 
                                   <div className="flex gap-4">
                                     <button
+                                      aria-label="Copy"
                                       disabled={!isAllowCodeSharing}
                                       onClick={handleCopyCode}
                                       className={`${isAllowCodeSharing ? "bg-blue-500 hover:bg-blue-600 cursor-pointer" : "bg-gray-400 cursor-not-allowed"} text-white px-6 py-2 rounded-lg font-semibold transition-colors`}
@@ -1071,6 +1077,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                                       {isCopiedCode ? "Copied" : "Copy"}
                                     </button>
                                     <button
+                                      aria-label="Reset"
                                       disabled={!isAllowCodeSharing}
                                       onClick={handleUpdateCodeRoom}
                                       className={`flex-1 sm:flex-none px-6 py-2.5 rounded-lg font-bold transition-all active:scale-95 ${
@@ -1212,6 +1219,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                   {/* Group 1: Basic Formatting */}
                   <div className="flex items-center gap-1">
                     <button
+                      aria-label="Bold"
                       onClick={() => editor.chain().focus().toggleBold().run()}
                       disabled={
                         !editor.can().chain().focus().toggleBold().run()
@@ -1222,6 +1230,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                       <Icon icon="mdi:format-bold" width="20" />
                     </button>
                     <button
+                      aria-label="Italic"
                       onClick={() =>
                         editor.chain().focus().toggleItalic().run()
                       }
@@ -1234,6 +1243,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                       <Icon icon="mdi:format-italic" width="20" />
                     </button>
                     <button
+                      aria-label="Underline"
                       onClick={() =>
                         editor.chain().focus().toggleUnderline().run()
                       }
@@ -1243,6 +1253,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                       <Icon icon="mdi:format-underline" width="20" />
                     </button>
                     <button
+                      aria-label="Strikethrough"
                       onClick={() =>
                         editor.chain().focus().toggleStrike().run()
                       }
@@ -1255,6 +1266,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                       />
                     </button>
                     <button
+                      aria-label="Inline code"
                       onClick={() => editor.chain().focus().toggleCode().run()}
                       className={`p-2 rounded transition-colors ${editor.isActive("code") ? "bg-blue-100 text-blue-600" : "hover:bg-blue-100 text-slate-600"}`}
                       title="Inline Code"
@@ -1346,6 +1358,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                   {/* Group 3: Lists & Alignment */}
                   <div className="flex items-center gap-1">
                     <button
+                      aria-label="Bullet"
                       onClick={() =>
                         editor.chain().focus().toggleBulletList().run()
                       }
@@ -1354,6 +1367,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                       <Icon icon="mdi:format-list-bulleted" width="20" />
                     </button>
                     <button
+                      aria-label="Number"
                       onClick={() =>
                         editor.chain().focus().toggleOrderedList().run()
                       }
@@ -1364,6 +1378,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
 
                     {/* Alignment */}
                     <button
+                      aria-label="Left"
                       onClick={() =>
                         editor.chain().focus().setTextAlign("left").run()
                       }
@@ -1372,6 +1387,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                       <Icon icon="mdi:format-align-left" width="20" />
                     </button>
                     <button
+                      aria-label="Center"
                       onClick={() =>
                         editor.chain().focus().setTextAlign("center").run()
                       }
@@ -1380,6 +1396,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                       <Icon icon="mdi:format-align-center" width="20" />
                     </button>
                     <button
+                      aria-label="Right"
                       onClick={() =>
                         editor.chain().focus().setTextAlign("right").run()
                       }
@@ -1389,6 +1406,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                       <Icon icon="mdi:format-align-right" width="20" />
                     </button>
                     <button
+                      aria-label="Divider"
                       onClick={() =>
                         editor.chain().focus().setHorizontalRule().run()
                       }
@@ -1402,6 +1420,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                   {/* Group 4: Inserts & Colors */}
                   <div className="flex items-center gap-1">
                     <button
+                      aria-label="Image"
                       onClick={() => fileInputRef.current.click()}
                       className="p-1.5 md:p-2 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
                       title="Upload Image"
@@ -1432,6 +1451,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                     </div>
 
                     <button
+                      aria-label="Code block"
                       onClick={() =>
                         editor.chain().focus().toggleCodeBlock().run()
                       }
@@ -1444,6 +1464,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
                   <div className="flex-1" /> {/* ดันปุ่มที่เหลือไปทางขวาสุด */}
                   {/* Group 5: Clear */}
                   <button
+                    aria-label="Clear"
                     onClick={() =>
                       editor.chain().focus().unsetAllMarks().clearNodes().run()
                     }
@@ -1477,6 +1498,7 @@ function EditorInner({ yjs, user, room, activeUsersList, provider }) {
             </div>
 
             <button
+              aria-label="Comment"
               onMouseDown={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation();
